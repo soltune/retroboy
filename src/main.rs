@@ -1,3 +1,6 @@
+use gameboy_emulator;
+
 fn main() {
-    println!("Hello, world!");
+    let result = gameboy_emulator::initialize_cpu_state();
+    println!("{:?} {:?}", result.registers, result.clock)
 }
