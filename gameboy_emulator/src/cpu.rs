@@ -51,6 +51,7 @@ pub fn initialize_cpu_state() -> CpuState {
         },
         memory: mmu::Memory {
             in_bios: false,
+            bios: [0; 0x100],
             rom: [0; 0x8000],
             video_ram: [0; 0x2000],
             object_attribute_memory: [0; 0xa0],
