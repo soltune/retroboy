@@ -49,15 +49,6 @@ pub fn initialize_cpu_state() -> CpuState {
             machine_cycles: 0,
             clock_cycles: 0
         },
-        memory: mmu::Memory {
-            in_bios: false,
-            bios: [0; 0x100],
-            rom: [0; 0x8000],
-            video_ram: [0; 0x2000],
-            object_attribute_memory: [0; 0xa0],
-            working_ram: [0; 0x3e00],
-            external_ram: [0; 0x2000],
-            zero_page_ram: [0; 0x80]
-        }
+        memory: mmu::Memory::new()
     }
 }
