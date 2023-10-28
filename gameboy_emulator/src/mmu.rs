@@ -36,6 +36,7 @@ impl Memory {
             },
             0x1000 | 0x2000 | 0x3000 | 0x4000 |
             0x5000 | 0x6000 | 0x7000 =>
+                // I will implement bank switching later.
                 self.rom[address as usize],
             0x8000 | 0x9000 =>
                 self.video_ram[(address & 0x1FFF) as usize],
@@ -68,6 +69,12 @@ impl Memory {
                 },
             _ => 0x00
         }
+    }
+
+    pub fn read_word(&self, address: u16) -> u16 {
+        let first_byte = self.read_byte(address) as u16;
+        let second_byte = self.read_byte(address + 1) as u16;
+        first_byte + (second_byte << 8)
     }
 }
 
@@ -195,5 +202,11 @@ mod tests {
     fn reads_from_zero_page_ram() {
         let memory = setup_test_memory_data();
         assert_eq!(memory.read_byte(0xFFA0), 0xBB);
+    }
+
+    #[test]
+    fn reads_word_from_memory() {
+        let memory = setup_test_memory_data();
+        assert_eq!(memory.read_word(0x20AF), 0x1711);
     }
 }
