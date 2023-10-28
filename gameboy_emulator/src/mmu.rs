@@ -76,6 +76,10 @@ impl Memory {
         let second_byte = self.read_byte(address + 1) as u16;
         first_byte + (second_byte << 8)
     }
+
+    pub fn load_rom_buffer(& mut self, buffer: Vec<u8>) {
+        self.rom[..0x8000].copy_from_slice(&buffer[..0x8000])
+    }
 }
 
 #[cfg(test)]
@@ -208,5 +212,28 @@ mod tests {
     fn reads_word_from_memory() {
         let memory = setup_test_memory_data();
         assert_eq!(memory.read_word(0x20AF), 0x1711);
+    }
+
+    #[test]
+    fn loads_rom_buffer_into_memory() {
+        let mut memory = setup_test_memory_data();
+
+        let mut rom_buffer = vec![0; 0xA000];
+        rom_buffer[0] = 0xA0;
+        rom_buffer[1] = 0xCC;
+        rom_buffer[2] = 0x3B;
+        rom_buffer[3] = 0x4C;
+        rom_buffer[0x7FFF] = 0xD4;
+        rom_buffer[0x8000] = 0xBB;
+        rom_buffer[0x8001] = 0xD1;
+
+        memory.load_rom_buffer(rom_buffer);
+
+        assert_eq!(memory.read_byte(0x0000), 0xA0);
+        assert_eq!(memory.read_byte(0x0001), 0xCC);
+        assert_eq!(memory.read_byte(0x0002), 0x3B);
+        assert_eq!(memory.read_byte(0x0003), 0x4C);
+        assert_eq!(memory.read_byte(0x7FFF), 0xD4);
+        assert_eq!(memory.read_byte(0x8000), 0xB1);
     }
 }
