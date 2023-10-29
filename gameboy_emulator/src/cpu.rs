@@ -49,6 +49,6 @@ pub fn initialize_cpu_state() -> CpuState {
             machine_cycles: 0,
             clock_cycles: 0
         },
-        memory: mmu::Memory::new()
+        memory: mmu::initialize_memory()
     }
 }
