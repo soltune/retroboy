@@ -105,9 +105,10 @@ pub fn load_rom_by_filepath(memory: &mut Memory, filepath: &str) -> io::Result<(
     let f = File::open(filepath)?;
     let mut reader = BufReader::new(f);
     let mut buffer = Vec::new();
-    
+
     reader.read_to_end(&mut buffer)?;
     load_rom_buffer(memory, buffer);
+    
     Ok(())
 }
 
