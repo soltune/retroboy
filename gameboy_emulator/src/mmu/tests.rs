@@ -53,79 +53,79 @@ fn setup_test_memory_data() -> Memory {
 fn reads_from_bios() {
     let mut memory = setup_test_memory_data();
     memory.in_bios = true;
-    assert_eq!(read_byte(&memory, 0x02), 0x03);
+    assert_eq!(read_byte(&mut memory, 0x02), 0x03);
 }
 
 #[test]
 fn reads_from_rom_in_bank_zero() {
-    let memory = setup_test_memory_data();
-    assert_eq!(read_byte(&memory, 0x02), 0x01);
+    let mut memory = setup_test_memory_data();
+    assert_eq!(read_byte(&mut memory, 0x02), 0x01);
 }
 
 #[test]
 fn reads_from_rom_in_bank_zero_scenario_two() {
-    let memory = setup_test_memory_data();
-    assert_eq!(read_byte(&memory, 0x20B1), 0xEE);
+    let mut memory = setup_test_memory_data();
+    assert_eq!(read_byte(&mut memory, 0x20B1), 0xEE);
 }
 
 #[test]
 fn reads_from_rom_in_subsequent_bank() {
-    let memory = setup_test_memory_data();
-    assert_eq!(read_byte(&memory, 0x5ACE), 0x55);
+    let mut memory = setup_test_memory_data();
+    assert_eq!(read_byte(&mut memory, 0x5ACE), 0x55);
 }
 
 #[test]
 fn reads_from_video_ram() {
-    let memory = setup_test_memory_data();
-    assert_eq!(read_byte(&memory, 0x8002), 0xAA);
+    let mut memory = setup_test_memory_data();
+    assert_eq!(read_byte(&mut memory, 0x8002), 0xAA);
 }
 
 #[test]
 fn reads_from_external_ram() {
-    let memory = setup_test_memory_data();
-    assert_eq!(read_byte(&memory, 0xA001), 0x22);
+    let mut memory = setup_test_memory_data();
+    assert_eq!(read_byte(&mut memory, 0xA001), 0x22);
 }
 
 #[test]
 fn reads_from_working_ram() {
-    let memory = setup_test_memory_data();
-    assert_eq!(read_byte(&memory, 0xC002), 0x2B);
+    let mut memory = setup_test_memory_data();
+    assert_eq!(read_byte(&mut memory, 0xC002), 0x2B);
 }
 
 #[test]
 fn reads_from_working_ram_shadow() {
-    let memory = setup_test_memory_data();
-    assert_eq!(read_byte(&memory, 0xE002), 0x2B);
+    let mut memory = setup_test_memory_data();
+    assert_eq!(read_byte(&mut memory, 0xE002), 0x2B);
 }
 
 #[test]
 fn reads_from_working_ram_shadow_scenario_two() {
-    let memory = setup_test_memory_data();
-    assert_eq!(read_byte(&memory, 0xF5F0), 0x2B);
+    let mut memory = setup_test_memory_data();
+    assert_eq!(read_byte(&mut memory, 0xF5F0), 0x2B);
 }
 
 #[test]
 fn reads_from_object_attribute_memory() {
-    let memory = setup_test_memory_data();
-    assert_eq!(read_byte(&memory, 0xFE7B), 0x45);
+    let mut memory = setup_test_memory_data();
+    assert_eq!(read_byte(&mut memory, 0xFE7B), 0x45);
 }
 
 #[test]
 fn reads_zero_values_outside_of_object_attribute_memory() {
-    let memory = setup_test_memory_data();
-    assert_eq!(read_byte(&memory, 0xFEEE), 0x00);
+    let mut memory = setup_test_memory_data();
+    assert_eq!(read_byte(&mut memory, 0xFEEE), 0x00);
 }
 
 #[test]
 fn reads_from_zero_page_ram() {
-    let memory = setup_test_memory_data();
-    assert_eq!(read_byte(&memory, 0xFFA0), 0xBB);
+    let mut memory = setup_test_memory_data();
+    assert_eq!(read_byte(&mut memory, 0xFFA0), 0xBB);
 }
 
 #[test]
 fn reads_word_from_memory() {
-    let memory = setup_test_memory_data();
-    assert_eq!(read_word(&memory, 0x20AF), 0x1711);
+    let mut memory = setup_test_memory_data();
+    assert_eq!(read_word(&mut memory, 0x20AF), 0x1711);
 }
 
 #[test]
@@ -141,12 +141,19 @@ fn loads_rom_buffer_into_memory() {
     rom_buffer[0x8000] = 0xBB;
     rom_buffer[0x8001] = 0xD1;
 
-    load_rom_buffer(& mut memory, rom_buffer);
+    load_rom_buffer(&mut memory, rom_buffer);
 
-    assert_eq!(read_byte(&memory, 0x0000), 0xA0);
-    assert_eq!(read_byte(&memory, 0x0001), 0xCC);
-    assert_eq!(read_byte(&memory, 0x0002), 0x3B);
-    assert_eq!(read_byte(&memory, 0x0003), 0x4C);
-    assert_eq!(read_byte(&memory, 0x7FFF), 0xD4);
-    assert_eq!(read_byte(&memory, 0x8000), 0xB1);
+    assert_eq!(read_byte(&mut memory, 0x0000), 0xA0);
+    assert_eq!(read_byte(&mut memory, 0x0001), 0xCC);
+    assert_eq!(read_byte(&mut memory, 0x0002), 0x3B);
+    assert_eq!(read_byte(&mut memory, 0x0003), 0x4C);
+    assert_eq!(read_byte(&mut memory, 0x7FFF), 0xD4);
+    assert_eq!(read_byte(&mut memory, 0x8000), 0xB1);
+}
+
+#[test]
+fn writes_to_video_ram() {
+    let mut memory = setup_test_memory_data();
+    write_byte(&mut memory, 0x8002, 0xC1);
+    assert_eq!(memory.video_ram[2], 0xC1);
 }

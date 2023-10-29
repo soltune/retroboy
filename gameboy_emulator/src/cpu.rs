@@ -54,6 +54,6 @@ pub fn initialize_cpu_state() -> CpuState {
     }
 }
 
-pub fn load_rom_by_filepath(cpu_state: & mut CpuState, filepath: &str) -> io::Result<()> {
-    mmu::load_rom_by_filepath(& mut cpu_state.memory, filepath)
+pub fn load_rom_by_filepath(cpu_state: &mut CpuState, filepath: &str) -> io::Result<()> {
+    mmu::load_rom_by_filepath(&mut cpu_state.memory, filepath)
 }
