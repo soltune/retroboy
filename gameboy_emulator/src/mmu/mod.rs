@@ -97,6 +97,13 @@ pub fn read_word(memory: &mut Memory, address: u16) -> u16 {
     first_byte + (second_byte << 8)
 }
 
+pub fn write_word(memory: &mut Memory, address: u16, value: u16) {
+    let first_byte = value & 0xFF;
+    let second_byte = value >> 8;
+    write_byte(memory, address, first_byte as u8);
+    write_byte(memory, address + 1, second_byte as u8);
+}
+
 pub fn load_rom_buffer(memory: &mut Memory, buffer: Vec<u8>) {
     memory.rom[..0x8000].copy_from_slice(&buffer[..0x8000]);
 }

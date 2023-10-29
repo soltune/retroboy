@@ -157,3 +157,11 @@ fn writes_to_video_ram() {
     write_byte(&mut memory, 0x8002, 0xC1);
     assert_eq!(memory.video_ram[2], 0xC1);
 }
+
+#[test]
+fn writes_word_to_video_ram() {
+    let mut memory = setup_test_memory_data();
+    write_word(&mut memory, 0x8002, 0xC1DD);
+    assert_eq!(memory.video_ram[2], 0xDD);
+    assert_eq!(memory.video_ram[3], 0xC1);
+}
