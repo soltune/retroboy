@@ -1,3 +1,4 @@
+use std::io;
 use crate::mmu;
 
 #[derive(Debug)]
@@ -51,4 +52,8 @@ pub fn initialize_cpu_state() -> CpuState {
         },
         memory: mmu::initialize_memory()
     }
+}
+
+pub fn load_rom_by_filepath(cpu_state: & mut CpuState, filepath: &str) -> io::Result<()> {
+    mmu::load_rom_by_filepath(& mut cpu_state.memory, filepath)
 }

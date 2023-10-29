@@ -1,3 +1,8 @@
+use std::io;
+use std::io::Read;
+use std::io::BufReader;
+use std::fs::File;
+
 #[derive(Debug)]
 pub struct Memory {
     pub in_bios: bool,
@@ -78,6 +83,19 @@ pub fn read_word(memory: &Memory, address: u16) -> u16 {
 
 pub fn load_rom_buffer(memory: & mut Memory, buffer: Vec<u8>) {
     memory.rom[..0x8000].copy_from_slice(&buffer[..0x8000]);
+}
+
+pub fn load_rom_by_filepath(memory: & mut Memory, filepath: &str) -> io::Result<()> {
+    let f = File::open(filepath)?;
+    let mut reader = BufReader::new(f);
+    let mut buffer = Vec::new();
+
+    // Read file into vector.
+    reader.read_to_end(&mut buffer)?;
+
+    load_rom_buffer(memory, buffer);
+
+    Ok(())
 }
 
 #[cfg(test)]
