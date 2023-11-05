@@ -2,8 +2,6 @@ use gameboy_emulator;
 use std::io;
 
 fn main() -> io::Result<()> {
-    // Test loading the ROM.
-
     let mut cpu_state = gameboy_emulator::cpu::initialize_cpu_state();
     let filepath = "/Users/samuelparsons/development/gb-test-roms/cpu_instrs/cpu_instrs.gb";
 
