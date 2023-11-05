@@ -20,8 +20,7 @@ pub fn read_from_register(cpu_state: cpu::CpuState, register: Register) -> Resul
         Register::E => Ok(cpu_state.registers.e),
         Register::F => Ok(cpu_state.registers.f),
         Register::H => Ok(cpu_state.registers.h),
-        Register::L => Ok(cpu_state.registers.l),
-        _ => Err("Register not foumnd.")
+        Register::L => Ok(cpu_state.registers.l)
     } 
 }
 
@@ -34,29 +33,36 @@ pub fn store_in_register(cpu_state: &mut cpu::CpuState, register: Register, valu
         Register::E => cpu_state.registers.e = value,
         Register::F => cpu_state.registers.f = value,
         Register::H => cpu_state.registers.h = value,
-        Register::L => cpu_state.registers.l = value,
-        _ => ()
+        Register::L => cpu_state.registers.l = value
     } 
 }
 
 fn load_immediate_value(cpu_state: &mut cpu::CpuState, register: Register) -> &mut cpu::CpuState {
     let immediate_byte = mmu::read_byte(&mut cpu_state.memory, cpu_state.registers.program_counter);
+
     store_in_register(cpu_state, register, immediate_byte);
+    
     cpu_state.registers.program_counter += 1;
+    
     cpu_state.clock.last_instr_clock_cycles = 8;
     cpu_state.clock.last_instr_machine_cycles = 2;
+    
     cpu_state
 }
 
 pub fn execute_opcode(cpu_state: &mut cpu::CpuState) -> &mut cpu::CpuState {
     let opcode = mmu::read_byte(&mut cpu_state.memory, cpu_state.registers.program_counter);
+
     cpu_state.registers.program_counter += 1;
+    
     let cpu_state = match opcode {
         0x06 => load_immediate_value(cpu_state, Register::A),
         _ => cpu_state
     };
+    
     cpu_state.clock.clock_cycles += cpu_state.clock.last_instr_clock_cycles as u32;
     cpu_state.clock.machine_cycles += cpu_state.clock.last_instr_machine_cycles as u32;
+    
     cpu_state
 }
 
