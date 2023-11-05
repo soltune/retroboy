@@ -105,7 +105,8 @@ pub fn write_word(memory: &mut Memory, address: u16, value: u16) {
 }
 
 pub fn load_rom_buffer(memory: &mut Memory, buffer: Vec<u8>) {
-    memory.rom[..0x8000].copy_from_slice(&buffer[..0x8000]);
+    let slice_length = std::cmp::min(buffer.len(), 0x8000);
+    memory.rom[..slice_length].copy_from_slice(&buffer[..slice_length]);
 }
 
 pub fn load_rom_by_filepath(memory: &mut Memory, filepath: &str) -> io::Result<()> {
