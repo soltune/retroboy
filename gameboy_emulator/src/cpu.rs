@@ -58,4 +58,4 @@ pub fn load_rom_by_filepath(cpu_state: &mut CpuState, filepath: &str) -> io::Res
     mmu::load_rom_by_filepath(&mut cpu_state.memory, filepath)
 }
 
-mod opcodes;
+pub mod opcodes;

@@ -39,7 +39,7 @@ pub fn store_in_register(cpu_state: &mut cpu::CpuState, register: Register, valu
     } 
 }
 
-pub fn load_immediate_value(cpu_state: &mut cpu::CpuState, register: Register) -> &mut cpu::CpuState {
+fn load_immediate_value(cpu_state: &mut cpu::CpuState, register: Register) -> &mut cpu::CpuState {
     let immediate_byte = mmu::read_byte(&mut cpu_state.memory, cpu_state.registers.program_counter);
     store_in_register(cpu_state, register, immediate_byte);
     cpu_state.registers.program_counter += 1;
