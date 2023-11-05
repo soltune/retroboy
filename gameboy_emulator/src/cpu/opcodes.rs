@@ -11,7 +11,7 @@ pub enum Register {
     L
 }
 
-pub fn read_from_register(cpu_state: cpu::CpuState, register: Register) -> Result<u8, &'static str> {
+fn read_from_register(cpu_state: cpu::CpuState, register: Register) -> Result<u8, &'static str> {
     match register {
         Register::A => Ok(cpu_state.registers.a),
         Register::B => Ok(cpu_state.registers.b),
@@ -24,7 +24,7 @@ pub fn read_from_register(cpu_state: cpu::CpuState, register: Register) -> Resul
     } 
 }
 
-pub fn store_in_register(cpu_state: &mut cpu::CpuState, register: Register, value: u8) {
+fn store_in_register(cpu_state: &mut cpu::CpuState, register: Register, value: u8) {
     match register {
         Register::A => cpu_state.registers.a = value,
         Register::B => cpu_state.registers.b = value,
