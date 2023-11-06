@@ -54,7 +54,12 @@ pub fn execute_opcode(cpu_state: &mut cpu::CpuState) {
     cpu_state.registers.program_counter += 1;
     
     match opcode {
-        0x06 => load_immediate_value(cpu_state, Register::A),
+        0x06 => load_immediate_value(cpu_state, Register::B),
+        0x0e => load_immediate_value(cpu_state, Register::C),
+        0x16 => load_immediate_value(cpu_state, Register::D),
+        0x1e => load_immediate_value(cpu_state, Register::E),
+        0x26 => load_immediate_value(cpu_state, Register::H),
+        0x2e => load_immediate_value(cpu_state, Register::L),
         _ => ()
     }
     
