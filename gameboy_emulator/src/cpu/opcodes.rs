@@ -37,7 +37,7 @@ fn store_in_register(cpu_state: &mut cpu::CpuState, register: Register, value: u
     } 
 }
 
-fn load_immediate_value(cpu_state: &mut cpu::CpuState, register: Register) -> &mut cpu::CpuState {
+fn load_immediate_value(cpu_state: &mut cpu::CpuState, register: Register) {
     let immediate_byte = mmu::read_byte(&mut cpu_state.memory, cpu_state.registers.program_counter);
 
     store_in_register(cpu_state, register, immediate_byte);
@@ -46,24 +46,20 @@ fn load_immediate_value(cpu_state: &mut cpu::CpuState, register: Register) -> &m
     
     cpu_state.clock.last_instr_clock_cycles = 8;
     cpu_state.clock.last_instr_machine_cycles = 2;
-    
-    cpu_state
 }
 
-pub fn execute_opcode(cpu_state: &mut cpu::CpuState) -> &mut cpu::CpuState {
+pub fn execute_opcode(cpu_state: &mut cpu::CpuState) {
     let opcode = mmu::read_byte(&mut cpu_state.memory, cpu_state.registers.program_counter);
 
     cpu_state.registers.program_counter += 1;
     
-    let cpu_state = match opcode {
+    match opcode {
         0x06 => load_immediate_value(cpu_state, Register::A),
-        _ => cpu_state
-    };
+        _ => ()
+    }
     
     cpu_state.clock.clock_cycles += cpu_state.clock.last_instr_clock_cycles as u32;
     cpu_state.clock.machine_cycles += cpu_state.clock.last_instr_machine_cycles as u32;
-    
-    cpu_state
 }
 
 #[cfg(test)]
