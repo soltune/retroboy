@@ -69,16 +69,6 @@ fn loads_immediate_byte_into_register_l() {
 }
 
 #[test]
-fn loads_register_a_into_register_a() {
-    let mut cpu_state = init_cpu_with_test_instructions(vec![0x7f]);
-    cpu_state.registers.a = 0x88;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0x88);
-    assert_eq!(cpu_state.registers.program_counter, 1);
-    assert_cycles(&cpu_state, 1)
-}
-
-#[test]
 fn loads_register_b_into_register_a() {
     let mut cpu_state = init_cpu_with_test_instructions(vec![0x78]);
     cpu_state.registers.b = 0x2F;
@@ -97,3 +87,14 @@ fn loads_register_c_into_register_a() {
     assert_eq!(cpu_state.registers.program_counter, 1);
     assert_cycles(&cpu_state, 1)
 }
+
+#[test]
+fn loads_register_a_into_register_a() {
+    let mut cpu_state = init_cpu_with_test_instructions(vec![0x7f]);
+    cpu_state.registers.a = 0x88;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0x88);
+    assert_eq!(cpu_state.registers.program_counter, 1);
+    assert_cycles(&cpu_state, 1)
+}
+
