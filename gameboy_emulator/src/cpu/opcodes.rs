@@ -16,6 +16,8 @@ pub struct RegisterPair {
     pub second: Register
 }
 
+const REGISTER_HL: RegisterPair = RegisterPair { first: Register::H, second: Register::L };
+
 fn read_from_register(cpu_state: &mut cpu::CpuState, register: Register) -> u8 {
     match register {
         Register::A => cpu_state.registers.a,
@@ -135,6 +137,7 @@ pub fn execute_opcode(cpu_state: &mut cpu::CpuState) {
         0x7b => load_source_register_in_destination_register(cpu_state, Register::E, Register::A),
         0x7c => load_source_register_in_destination_register(cpu_state, Register::H, Register::A),
         0x7d => load_source_register_in_destination_register(cpu_state, Register::L, Register::A),
+        0x7e => load_memory_byte_in_destination_register(cpu_state, REGISTER_HL, Register::A),
         0x7f => load_source_register_in_destination_register(cpu_state, Register::A, Register::A),
         _ => ()
     }

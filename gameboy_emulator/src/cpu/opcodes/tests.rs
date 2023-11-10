@@ -32,3 +32,15 @@ fn loads_register_b_into_register_a() {
     assert_eq!(cpu_state.registers.program_counter, 1);
     assert_cycles(&cpu_state, 1)
 }
+
+#[test]
+fn loads_byte_at_address_hl_into_register_a() {
+    let mut cpu_state = init_cpu_with_test_instructions(vec![0x7e]);
+    cpu_state.registers.h = 0x55;
+    cpu_state.registers.l = 0x50;
+    cpu_state.memory.rom[0x5550] = 0xB1;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0xB1);
+    assert_eq!(cpu_state.registers.program_counter, 1);
+    assert_cycles(&cpu_state, 2)
+}
