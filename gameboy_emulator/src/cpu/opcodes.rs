@@ -74,10 +74,19 @@ fn load_source_register_in_destination_register(cpu_state: &mut cpu::CpuState, s
     cpu_state.clock.last_instr_machine_cycles = 1;
 }
 
-fn load_memory_byte_in_destination_register(cpu_state: &mut cpu::CpuState, address_source_register_pair: RegisterPair, destination: Register) {
-    let address = read_from_register_pair(cpu_state, address_source_register_pair);
+fn load_memory_byte_in_destination_register(cpu_state: &mut cpu::CpuState, register_pair: RegisterPair, destination: Register) {
+    let address = read_from_register_pair(cpu_state, register_pair);
     let byte = mmu::read_byte(&mut cpu_state.memory, address);
     store_in_register(cpu_state, destination, byte);
+
+    cpu_state.clock.last_instr_clock_cycles = 8;
+    cpu_state.clock.last_instr_machine_cycles = 2;
+}
+
+fn load_source_register_in_memory(cpu_state: &mut cpu::CpuState, register_pair: RegisterPair, source: Register) {
+    let address = read_from_register_pair(cpu_state, register_pair);
+    let byte = read_from_register(cpu_state, source);
+    mmu::write_byte(&mut cpu_state.memory, address, byte);
 
     cpu_state.clock.last_instr_clock_cycles = 8;
     cpu_state.clock.last_instr_machine_cycles = 2;
@@ -137,6 +146,12 @@ pub fn execute_opcode(cpu_state: &mut cpu::CpuState) {
         0x6c => load_source_register_in_destination_register(cpu_state, Register::H, Register::L),
         0x6d => load_source_register_in_destination_register(cpu_state, Register::L, Register::L),
         0x6e => load_memory_byte_in_destination_register(cpu_state, REGISTER_HL, Register::L),
+        0x70 => load_source_register_in_memory(cpu_state, REGISTER_HL, Register::B),
+        0x71 => load_source_register_in_memory(cpu_state, REGISTER_HL, Register::C),
+        0x72 => load_source_register_in_memory(cpu_state, REGISTER_HL, Register::D),
+        0x73 => load_source_register_in_memory(cpu_state, REGISTER_HL, Register::E),
+        0x74 => load_source_register_in_memory(cpu_state, REGISTER_HL, Register::H),
+        0x75 => load_source_register_in_memory(cpu_state, REGISTER_HL, Register::L),
         0x78 => load_source_register_in_destination_register(cpu_state, Register::B, Register::A),
         0x79 => load_source_register_in_destination_register(cpu_state, Register::C, Register::A),
         0x7a => load_source_register_in_destination_register(cpu_state, Register::D, Register::A),
