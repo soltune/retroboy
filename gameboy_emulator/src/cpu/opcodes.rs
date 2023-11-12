@@ -92,6 +92,17 @@ fn load_source_register_in_memory(cpu_state: &mut cpu::CpuState, register_pair: 
     cpu_state.clock.last_instr_machine_cycles = 2;
 }
 
+fn load_immediate_value_in_memory(cpu_state: &mut cpu::CpuState, register_pair: RegisterPair) {
+    let address = read_from_register_pair(cpu_state, register_pair);
+    let immediate_byte = mmu::read_byte(&mut cpu_state.memory, cpu_state.registers.program_counter);
+    mmu::write_byte(&mut cpu_state.memory, address, immediate_byte);
+
+    cpu_state.registers.program_counter += 1;
+    
+    cpu_state.clock.last_instr_clock_cycles = 12;
+    cpu_state.clock.last_instr_machine_cycles = 3;
+}
+
 pub fn execute_opcode(cpu_state: &mut cpu::CpuState) {
     let opcode = mmu::read_byte(&mut cpu_state.memory, cpu_state.registers.program_counter);
 
@@ -104,6 +115,7 @@ pub fn execute_opcode(cpu_state: &mut cpu::CpuState) {
         0x1e => load_immediate_value(cpu_state, Register::E),
         0x26 => load_immediate_value(cpu_state, Register::H),
         0x2e => load_immediate_value(cpu_state, Register::L),
+        0x36 => load_immediate_value_in_memory(cpu_state, REGISTER_HL),
         0x40 => load_source_register_in_destination_register(cpu_state, Register::B, Register::B),
         0x41 => load_source_register_in_destination_register(cpu_state, Register::C, Register::B),
         0x42 => load_source_register_in_destination_register(cpu_state, Register::D, Register::B),

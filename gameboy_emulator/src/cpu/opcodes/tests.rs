@@ -55,3 +55,13 @@ fn loads_register_b_into_address_hl() {
     assert_eq!(cpu_state.memory.rom[0x419B], 0x5A);
     assert_cycles(&cpu_state, 2)
 }
+
+#[test]
+fn loads_immediate_byte_into_memory() {
+    let mut cpu_state = init_cpu_with_test_instructions(vec![0x36, 0xE6]);
+    cpu_state.registers.h = 0x52;
+    cpu_state.registers.l = 0x44;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.memory.rom[0x5244], 0xE6);
+    assert_cycles(&cpu_state, 3)
+}
