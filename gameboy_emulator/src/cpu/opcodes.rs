@@ -17,6 +17,8 @@ pub struct RegisterPair {
 }
 
 const REGISTER_HL: RegisterPair = RegisterPair { first: Register::H, second: Register::L };
+const REGISTER_BC: RegisterPair = RegisterPair { first: Register::B, second: Register::C };
+const REGISTER_DE: RegisterPair = RegisterPair { first: Register::D, second: Register::E };
 
 fn read_from_register(cpu_state: &mut cpu::CpuState, register: Register) -> u8 {
     match register {
@@ -110,8 +112,10 @@ pub fn execute_opcode(cpu_state: &mut cpu::CpuState) {
     
     match opcode {
         0x06 => load_immediate_value(cpu_state, Register::B),
+        0x0a => load_memory_byte_in_destination_register(cpu_state, REGISTER_BC, Register::A),
         0x0e => load_immediate_value(cpu_state, Register::C),
         0x16 => load_immediate_value(cpu_state, Register::D),
+        0x1a => load_memory_byte_in_destination_register(cpu_state, REGISTER_DE, Register::A),
         0x1e => load_immediate_value(cpu_state, Register::E),
         0x26 => load_immediate_value(cpu_state, Register::H),
         0x2e => load_immediate_value(cpu_state, Register::L),
