@@ -65,6 +65,8 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             load_immediate_value(cpu_state, Register::L),
         0x36 =>
             load_immediate_value_in_memory(cpu_state, REGISTER_HL),
+        0x3e =>
+            load_immediate_value(cpu_state, Register::A),
         0x40 =>
             load_source_register_in_destination_register(cpu_state, Register::B, Register::B),
         0x41 =>
