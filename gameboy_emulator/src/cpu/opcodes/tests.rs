@@ -9,18 +9,13 @@ fn init_cpu_with_test_instructions(test_instructions: Vec<u8>) -> cpu::CpuState 
     cpu_state
 }
 
-fn assert_cycles(cpu_state: &cpu::CpuState, machine_cycles: u8) {
-    assert_eq!(cpu_state.clock.machine_cycles, machine_cycles as u32);
-    assert_eq!(cpu_state.clock.clock_cycles, (machine_cycles * 4) as u32);
-}
-
 #[test]
 fn loads_immediate_byte_into_register_b() {
     let mut cpu_state = init_cpu_with_test_instructions(vec![0x06, 0xA1]);
     execute_opcode(&mut cpu_state);
     assert_eq!(cpu_state.registers.b, 0xA1);
     assert_eq!(cpu_state.registers.program_counter, 2);
-    assert_cycles(&cpu_state, 2)
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
 }
 
 #[test]
@@ -30,7 +25,7 @@ fn loads_register_b_into_register_a() {
     execute_opcode(&mut cpu_state);
     assert_eq!(cpu_state.registers.a, 0x2F);
     assert_eq!(cpu_state.registers.program_counter, 1);
-    assert_cycles(&cpu_state, 1)
+    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
 }
 
 #[test]
@@ -42,7 +37,7 @@ fn loads_byte_at_address_hl_into_register_a() {
     execute_opcode(&mut cpu_state);
     assert_eq!(cpu_state.registers.a, 0xB1);
     assert_eq!(cpu_state.registers.program_counter, 1);
-    assert_cycles(&cpu_state, 2)
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
 }
 
 #[test]
@@ -53,7 +48,7 @@ fn loads_register_b_into_address_hl() {
     cpu_state.registers.l = 0x9B;
     execute_opcode(&mut cpu_state);
     assert_eq!(cpu_state.memory.rom[0x419B], 0x5A);
-    assert_cycles(&cpu_state, 2)
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
 }
 
 #[test]
@@ -63,5 +58,14 @@ fn loads_immediate_byte_into_memory() {
     cpu_state.registers.l = 0x44;
     execute_opcode(&mut cpu_state);
     assert_eq!(cpu_state.memory.rom[0x5244], 0xE6);
-    assert_cycles(&cpu_state, 3)
+    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+}
+
+#[test]
+fn loads_byte_at_address_nn_into_register_a() {
+    let mut cpu_state = init_cpu_with_test_instructions(vec![0xFA, 0x1C, 0x4B]);
+    cpu_state.memory.rom[0x4B1C] = 0x22;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0x22);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 16);
 }

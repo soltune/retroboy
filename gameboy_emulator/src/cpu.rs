@@ -17,10 +17,7 @@ pub struct Registers {
 
 #[derive(Debug)]
 pub struct Clock {
-    last_instr_machine_cycles: u8,
-    last_instr_clock_cycles: u8,
-    machine_cycles: u32,
-    clock_cycles: u32
+    total_clock_cycles: u32
 }
 
 #[derive(Debug)]
@@ -29,6 +26,26 @@ pub struct CpuState {
     pub clock: Clock,
     pub memory: mmu::Memory
 }
+
+pub enum Register {
+    A,
+    B,
+    C,
+    D,
+    E,
+    F,
+    H,
+    L
+}
+
+pub struct RegisterPair {
+    pub first: Register,
+    pub second: Register
+}
+
+pub const REGISTER_HL: RegisterPair = RegisterPair { first: Register::H, second: Register::L };
+pub const REGISTER_BC: RegisterPair = RegisterPair { first: Register::B, second: Register::C };
+pub const REGISTER_DE: RegisterPair = RegisterPair { first: Register::D, second: Register::E }; 
 
 pub fn initialize_cpu_state() -> CpuState {
     CpuState {
@@ -45,10 +62,7 @@ pub fn initialize_cpu_state() -> CpuState {
             stack_pointer: 0
         },
         clock: Clock {
-            last_instr_machine_cycles: 0,
-            last_instr_clock_cycles: 0,
-            machine_cycles: 0,
-            clock_cycles: 0
+            total_clock_cycles: 0,
         },
         memory: mmu::initialize_memory()
     }
@@ -58,4 +72,5 @@ pub fn load_rom_by_filepath(cpu_state: &mut CpuState, filepath: &str) -> io::Res
     mmu::load_rom_by_filepath(&mut cpu_state.memory, filepath)
 }
 
+mod microops;
 pub mod opcodes;
