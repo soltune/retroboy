@@ -236,7 +236,7 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         },
         0xfa => {
             let address = read_next_instruction_word(cpu_state);
-            load_memory_byte_in_destination_register(cpu_state, address, Register::A)
+            load_memory_byte_in_destination_register(cpu_state, address, Register::A);
         },
         _ => ()
     }
