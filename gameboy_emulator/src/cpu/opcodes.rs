@@ -43,6 +43,8 @@ fn load_immediate_value_in_memory(cpu_state: &mut CpuState, register_pair: Regis
 pub fn execute_opcode(cpu_state: &mut CpuState) {
     let opcode = read_next_instruction_byte(cpu_state);
     match opcode {
+        0x00 =>
+            (),
         0x06 =>
             load_immediate_value(cpu_state, Register::B),
         0x0a => {
