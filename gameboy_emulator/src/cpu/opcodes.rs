@@ -28,8 +28,7 @@ fn load_memory_byte_in_destination_register(cpu_state: &mut CpuState, address: u
     microops::store_in_register(cpu_state, destination, byte);
 }
 
-fn load_source_register_in_memory(cpu_state: &mut CpuState, register_pair: RegisterPair, source: Register) {
-    let address = microops::read_from_register_pair(cpu_state, register_pair);
+fn load_source_register_in_memory(cpu_state: &mut CpuState, source: Register, address: u16) {
     let byte = microops::read_from_register(cpu_state, source);
     microops::store_byte_in_memory(cpu_state, address, byte);
 }
@@ -45,6 +44,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
     match opcode {
         0x00 =>
             (),
+        0x02 => {
+            let address = microops::read_from_register_pair(cpu_state, REGISTER_BC);
+            load_source_register_in_memory(cpu_state, Register::A, address);
+        },
         0x06 =>
             load_immediate_value(cpu_state, Register::B),
         0x0a => {
@@ -53,6 +56,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         },
         0x0e =>
             load_immediate_value(cpu_state, Register::C),
+        0x12 => {
+            let address = microops::read_from_register_pair(cpu_state, REGISTER_DE);
+            load_source_register_in_memory(cpu_state, Register::A, address);
+        },
         0x16 =>
             load_immediate_value(cpu_state, Register::D),
         0x1a => {
@@ -85,6 +92,8 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let address = microops::read_from_register_pair(cpu_state, REGISTER_HL);
             load_memory_byte_in_destination_register(cpu_state, address, Register::B)
         },
+        0x47 =>
+            load_source_register_in_destination_register(cpu_state, Register::A, Register::B),
         0x48 =>
             load_source_register_in_destination_register(cpu_state, Register::B, Register::C),
         0x49 =>
@@ -101,6 +110,8 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let address = microops::read_from_register_pair(cpu_state, REGISTER_HL);
             load_memory_byte_in_destination_register(cpu_state, address, Register::C)
         },
+        0x4f =>
+            load_source_register_in_destination_register(cpu_state, Register::A, Register::C),
         0x50 => 
             load_source_register_in_destination_register(cpu_state, Register::B, Register::D),
         0x51 =>
@@ -117,6 +128,8 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let address = microops::read_from_register_pair(cpu_state, REGISTER_HL);
             load_memory_byte_in_destination_register(cpu_state, address, Register::D)
         },
+        0x57 =>
+            load_source_register_in_destination_register(cpu_state, Register::A, Register::D),
         0x58 =>
             load_source_register_in_destination_register(cpu_state, Register::B, Register::E),
         0x59 =>
@@ -133,6 +146,8 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let address = microops::read_from_register_pair(cpu_state, REGISTER_HL);
             load_memory_byte_in_destination_register(cpu_state, address, Register::E)
         },
+        0x5f =>
+            load_source_register_in_destination_register(cpu_state, Register::A, Register::E),
         0x60 =>
             load_source_register_in_destination_register(cpu_state, Register::B, Register::H),
         0x61 =>
@@ -149,6 +164,8 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let address = microops::read_from_register_pair(cpu_state, REGISTER_HL);
             load_memory_byte_in_destination_register(cpu_state, address, Register::H)
         },
+        0x67 =>
+            load_source_register_in_destination_register(cpu_state, Register::A, Register::H),
         0x68 =>
             load_source_register_in_destination_register(cpu_state, Register::B, Register::L),
         0x69 =>
@@ -165,18 +182,36 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let address = microops::read_from_register_pair(cpu_state, REGISTER_HL);
             load_memory_byte_in_destination_register(cpu_state, address, Register::L)
         },
-        0x70 =>
-            load_source_register_in_memory(cpu_state, REGISTER_HL, Register::B),
-        0x71 =>
-            load_source_register_in_memory(cpu_state, REGISTER_HL, Register::C),
-        0x72 => 
-            load_source_register_in_memory(cpu_state, REGISTER_HL, Register::D),
-        0x73 =>
-            load_source_register_in_memory(cpu_state, REGISTER_HL, Register::E),
-        0x74 =>
-            load_source_register_in_memory(cpu_state, REGISTER_HL, Register::H),
-        0x75 =>
-            load_source_register_in_memory(cpu_state, REGISTER_HL, Register::L),
+        0x6f =>
+            load_source_register_in_destination_register(cpu_state, Register::A, Register::L),
+        0x70 => {
+            let address = microops::read_from_register_pair(cpu_state, REGISTER_HL);
+            load_source_register_in_memory(cpu_state, Register::B, address);
+        },
+        0x71 => {
+            let address = microops::read_from_register_pair(cpu_state, REGISTER_HL);
+            load_source_register_in_memory(cpu_state, Register::C, address);
+        },
+        0x72 => {
+            let address = microops::read_from_register_pair(cpu_state, REGISTER_HL);
+            load_source_register_in_memory(cpu_state, Register::D, address);
+        },
+        0x73 => {
+            let address = microops::read_from_register_pair(cpu_state, REGISTER_HL);
+            load_source_register_in_memory(cpu_state, Register::E, address);
+        },
+        0x74 => {
+            let address = microops::read_from_register_pair(cpu_state, REGISTER_HL);
+            load_source_register_in_memory(cpu_state, Register::H, address);
+        },
+        0x75 => {
+            let address = microops::read_from_register_pair(cpu_state, REGISTER_HL);
+            load_source_register_in_memory(cpu_state, Register::L, address);
+        },
+        0x77 => {
+            let address = microops::read_from_register_pair(cpu_state, REGISTER_HL);
+            load_source_register_in_memory(cpu_state, Register::A, address);
+        },
         0x78 =>
             load_source_register_in_destination_register(cpu_state, Register::B, Register::A),
         0x79 =>
@@ -195,6 +230,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         },
         0x7f =>
             load_source_register_in_destination_register(cpu_state, Register::A, Register::A),
+        0xea => {
+            let address = read_next_instruction_word(cpu_state);
+            load_source_register_in_memory(cpu_state, Register::A, address);
+        },
         0xfa => {
             let address = read_next_instruction_word(cpu_state);
             load_memory_byte_in_destination_register(cpu_state, address, Register::A)
