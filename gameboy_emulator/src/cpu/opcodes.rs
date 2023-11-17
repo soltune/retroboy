@@ -230,6 +230,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         },
         0x7f =>
             load_source_register_in_destination_register(cpu_state, Register::A, Register::A),
+        0xe2 => {
+            let address = 0xFF00 + microops::read_from_register(cpu_state, Register::C) as u16;
+            load_source_register_in_memory(cpu_state, Register::A, address);
+        },
         0xea => {
             let address = read_next_instruction_word(cpu_state);
             load_source_register_in_memory(cpu_state, Register::A, address);
