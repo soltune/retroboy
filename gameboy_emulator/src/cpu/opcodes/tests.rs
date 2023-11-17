@@ -69,3 +69,13 @@ fn loads_byte_at_address_nn_into_register_a() {
     assert_eq!(cpu_state.registers.a, 0x22);
     assert_eq!(cpu_state.clock.total_clock_cycles, 16);
 }
+
+#[test]
+fn loads_byte_at_ff00_plus_register_c_into_register_a() {
+    let mut cpu_state = init_cpu_with_test_instructions(vec![0xF2]);
+    cpu_state.memory.zero_page_ram[0x1B] = 0x9A;
+    cpu_state.registers.c = 0x9B;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0x9A);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}
