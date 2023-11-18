@@ -89,3 +89,60 @@ fn loads_register_a_into_ff00_plus_register_c() {
     assert_eq!(cpu_state.memory.zero_page_ram[0x1B], 0x9A);
     assert_eq!(cpu_state.clock.total_clock_cycles, 8);
 }
+
+#[test]
+fn loads_byte_at_address_hl_into_register_a_then_decrements_hl() {
+    let mut cpu_state = init_cpu_with_test_instructions(vec![0x3a]);
+    cpu_state.registers.h = 0x2A;
+    cpu_state.registers.l = 0xB1;
+    cpu_state.memory.rom[0x2AB1] = 0xAA;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0xAA);
+    assert_eq!(cpu_state.registers.program_counter, 1);
+    assert_eq!(cpu_state.registers.h, 0x2A);
+    assert_eq!(cpu_state.registers.l, 0xB0);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}
+
+#[test]
+fn loads_register_a_into_address_hl_then_decrements_hl() {
+    let mut cpu_state = init_cpu_with_test_instructions(vec![0x32]);
+    cpu_state.registers.a = 0xBB;
+    cpu_state.registers.h = 0x2A;
+    cpu_state.registers.l = 0xB1;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.program_counter, 1);
+    assert_eq!(cpu_state.memory.rom[0x2AB1], 0xBB);
+    assert_eq!(cpu_state.registers.h, 0x2A);
+    assert_eq!(cpu_state.registers.l, 0xB0);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}
+
+
+#[test]
+fn loads_byte_at_address_hl_into_register_a_then_increments_hl() {
+    let mut cpu_state = init_cpu_with_test_instructions(vec![0x2A]);
+    cpu_state.registers.h = 0x2A;
+    cpu_state.registers.l = 0xB1;
+    cpu_state.memory.rom[0x2AB1] = 0xAA;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0xAA);
+    assert_eq!(cpu_state.registers.program_counter, 1);
+    assert_eq!(cpu_state.registers.h, 0x2A);
+    assert_eq!(cpu_state.registers.l, 0xB2);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}
+
+#[test]
+fn loads_register_a_into_address_hl_then_increments_hl() {
+    let mut cpu_state = init_cpu_with_test_instructions(vec![0x22]);
+    cpu_state.registers.a = 0xBB;
+    cpu_state.registers.h = 0x2A;
+    cpu_state.registers.l = 0xB1;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.program_counter, 1);
+    assert_eq!(cpu_state.memory.rom[0x2AB1], 0xBB);
+    assert_eq!(cpu_state.registers.h, 0x2A);
+    assert_eq!(cpu_state.registers.l, 0xB2);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}

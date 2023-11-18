@@ -68,10 +68,34 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         },
         0x1e =>
             load_immediate_value(cpu_state, Register::E),
+        0x22 => {
+            let mut address = microops::read_from_register_pair(cpu_state, REGISTER_HL);
+            load_source_register_in_memory(cpu_state, Register::A, address);
+            address += 1;
+            microops::store_in_register_pair(cpu_state, REGISTER_HL, address);    
+        },
         0x26 =>
             load_immediate_value(cpu_state, Register::H),
+        0x2a => {
+            let mut address = microops::read_from_register_pair(cpu_state, REGISTER_HL);
+            load_memory_byte_in_destination_register(cpu_state, address, Register::A);
+            address += 1;
+            microops::store_in_register_pair(cpu_state, REGISTER_HL, address);  
+        },
         0x2e =>
             load_immediate_value(cpu_state, Register::L),
+        0x32 => {
+            let mut address = microops::read_from_register_pair(cpu_state, REGISTER_HL);
+            load_source_register_in_memory(cpu_state, Register::A, address);
+            address -= 1;
+            microops::store_in_register_pair(cpu_state, REGISTER_HL, address);           
+        },
+        0x3a => {
+            let mut address = microops::read_from_register_pair(cpu_state, REGISTER_HL);
+            load_memory_byte_in_destination_register(cpu_state, address, Register::A);
+            address -= 1;
+            microops::store_in_register_pair(cpu_state, REGISTER_HL, address);
+        },
         0x36 =>
             load_immediate_value_in_memory(cpu_state, REGISTER_HL),
         0x3e =>
