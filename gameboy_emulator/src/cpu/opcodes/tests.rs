@@ -146,3 +146,12 @@ fn loads_register_a_into_address_hl_then_increments_hl() {
     assert_eq!(cpu_state.registers.l, 0xB2);
     assert_eq!(cpu_state.clock.total_clock_cycles, 8);
 }
+
+#[test]
+fn loads_register_a_into_ff00_plus_immediate_byte() {
+    let mut cpu_state = init_cpu_with_test_instructions(vec![0xE0, 0xB1]);
+    cpu_state.registers.a = 0x9A;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.memory.zero_page_ram[0x31], 0x9A);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+}
