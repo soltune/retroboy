@@ -44,6 +44,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
     match opcode {
         0x00 =>
             (),
+        0x01 => {
+            let word = read_next_instruction_word(cpu_state);
+            microops::store_in_register_pair(cpu_state, REGISTER_BC, word);
+        },
         0x02 => {
             let address = microops::read_from_register_pair(cpu_state, REGISTER_BC);
             load_source_register_in_memory(cpu_state, Register::A, address);
@@ -56,6 +60,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         },
         0x0e =>
             load_immediate_value(cpu_state, Register::C),
+        0x11 => {
+            let word = read_next_instruction_word(cpu_state);
+            microops::store_in_register_pair(cpu_state, REGISTER_DE, word);
+        },
         0x12 => {
             let address = microops::read_from_register_pair(cpu_state, REGISTER_DE);
             load_source_register_in_memory(cpu_state, Register::A, address);
@@ -68,6 +76,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         },
         0x1e =>
             load_immediate_value(cpu_state, Register::E),
+        0x21 => {
+            let word = read_next_instruction_word(cpu_state);
+            microops::store_in_register_pair(cpu_state, REGISTER_HL, word);
+        },
         0x22 => {
             let mut address = microops::read_from_register_pair(cpu_state, REGISTER_HL);
             load_source_register_in_memory(cpu_state, Register::A, address);
@@ -84,6 +96,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         },
         0x2e =>
             load_immediate_value(cpu_state, Register::L),
+        0x31 => {
+            let word = read_next_instruction_word(cpu_state);
+            cpu_state.registers.stack_pointer = word;            
+        },
         0x32 => {
             let mut address = microops::read_from_register_pair(cpu_state, REGISTER_HL);
             load_source_register_in_memory(cpu_state, Register::A, address);

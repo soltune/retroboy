@@ -158,9 +158,26 @@ fn loads_register_a_into_ff00_plus_immediate_byte() {
 
 #[test]
 fn loads_byte_at_address_ff00_plus_immediate_byte_into_register_a() {
-    let mut cpu_state = init_cpu_with_test_instructions(vec![0xF0, 0xB1]);
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xF0, 0xB1]);
     cpu_state.memory.zero_page_ram[0x31] = 0x9A;
     execute_opcode(&mut cpu_state);
     assert_eq!(cpu_state.registers.a, 0x9A);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+}
+
+#[test]
+fn loads_immediate_word_into_register_pair_bc() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x01, 0xA2, 0xA3]);
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.b, 0xA3);
+    assert_eq!(cpu_state.registers.c, 0xA2);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+}
+
+#[test]
+fn loads_immediate_word_into_stack_pointer() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x31, 0xA2, 0xA3]);
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.stack_pointer, 0xA3A2);
     assert_eq!(cpu_state.clock.total_clock_cycles, 12);
 }
