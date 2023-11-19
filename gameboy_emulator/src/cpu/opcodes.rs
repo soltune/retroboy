@@ -274,6 +274,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let address = read_next_instruction_word(cpu_state);
             load_memory_byte_in_destination_register(cpu_state, address, Register::A);
         },
+        0xf0 => {
+            let address = 0xFF00 + read_next_instruction_byte(cpu_state) as u16;
+            load_memory_byte_in_destination_register(cpu_state, address, Register::A);
+        },
         _ => ()
     }
 }
