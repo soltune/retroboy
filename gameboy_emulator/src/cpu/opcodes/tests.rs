@@ -181,3 +181,13 @@ fn loads_immediate_word_into_stack_pointer() {
     assert_eq!(cpu_state.registers.stack_pointer, 0xA3A2);
     assert_eq!(cpu_state.clock.total_clock_cycles, 12);
 }
+
+#[test]
+fn loads_word_at_register_pair_hl_into_stack_pointer() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xF9]);
+    cpu_state.registers.h = 0xAB;
+    cpu_state.registers.l = 0x13;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.stack_pointer, 0xAB13);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}

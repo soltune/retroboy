@@ -290,6 +290,11 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let address = 0xFF00 + microops::read_from_register(cpu_state, Register::C) as u16;
             load_memory_byte_in_destination_register(cpu_state, address, Register::A);
         },
+        0xf9 => {
+            let word = microops::read_from_register_pair(cpu_state, REGISTER_HL);
+            cpu_state.registers.stack_pointer = word;
+            microops::run_extra_machine_cycle(cpu_state);
+        },
         0xfa => {
             let address = read_next_instruction_word(cpu_state);
             load_memory_byte_in_destination_register(cpu_state, address, Register::A);
