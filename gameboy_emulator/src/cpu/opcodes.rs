@@ -290,6 +290,18 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let address = 0xFF00 + microops::read_from_register(cpu_state, Register::C) as u16;
             load_memory_byte_in_destination_register(cpu_state, address, Register::A);
         },
+        0xf8 => {
+            let signed_byte = read_next_instruction_byte(cpu_state) as i8;
+            let sum = cpu_state.registers.stack_pointer.wrapping_add_signed(signed_byte.into());
+            microops::store_in_register_pair(cpu_state, REGISTER_HL, sum);
+            
+            microops::set_flag_z(cpu_state, false);
+            microops::set_flag_n(cpu_state, false);
+            microops::set_flag_h(cpu_state, (sum & 0xF) < (cpu_state.registers.stack_pointer & 0xF));
+            microops::set_flag_c(cpu_state, (sum & 0xFF) < (cpu_state.registers.stack_pointer & 0xFF));
+
+            microops::run_extra_machine_cycle(cpu_state);
+        },
         0xf9 => {
             let word = microops::read_from_register_pair(cpu_state, REGISTER_HL);
             cpu_state.registers.stack_pointer = word;

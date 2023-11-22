@@ -60,6 +60,30 @@ pub fn store_in_register_pair(cpu_state: &mut CpuState, register_pair: RegisterP
     store_in_register(cpu_state, register_pair.second, (value & 0xFF) as u8);
 }
 
+pub fn set_flag_z(cpu_state: &mut CpuState, flag: bool) {
+    if flag {
+        cpu_state.registers.f = cpu_state.registers.f | 0x80;
+    }
+}
+
+pub fn set_flag_n(cpu_state: &mut CpuState, flag: bool) {
+    if flag {
+        cpu_state.registers.f = cpu_state.registers.f | 0x40;
+    }
+}
+
+pub fn set_flag_h(cpu_state: &mut CpuState, flag: bool) {
+    if flag {
+        cpu_state.registers.f = cpu_state.registers.f | 0x20;
+    }
+}
+
+pub fn set_flag_c(cpu_state: &mut CpuState, flag: bool) {
+    if flag {
+        cpu_state.registers.f = cpu_state.registers.f | 0x10;
+    }
+}
+
 pub fn run_extra_machine_cycle(cpu_state: &mut CpuState) {
     cpu_state.clock.total_clock_cycles += 4;
 }

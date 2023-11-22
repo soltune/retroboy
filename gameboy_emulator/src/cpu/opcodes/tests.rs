@@ -191,3 +191,27 @@ fn loads_word_at_register_pair_hl_into_stack_pointer() {
     assert_eq!(cpu_state.registers.stack_pointer, 0xAB13);
     assert_eq!(cpu_state.clock.total_clock_cycles, 8);
 }
+
+#[test]
+fn loads_stack_pointer_plus_immediate_byte_into_register_pair_hl_with_half_carry() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xF8, 0x19]);
+    cpu_state.registers.stack_pointer = 0xB207;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.h, 0xB2);
+    assert_eq!(cpu_state.registers.l, 0x20);
+    assert_eq!(cpu_state.registers.stack_pointer, 0xB207);
+    assert_eq!(cpu_state.registers.f, 0x20);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+}
+
+#[test]
+fn loads_stack_pointer_plus_immediate_byte_into_register_pair_hl_with_carry() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xF8, 0x19]);
+    cpu_state.registers.stack_pointer = 0xB2F7;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.h, 0xB3);
+    assert_eq!(cpu_state.registers.l, 0x10);
+    assert_eq!(cpu_state.registers.stack_pointer, 0xB2F7);
+    assert_eq!(cpu_state.registers.f, 0x30);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+}
