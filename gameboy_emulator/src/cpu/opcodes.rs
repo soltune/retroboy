@@ -41,8 +41,10 @@ fn load_immediate_value_in_memory(cpu_state: &mut CpuState, register_pair: Regis
 
 fn push_register_pair_to_stack(cpu_state: &mut CpuState, register_pair: RegisterPair) {
     let word = microops::read_from_register_pair(cpu_state, register_pair);
-    microops::store_word_in_memory(cpu_state, cpu_state.registers.stack_pointer, word);
-    cpu_state.registers.stack_pointer = cpu_state.registers.stack_pointer - 2;
+    cpu_state.registers.stack_pointer = cpu_state.registers.stack_pointer - 1;
+    microops::store_byte_in_memory(cpu_state, cpu_state.registers.stack_pointer, (word >> 8) as u8);
+    cpu_state.registers.stack_pointer = cpu_state.registers.stack_pointer - 1;
+    microops::store_byte_in_memory(cpu_state, cpu_state.registers.stack_pointer, (word & 0xFF) as u8);
     microops::run_extra_machine_cycle(cpu_state);
 }
 
