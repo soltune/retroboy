@@ -1,4 +1,4 @@
-use crate::cpu::{Register, RegisterPair, CpuState, REGISTER_BC, REGISTER_DE, REGISTER_HL};
+use crate::cpu::{Register, RegisterPair, CpuState, REGISTER_AF, REGISTER_BC, REGISTER_DE, REGISTER_HL};
 use crate::cpu::microops;
 
 fn read_next_instruction_byte(cpu_state: &mut CpuState) -> u8 {
@@ -37,6 +37,13 @@ fn load_immediate_value_in_memory(cpu_state: &mut CpuState, register_pair: Regis
     let address = microops::read_from_register_pair(cpu_state, register_pair);
     let immediate_byte = read_next_instruction_byte(cpu_state);
     microops::store_byte_in_memory(cpu_state, address, immediate_byte);
+}
+
+fn push_register_pair_to_stack(cpu_state: &mut CpuState, register_pair: RegisterPair) {
+    let word = microops::read_from_register_pair(cpu_state, register_pair);
+    microops::store_word_in_memory(cpu_state, cpu_state.registers.stack_pointer, word);
+    cpu_state.registers.stack_pointer = cpu_state.registers.stack_pointer - 2;
+    microops::run_extra_machine_cycle(cpu_state);
 }
 
 pub fn execute_opcode(cpu_state: &mut CpuState) {
@@ -274,6 +281,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         },
         0x7f =>
             load_source_register_in_destination_register(cpu_state, Register::A, Register::A),
+        0xc5 =>
+            push_register_pair_to_stack(cpu_state, REGISTER_BC),
+        0xd5 =>
+            push_register_pair_to_stack(cpu_state, REGISTER_DE),
         0xe0 => {
             let address = 0xFF00 + read_next_instruction_byte(cpu_state) as u16;
             load_source_register_in_memory(cpu_state, Register::A, address);
@@ -282,6 +293,8 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let address = 0xFF00 + microops::read_from_register(cpu_state, Register::C) as u16;
             load_source_register_in_memory(cpu_state, Register::A, address);
         },
+        0xe5 =>
+            push_register_pair_to_stack(cpu_state, REGISTER_HL),
         0xea => {
             let address = read_next_instruction_word(cpu_state);
             load_source_register_in_memory(cpu_state, Register::A, address);
@@ -294,6 +307,8 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let address = 0xFF00 + microops::read_from_register(cpu_state, Register::C) as u16;
             load_memory_byte_in_destination_register(cpu_state, address, Register::A);
         },
+        0xf5 =>
+            push_register_pair_to_stack(cpu_state, REGISTER_AF),
         0xf8 => {
             let signed_byte = read_next_instruction_byte(cpu_state) as i8;
             let sum = cpu_state.registers.stack_pointer.wrapping_add_signed(signed_byte.into());

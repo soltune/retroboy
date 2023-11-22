@@ -43,6 +43,7 @@ pub struct RegisterPair {
     pub second: Register
 }
 
+pub const REGISTER_AF: RegisterPair = RegisterPair { first: Register::A, second: Register::F };
 pub const REGISTER_HL: RegisterPair = RegisterPair { first: Register::H, second: Register::L };
 pub const REGISTER_BC: RegisterPair = RegisterPair { first: Register::B, second: Register::C };
 pub const REGISTER_DE: RegisterPair = RegisterPair { first: Register::D, second: Register::E }; 

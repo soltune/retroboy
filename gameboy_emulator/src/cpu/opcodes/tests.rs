@@ -225,3 +225,16 @@ fn loads_stack_pointer_into_address_nn() {
     assert_eq!(cpu_state.memory.rom[0x3214], 0x9B);
     assert_eq!(cpu_state.clock.total_clock_cycles, 20);
 }
+
+#[test]
+fn pushes_register_pair_onto_stack() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xC5]);
+    cpu_state.registers.b = 0xB1;
+    cpu_state.registers.c = 0xDD;
+    cpu_state.registers.stack_pointer = 0x2112;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.memory.rom[0x2112], 0xDD);
+    assert_eq!(cpu_state.memory.rom[0x2113], 0xB1);
+    assert_eq!(cpu_state.registers.stack_pointer, 0x2110);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 16);
+}
