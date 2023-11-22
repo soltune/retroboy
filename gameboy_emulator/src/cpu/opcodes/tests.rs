@@ -215,3 +215,13 @@ fn loads_stack_pointer_plus_immediate_byte_into_register_pair_hl_with_carry() {
     assert_eq!(cpu_state.registers.f, 0x30);
     assert_eq!(cpu_state.clock.total_clock_cycles, 12);
 }
+
+#[test]
+fn loads_stack_pointer_into_address_nn() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x08, 0x13, 0x32]);
+    cpu_state.registers.stack_pointer = 0x9BB2;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.memory.rom[0x3213], 0xB2);
+    assert_eq!(cpu_state.memory.rom[0x3214], 0x9B);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 20);
+}

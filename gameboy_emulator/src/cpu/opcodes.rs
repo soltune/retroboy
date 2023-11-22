@@ -54,9 +54,13 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         },
         0x06 =>
             load_immediate_value(cpu_state, Register::B),
+        0x08 => {
+            let address = read_next_instruction_word(cpu_state);
+            microops::store_word_in_memory(cpu_state, address, cpu_state.registers.stack_pointer);
+        },
         0x0a => {
             let address = microops::read_from_register_pair(cpu_state, REGISTER_BC);
-            load_memory_byte_in_destination_register(cpu_state, address, Register::A)
+            load_memory_byte_in_destination_register(cpu_state, address, Register::A);
         },
         0x0e =>
             load_immediate_value(cpu_state, Register::C),
