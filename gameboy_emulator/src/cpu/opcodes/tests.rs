@@ -238,3 +238,16 @@ fn pushes_register_pair_onto_stack() {
     assert_eq!(cpu_state.registers.stack_pointer, 0x2110);
     assert_eq!(cpu_state.clock.total_clock_cycles, 16);
 }
+
+#[test]
+fn pops_word_into_register_pair_from_stack() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xC1]);
+    cpu_state.registers.stack_pointer = 0x2110;
+    cpu_state.memory.rom[0x2111] = 0xB1;
+    cpu_state.memory.rom[0x2110] = 0xDD;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.b, 0xB1);
+    assert_eq!(cpu_state.registers.c, 0xDD);
+    assert_eq!(cpu_state.registers.stack_pointer, 0x2112);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+}

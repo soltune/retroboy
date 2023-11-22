@@ -48,6 +48,15 @@ fn push_register_pair_to_stack(cpu_state: &mut CpuState, register_pair: Register
     microops::run_extra_machine_cycle(cpu_state);
 }
 
+fn pop_word_into_register_pair_from_stack(cpu_state: &mut CpuState, register_pair: RegisterPair) {
+    let first_byte = microops::read_byte_from_memory(cpu_state, cpu_state.registers.stack_pointer) as u16;
+    cpu_state.registers.stack_pointer = cpu_state.registers.stack_pointer + 1;
+    let second_byte = microops::read_byte_from_memory(cpu_state, cpu_state.registers.stack_pointer) as u16;
+    cpu_state.registers.stack_pointer = cpu_state.registers.stack_pointer + 1;
+    let word = (second_byte << 8) + first_byte;
+    microops::store_in_register_pair(cpu_state, register_pair, word);
+}   
+
 pub fn execute_opcode(cpu_state: &mut CpuState) {
     let opcode = read_next_instruction_byte(cpu_state);
     match opcode {
@@ -283,14 +292,20 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         },
         0x7f =>
             load_source_register_in_destination_register(cpu_state, Register::A, Register::A),
+        0xc1 =>
+            pop_word_into_register_pair_from_stack(cpu_state, REGISTER_BC),
         0xc5 =>
             push_register_pair_to_stack(cpu_state, REGISTER_BC),
+        0xd1 =>
+            pop_word_into_register_pair_from_stack(cpu_state, REGISTER_DE),
         0xd5 =>
             push_register_pair_to_stack(cpu_state, REGISTER_DE),
         0xe0 => {
             let address = 0xFF00 + read_next_instruction_byte(cpu_state) as u16;
             load_source_register_in_memory(cpu_state, Register::A, address);
         },
+        0xe1 =>
+            pop_word_into_register_pair_from_stack(cpu_state, REGISTER_HL),
         0xe2 => {
             let address = 0xFF00 + microops::read_from_register(cpu_state, Register::C) as u16;
             load_source_register_in_memory(cpu_state, Register::A, address);
@@ -305,6 +320,8 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let address = 0xFF00 + read_next_instruction_byte(cpu_state) as u16;
             load_memory_byte_in_destination_register(cpu_state, address, Register::A);
         },
+        0xf1 =>
+            pop_word_into_register_pair_from_stack(cpu_state, REGISTER_AF),
         0xf2 => {
             let address = 0xFF00 + microops::read_from_register(cpu_state, Register::C) as u16;
             load_memory_byte_in_destination_register(cpu_state, address, Register::A);
