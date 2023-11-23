@@ -251,3 +251,27 @@ fn pops_word_into_register_pair_from_stack() {
     assert_eq!(cpu_state.registers.stack_pointer, 0x2112);
     assert_eq!(cpu_state.clock.total_clock_cycles, 12);
 }
+
+#[test]
+fn adds_register_and_register_a_with_half_carry() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x80]);
+    cpu_state.registers.a = 0x2B;
+    cpu_state.registers.b = 0xAF;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0xDA);
+    assert_eq!(cpu_state.registers.b, 0xAF);
+    assert_eq!(cpu_state.registers.f, 0x20);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+}
+
+#[test]
+fn adds_register_and_register_a_with_carry() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x80]);
+    cpu_state.registers.a = 0xC1;
+    cpu_state.registers.b = 0x5A;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0x1B);
+    assert_eq!(cpu_state.registers.b, 0x5A);
+    assert_eq!(cpu_state.registers.f, 0x10);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+}

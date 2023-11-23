@@ -23,7 +23,7 @@ pub fn store_word_in_memory(cpu_state: &mut CpuState, address: u16, word: u16) {
     cpu_state.clock.total_clock_cycles += 8;
 }
 
-pub fn read_from_register(cpu_state: &mut CpuState, register: Register) -> u8 {
+pub fn read_from_register(cpu_state: &mut CpuState, register: &Register) -> u8 {
     match register {
         Register::A => cpu_state.registers.a,
         Register::B => cpu_state.registers.b,
@@ -50,8 +50,8 @@ pub fn store_in_register(cpu_state: &mut CpuState, register: Register, value: u8
 }
 
 pub fn read_from_register_pair(cpu_state: &mut CpuState, register_pair: RegisterPair) -> u16 {
-    let first_byte = read_from_register(cpu_state, register_pair.first);
-    let second_byte = read_from_register(cpu_state, register_pair.second);
+    let first_byte = read_from_register(cpu_state, &register_pair.first);
+    let second_byte = read_from_register(cpu_state, &register_pair.second);
     ((first_byte as u16) << 8) | (second_byte as u16 & 0xFF)
 }
 
