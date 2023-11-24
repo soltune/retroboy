@@ -63,25 +63,38 @@ pub fn store_in_register_pair(cpu_state: &mut CpuState, register_pair: RegisterP
 pub fn set_flag_z(cpu_state: &mut CpuState, flag: bool) {
     if flag {
         cpu_state.registers.f = cpu_state.registers.f | 0x80;
+    } else {
+        cpu_state.registers.f = cpu_state.registers.f & 0x7F;
     }
 }
 
 pub fn set_flag_n(cpu_state: &mut CpuState, flag: bool) {
     if flag {
         cpu_state.registers.f = cpu_state.registers.f | 0x40;
+    } else {
+        cpu_state.registers.f = cpu_state.registers.f & 0xBF;
     }
 }
 
 pub fn set_flag_h(cpu_state: &mut CpuState, flag: bool) {
     if flag {
         cpu_state.registers.f = cpu_state.registers.f | 0x20;
+    } else {
+        cpu_state.registers.f = cpu_state.registers.f & 0xDF;
     }
 }
 
 pub fn set_flag_c(cpu_state: &mut CpuState, flag: bool) {
     if flag {
         cpu_state.registers.f = cpu_state.registers.f | 0x10;
+    } else {
+        cpu_state.registers.f = cpu_state.registers.f & 0xEF;
     }
+}
+
+pub fn is_c_flag_set(cpu_state: &mut CpuState) -> bool {
+    let value = read_from_register(cpu_state, &Register::F);
+    (value & 0x10) == 0x10
 }
 
 pub fn run_extra_machine_cycle(cpu_state: &mut CpuState) {

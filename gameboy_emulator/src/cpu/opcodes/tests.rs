@@ -275,3 +275,16 @@ fn adds_register_and_register_a_with_carry() {
     assert_eq!(cpu_state.registers.f, 0x10);
     assert_eq!(cpu_state.clock.total_clock_cycles, 4);
 }
+
+#[test]
+fn adds_register_and_register_a_and_carry_flag() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x88]);
+    cpu_state.registers.a = 0x2B;
+    cpu_state.registers.b = 0xBE;
+    cpu_state.registers.f = 0x10;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0xEA);
+    assert_eq!(cpu_state.registers.b, 0xBE);
+    assert_eq!(cpu_state.registers.f, 0x20);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+}

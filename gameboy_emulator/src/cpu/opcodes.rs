@@ -57,16 +57,21 @@ fn pop_word_into_register_pair_from_stack(cpu_state: &mut CpuState, register_pai
     microops::store_in_register_pair(cpu_state, register_pair, word);
 }   
 
-fn add_to_register(cpu_state: &mut CpuState, register: Register, value: u8) {
-    let byte = microops::read_from_register(cpu_state, &register);
-    let sum = (value as u16 + byte as u16) & 0xFF;
+fn add_value_to_register(cpu_state: &mut CpuState, register: Register, value: u16) {
+    let byte = microops::read_from_register(cpu_state, &register) as u16;
+    let sum = ((value + byte) & 0xFF) as u8;
 
-    microops::store_in_register(cpu_state, register, sum as u8);
+    microops::store_in_register(cpu_state, register, sum);
 
     microops::set_flag_z(cpu_state, sum == 0);
     microops::set_flag_n(cpu_state, false);
     microops::set_flag_h(cpu_state, (value & 0xF) + (byte & 0xF) > 0xF);
-    microops::set_flag_c(cpu_state, (value as u16 + byte as u16) > 0xFF);
+    microops::set_flag_c(cpu_state, (value + byte) > 0xFF);
+}
+
+fn add_value_and_carry_to_register(cpu_state: &mut CpuState, register: Register, value: u16) {
+    let carry_value = if microops::is_c_flag_set(cpu_state) { 1 } else { 0 };
+    add_value_to_register(cpu_state, register, value + carry_value);
 }
 
 pub fn execute_opcode(cpu_state: &mut CpuState) {
@@ -306,36 +311,69 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             load_source_register_in_destination_register(cpu_state, Register::A, Register::A),
         0x80 => {
             let value = microops::read_from_register(cpu_state, &Register::B);
-            add_to_register(cpu_state, Register::A, value)
+            add_value_to_register(cpu_state, Register::A, value as u16);
         },
         0x81 => {
             let value = microops::read_from_register(cpu_state, &Register::C);
-            add_to_register(cpu_state, Register::A, value)
+            add_value_to_register(cpu_state, Register::A, value as u16);
         },
         0x82 => {
             let value = microops::read_from_register(cpu_state, &Register::D);
-            add_to_register(cpu_state, Register::A, value)
+            add_value_to_register(cpu_state, Register::A, value as u16);
         },
         0x83 => {
             let value = microops::read_from_register(cpu_state, &Register::E);
-            add_to_register(cpu_state, Register::A, value)
+            add_value_to_register(cpu_state, Register::A, value as u16);
         },
         0x84 => {
             let value = microops::read_from_register(cpu_state, &Register::H);
-            add_to_register(cpu_state, Register::A, value)
+            add_value_to_register(cpu_state, Register::A, value as u16);
         },
         0x85 => {
             let value = microops::read_from_register(cpu_state, &Register::L);
-            add_to_register(cpu_state, Register::A, value)
+            add_value_to_register(cpu_state, Register::A, value as u16);
         },
         0x86 => {
             let address = microops::read_from_register_pair(cpu_state, REGISTER_HL);
             let value = microops::read_byte_from_memory(cpu_state, address);
-            add_to_register(cpu_state, Register::A, value)
+            add_value_to_register(cpu_state, Register::A, value as u16);
         },
         0x87 => {
             let value = microops::read_from_register(cpu_state, &Register::A);
-            add_to_register(cpu_state, Register::A, value)
+            add_value_to_register(cpu_state, Register::A, value as u16);
+        },
+        0x88 => {
+            let value = microops::read_from_register(cpu_state, &Register::B);
+            add_value_and_carry_to_register(cpu_state, Register::A, value as u16);
+        },
+        0x89 => {
+            let value = microops::read_from_register(cpu_state, &Register::C);
+            add_value_and_carry_to_register(cpu_state, Register::A, value as u16);
+        },
+        0x8A => {
+            let value = microops::read_from_register(cpu_state, &Register::D);
+            add_value_and_carry_to_register(cpu_state, Register::A, value as u16);
+        },
+        0x8B => {
+            let value = microops::read_from_register(cpu_state, &Register::E);
+            add_value_and_carry_to_register(cpu_state, Register::A, value as u16);
+        },
+        0x8C => {
+            let value = microops::read_from_register(cpu_state, &Register::H);
+            add_value_and_carry_to_register(cpu_state, Register::A, value as u16);
+        },
+        0x8D => {
+            let value = microops::read_from_register(cpu_state, &Register::L);
+            add_value_and_carry_to_register(cpu_state, Register::A, value as u16);
+        },
+        0x8E => {
+            let address = microops::read_from_register_pair(cpu_state, REGISTER_HL);
+            let value = microops::read_byte_from_memory(cpu_state, address);
+            add_value_and_carry_to_register(cpu_state, Register::A, value as u16);
+        },
+        0x8F => {
+            let value = microops::read_from_register(cpu_state, &Register::A);
+            add_value_and_carry_to_register(cpu_state, Register::A, value as u16);
         },
         0xC1 =>
             pop_word_into_register_pair_from_stack(cpu_state, REGISTER_BC),
@@ -343,7 +381,11 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             push_register_pair_to_stack(cpu_state, REGISTER_BC),
         0xC6 => {
             let value = read_next_instruction_byte(cpu_state);
-            add_to_register(cpu_state, Register::A, value)
+            add_value_to_register(cpu_state, Register::A, value as u16);
+        },
+        0xCE => {
+            let value = read_next_instruction_byte(cpu_state);
+            add_value_and_carry_to_register(cpu_state, Register::A, value as u16);
         },
         0xD1 =>
             pop_word_into_register_pair_from_stack(cpu_state, REGISTER_DE),
