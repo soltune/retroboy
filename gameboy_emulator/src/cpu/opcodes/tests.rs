@@ -288,3 +288,53 @@ fn adds_register_and_register_a_and_carry_flag() {
     assert_eq!(cpu_state.registers.f, 0x20);
     assert_eq!(cpu_state.clock.total_clock_cycles, 4);
 }
+
+#[test]
+fn subtracts_register_value_from_register_a_with_half_carry() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x90]);
+    cpu_state.registers.a = 0xB1;
+    cpu_state.registers.b = 0x7F;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0x32);
+    assert_eq!(cpu_state.registers.b, 0x7F);
+    assert_eq!(cpu_state.registers.f, 0x60);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+}
+
+#[test]
+fn subtracts_register_value_from_register_a_with_carry() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x90]);
+    cpu_state.registers.a = 0x02;
+    cpu_state.registers.b = 0x04;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0xFE);
+    assert_eq!(cpu_state.registers.b, 0x04);
+    assert_eq!(cpu_state.registers.f, 0x70);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+}
+
+#[test]
+fn subtracts_register_value_plus_carry_from_register_a_with_half_carry() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x98]);
+    cpu_state.registers.a = 0xB1;
+    cpu_state.registers.b = 0x74;
+    cpu_state.registers.f = 0x10;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0x3C);
+    assert_eq!(cpu_state.registers.b, 0x74);
+    assert_eq!(cpu_state.registers.f, 0x60);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+}
+
+#[test]
+fn subtracts_register_value_plus_carry_from_register_a_with_carry() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x98]);
+    cpu_state.registers.a = 0x02;
+    cpu_state.registers.b = 0x04;
+    cpu_state.registers.f = 0x10;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0xFD);
+    assert_eq!(cpu_state.registers.b, 0x04);
+    assert_eq!(cpu_state.registers.f, 0x70);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+}
