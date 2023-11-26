@@ -338,3 +338,39 @@ fn subtracts_register_value_plus_carry_from_register_a_with_carry() {
     assert_eq!(cpu_state.registers.f, 0x70);
     assert_eq!(cpu_state.clock.total_clock_cycles, 4);
 }
+
+#[test]
+fn logical_ands_register_and_register_a() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xA0]);
+    cpu_state.registers.a = 0x15;
+    cpu_state.registers.b = 0x7E;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0x14);
+    assert_eq!(cpu_state.registers.b, 0x7E);
+    assert_eq!(cpu_state.registers.f, 0x20);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+}
+
+#[test]
+fn logical_ors_register_and_register_a() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xB0]);
+    cpu_state.registers.a = 0x15;
+    cpu_state.registers.b = 0x7E;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0x7F);
+    assert_eq!(cpu_state.registers.b, 0x7E);
+    assert_eq!(cpu_state.registers.f, 0x0);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+}
+
+#[test]
+fn logical_xors_register_and_register_a() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xA8]);
+    cpu_state.registers.a = 0x15;
+    cpu_state.registers.b = 0x7E;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0x6B);
+    assert_eq!(cpu_state.registers.b, 0x7E);
+    assert_eq!(cpu_state.registers.f, 0x0);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+}
