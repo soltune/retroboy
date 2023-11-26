@@ -374,3 +374,10 @@ fn logical_xors_register_and_register_a() {
     assert_eq!(cpu_state.registers.f, 0x0);
     assert_eq!(cpu_state.clock.total_clock_cycles, 4);
 }
+
+#[test]
+#[should_panic(expected = "Encountered illegal opcode 0xFC")]
+fn panics_on_illegal_opcode() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xFC]);
+    execute_opcode(&mut cpu_state);
+}

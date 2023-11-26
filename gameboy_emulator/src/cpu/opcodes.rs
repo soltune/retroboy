@@ -56,7 +56,11 @@ fn pop_word_into_register_pair_from_stack(cpu_state: &mut CpuState, register_pai
     cpu_state.registers.stack_pointer = cpu_state.registers.stack_pointer + 1;
     let word = (second_byte << 8) + first_byte;
     microops::store_in_register_pair(cpu_state, register_pair, word);
-}   
+}
+
+fn handle_illegal_opcode(opcode: u8) {
+    panic!("Encountered illegal opcode {:#04X}", opcode);
+}
 
 pub fn execute_opcode(cpu_state: &mut CpuState) {
     let opcode = read_next_instruction_byte(cpu_state);
@@ -538,12 +542,16 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         },
         0xD1 =>
             pop_word_into_register_pair_from_stack(cpu_state, REGISTER_DE),
+        0xD3 =>
+            handle_illegal_opcode(opcode),
         0xD5 =>
             push_register_pair_to_stack(cpu_state, REGISTER_DE),
         0xD6 => {
             let value = read_next_instruction_byte(cpu_state);
             alu::subtract_value_from_register(cpu_state, Register::A, value)
         },
+        0xDB =>
+            handle_illegal_opcode(opcode),
         0xE0 => {
             let address = 0xFF00 + read_next_instruction_byte(cpu_state) as u16;
             load_source_register_in_memory(cpu_state, Register::A, address);
@@ -554,6 +562,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let address = 0xFF00 + microops::read_from_register(cpu_state, &Register::C) as u16;
             load_source_register_in_memory(cpu_state, Register::A, address);
         },
+        0xE3 =>
+            handle_illegal_opcode(opcode),
+        0xE4 =>
+            handle_illegal_opcode(opcode),
         0xE5 =>
             push_register_pair_to_stack(cpu_state, REGISTER_HL),
         0xE6 => {
@@ -564,6 +576,12 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let address = read_next_instruction_word(cpu_state);
             load_source_register_in_memory(cpu_state, Register::A, address);
         },
+        0xEB =>
+            handle_illegal_opcode(opcode),
+        0xEC =>
+            handle_illegal_opcode(opcode),
+        0xED =>
+            handle_illegal_opcode(opcode),
         0xEE => {
             let value = read_next_instruction_byte(cpu_state);
             alu::logical_xor_with_register(cpu_state, Register::A, value)
@@ -578,6 +596,8 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let address = 0xFF00 + microops::read_from_register(cpu_state, &Register::C) as u16;
             load_memory_byte_in_destination_register(cpu_state, address, Register::A);
         },
+        0xF4 =>
+            handle_illegal_opcode(opcode),
         0xF5 =>
             push_register_pair_to_stack(cpu_state, REGISTER_AF),
         0xF6 => {
@@ -605,6 +625,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let address = read_next_instruction_word(cpu_state);
             load_memory_byte_in_destination_register(cpu_state, address, Register::A);
         },
+        0xFC =>
+            handle_illegal_opcode(opcode),
+        0xFD =>
+            handle_illegal_opcode(opcode),
         _ => ()
     }
 }
