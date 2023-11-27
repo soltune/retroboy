@@ -528,6 +528,39 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let value = microops::read_from_register(cpu_state, &Register::A);
             alu::logical_or_with_register(cpu_state, Register::A, value);
         },
+        0xB8 => {
+            let value = microops::read_from_register(cpu_state, &Register::B);
+            alu::compare_value_with_register(cpu_state, Register::A, value);
+        },
+        0xB9 => {
+            let value = microops::read_from_register(cpu_state, &Register::C);
+            alu::compare_value_with_register(cpu_state, Register::A, value);
+        },
+        0xBA => {
+            let value = microops::read_from_register(cpu_state, &Register::D);
+            alu::compare_value_with_register(cpu_state, Register::A, value);
+        },
+        0xBB => {
+            let value = microops::read_from_register(cpu_state, &Register::E);
+            alu::compare_value_with_register(cpu_state, Register::A, value);
+        },
+        0xBC => {
+            let value = microops::read_from_register(cpu_state, &Register::H);
+            alu::compare_value_with_register(cpu_state, Register::A, value);
+        },
+        0xBD => {
+            let value = microops::read_from_register(cpu_state, &Register::L);
+            alu::compare_value_with_register(cpu_state, Register::A, value);
+        },
+        0xBE => {
+            let address = microops::read_from_register_pair(cpu_state, REGISTER_HL);
+            let value = microops::read_byte_from_memory(cpu_state, address);
+            alu::compare_value_with_register(cpu_state, Register::A, value);
+        },
+        0xBF => {
+            let value = microops::read_from_register(cpu_state, &Register::A);
+            alu::compare_value_with_register(cpu_state, Register::A, value);
+        },
         0xC1 =>
             pop_word_into_register_pair_from_stack(cpu_state, REGISTER_BC),
         0xC5 =>
@@ -548,7 +581,7 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             push_register_pair_to_stack(cpu_state, REGISTER_DE),
         0xD6 => {
             let value = read_next_instruction_byte(cpu_state);
-            alu::subtract_value_from_register(cpu_state, Register::A, value)
+            alu::subtract_value_from_register(cpu_state, Register::A, value);
         },
         0xDB =>
             handle_illegal_opcode(opcode),
@@ -570,7 +603,7 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             push_register_pair_to_stack(cpu_state, REGISTER_HL),
         0xE6 => {
             let value = read_next_instruction_byte(cpu_state);
-            alu::logical_and_with_register(cpu_state, Register::A, value)
+            alu::logical_and_with_register(cpu_state, Register::A, value);
         },
         0xEA => {
             let address = read_next_instruction_word(cpu_state);
@@ -584,7 +617,7 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             handle_illegal_opcode(opcode),
         0xEE => {
             let value = read_next_instruction_byte(cpu_state);
-            alu::logical_xor_with_register(cpu_state, Register::A, value)
+            alu::logical_xor_with_register(cpu_state, Register::A, value);
         },
         0xF0 => {
             let address = 0xFF00 + read_next_instruction_byte(cpu_state) as u16;
@@ -602,7 +635,7 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             push_register_pair_to_stack(cpu_state, REGISTER_AF),
         0xF6 => {
             let value = read_next_instruction_byte(cpu_state);
-            alu::logical_or_with_register(cpu_state, Register::A, value)
+            alu::logical_or_with_register(cpu_state, Register::A, value);
         },
         0xF8 => {
             let signed_byte = read_next_instruction_byte(cpu_state) as i8;
@@ -629,6 +662,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             handle_illegal_opcode(opcode),
         0xFD =>
             handle_illegal_opcode(opcode),
+        0xFE => {
+            let value = read_next_instruction_byte(cpu_state);
+            alu::compare_value_with_register(cpu_state, Register::A, value);
+        },
         _ => ()
     }
 }

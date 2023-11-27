@@ -70,3 +70,13 @@ pub fn logical_xor_with_register(cpu_state: &mut CpuState, register: Register, v
     microops::set_flag_h(cpu_state, false);
     microops::set_flag_c(cpu_state, false);
 }
+
+pub fn compare_value_with_register(cpu_state: &mut CpuState, register: Register, value: u8) {
+    let byte = microops::read_from_register(cpu_state, &register);
+    let difference = byte.wrapping_sub(value);
+
+    microops::set_flag_z(cpu_state, difference == 0);
+    microops::set_flag_n(cpu_state, true);
+    microops::set_flag_h(cpu_state, (byte & 0xF) < (value & 0xF));
+    microops::set_flag_c(cpu_state, byte < value);
+}

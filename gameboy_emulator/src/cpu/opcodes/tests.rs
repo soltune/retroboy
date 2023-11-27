@@ -381,3 +381,27 @@ fn panics_on_illegal_opcode() {
     let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xFC]);
     execute_opcode(&mut cpu_state);
 }
+
+#[test]
+fn compares_register_value_with_register_a_resulting_in_half_carry() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xB8]);
+    cpu_state.registers.a = 0xB1;
+    cpu_state.registers.b = 0x7F;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0xB1);
+    assert_eq!(cpu_state.registers.b, 0x7F);
+    assert_eq!(cpu_state.registers.f, 0x60);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+}
+
+#[test]
+fn compares_register_value_with_register_a_resulting_in_carry() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xB8]);
+    cpu_state.registers.a = 0x02;
+    cpu_state.registers.b = 0x04;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0x02);
+    assert_eq!(cpu_state.registers.b, 0x04);
+    assert_eq!(cpu_state.registers.f, 0x70);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+}
