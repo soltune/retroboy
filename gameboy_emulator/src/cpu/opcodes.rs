@@ -75,6 +75,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let address = microops::read_from_register_pair(cpu_state, REGISTER_BC);
             load_source_register_in_memory(cpu_state, Register::A, address);
         },
+        0x04 =>
+            alu::increment_register(cpu_state, Register::B),
+        0x05 =>
+            alu::decrement_register(cpu_state, Register::B),
         0x06 =>
             load_immediate_value(cpu_state, Register::B),
         0x08 => {
@@ -85,6 +89,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let address = microops::read_from_register_pair(cpu_state, REGISTER_BC);
             load_memory_byte_in_destination_register(cpu_state, address, Register::A);
         },
+        0x0C =>
+            alu::increment_register(cpu_state, Register::C),
+        0x0D =>
+            alu::decrement_register(cpu_state, Register::C),
         0x0E =>
             load_immediate_value(cpu_state, Register::C),
         0x11 => {
@@ -95,12 +103,20 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let address = microops::read_from_register_pair(cpu_state, REGISTER_DE);
             load_source_register_in_memory(cpu_state, Register::A, address);
         },
+        0x14 =>
+            alu::increment_register(cpu_state, Register::D),
+        0x15 =>
+            alu::decrement_register(cpu_state, Register::D),
         0x16 =>
             load_immediate_value(cpu_state, Register::D),
         0x1A => {
             let address = microops::read_from_register_pair(cpu_state, REGISTER_DE);
             load_memory_byte_in_destination_register(cpu_state, address, Register::A)
         },
+        0x1C =>
+            alu::increment_register(cpu_state, Register::E),
+        0x1D =>
+            alu::decrement_register(cpu_state, Register::E),
         0x1E =>
             load_immediate_value(cpu_state, Register::E),
         0x21 => {
@@ -113,6 +129,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             address += 1;
             microops::store_in_register_pair(cpu_state, REGISTER_HL, address);    
         },
+        0x24 =>
+            alu::increment_register(cpu_state, Register::H),
+        0x25 =>
+            alu::decrement_register(cpu_state, Register::H),
         0x26 =>
             load_immediate_value(cpu_state, Register::H),
         0x2A => {
@@ -121,6 +141,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             address += 1;
             microops::store_in_register_pair(cpu_state, REGISTER_HL, address);  
         },
+        0x2C =>
+            alu::increment_register(cpu_state, Register::L),
+        0x2D =>
+            alu::decrement_register(cpu_state, Register::L),
         0x2E =>
             load_immediate_value(cpu_state, Register::L),
         0x31 => {
@@ -141,6 +165,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             address -= 1;
             microops::store_in_register_pair(cpu_state, REGISTER_HL, address);
         },
+        0x3C =>
+            alu::increment_register(cpu_state, Register::A),
+        0x3D =>
+            alu::decrement_register(cpu_state, Register::A),
         0x3E =>
             load_immediate_value(cpu_state, Register::A),
         0x40 =>

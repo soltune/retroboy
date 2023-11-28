@@ -80,3 +80,25 @@ pub fn compare_value_with_register(cpu_state: &mut CpuState, register: Register,
     microops::set_flag_h(cpu_state, (byte & 0xF) < (value & 0xF));
     microops::set_flag_c(cpu_state, byte < value);
 }
+
+pub fn increment_register(cpu_state: &mut CpuState, register: Register) {
+    let byte = microops::read_from_register(cpu_state, &register);
+    let sum = byte.wrapping_add(1);
+
+    microops::store_in_register(cpu_state, register, sum);
+
+    microops::set_flag_z(cpu_state, sum == 0);
+    microops::set_flag_n(cpu_state, false);
+    microops::set_flag_h(cpu_state, (1 + (byte & 0xF)) > 0xF);
+}
+
+pub fn decrement_register(cpu_state: &mut CpuState, register: Register) {
+    let byte = microops::read_from_register(cpu_state, &register);
+    let difference = byte.wrapping_sub(1);
+
+    microops::store_in_register(cpu_state, register, difference);
+
+    microops::set_flag_z(cpu_state, difference == 0);
+    microops::set_flag_n(cpu_state, true);
+    microops::set_flag_h(cpu_state, (byte & 0xF) < 1);
+}
