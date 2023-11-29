@@ -445,3 +445,27 @@ fn decrements_register_without_carry() {
     assert_eq!(cpu_state.registers.f, 0x40);
     assert_eq!(cpu_state.clock.total_clock_cycles, 4);
 }
+
+#[test]
+fn increments_memory_byte_with_half_carry() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x34]);
+    cpu_state.memory.rom[0x2C11] = 0x0F;
+    cpu_state.registers.h = 0x2C;
+    cpu_state.registers.l = 0x11;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.memory.rom[0x2C11], 0x10);
+    assert_eq!(cpu_state.registers.f, 0x20);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+}
+
+#[test]
+fn decrements_memory_byte_with_half_carry() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x35]);
+    cpu_state.memory.rom[0x2C11] = 0x10;
+    cpu_state.registers.h = 0x2C;
+    cpu_state.registers.l = 0x11;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.memory.rom[0x2C11], 0x0F);
+    assert_eq!(cpu_state.registers.f, 0x60);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+}

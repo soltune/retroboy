@@ -2,6 +2,8 @@ use crate::cpu::{Register, RegisterPair, CpuState, REGISTER_AF, REGISTER_BC, REG
 use crate::cpu::microops;
 use crate::cpu::alu;
 
+use super::alu::{increment_memory_byte, decrement_memory_byte};
+
 fn read_next_instruction_byte(cpu_state: &mut CpuState) -> u8 {
     let byte = microops::read_byte_from_memory(cpu_state, cpu_state.registers.program_counter);
     cpu_state.registers.program_counter += 1;
@@ -157,6 +159,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             address -= 1;
             microops::store_in_register_pair(cpu_state, REGISTER_HL, address);           
         },
+        0x34 =>
+            increment_memory_byte(cpu_state),
+        0x35 =>
+            decrement_memory_byte(cpu_state),
         0x36 =>
             load_immediate_value_in_memory(cpu_state, REGISTER_HL),
         0x3A => {

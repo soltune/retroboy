@@ -1,6 +1,8 @@
 use crate::cpu::{Register, CpuState};
 use crate::cpu::microops;
 
+use super::REGISTER_HL;
+
 pub fn add_value_to_register(cpu_state: &mut CpuState, register: Register, value: u8) {
     let byte = microops::read_from_register(cpu_state, &register);
     let sum = byte.wrapping_add(value);
@@ -97,6 +99,30 @@ pub fn decrement_register(cpu_state: &mut CpuState, register: Register) {
     let difference = byte.wrapping_sub(1);
 
     microops::store_in_register(cpu_state, register, difference);
+
+    microops::set_flag_z(cpu_state, difference == 0);
+    microops::set_flag_n(cpu_state, true);
+    microops::set_flag_h(cpu_state, (byte & 0xF) < 1);
+}
+
+pub fn increment_memory_byte(cpu_state: &mut CpuState) {
+    let address = microops::read_from_register_pair(cpu_state, REGISTER_HL);
+    let byte = microops::read_byte_from_memory(cpu_state, address);
+    let sum = byte.wrapping_add(1);
+
+    microops::store_byte_in_memory(cpu_state, address, sum);
+
+    microops::set_flag_z(cpu_state, sum == 0);
+    microops::set_flag_n(cpu_state, false);
+    microops::set_flag_h(cpu_state, (1 + (byte & 0xF)) > 0xF);
+}
+
+pub fn decrement_memory_byte(cpu_state: &mut CpuState) {
+    let address = microops::read_from_register_pair(cpu_state, REGISTER_HL);
+    let byte = microops::read_byte_from_memory(cpu_state, address);
+    let difference = byte.wrapping_sub(1);
+
+    microops::store_byte_in_memory(cpu_state, address, difference);
 
     microops::set_flag_z(cpu_state, difference == 0);
     microops::set_flag_n(cpu_state, true);
