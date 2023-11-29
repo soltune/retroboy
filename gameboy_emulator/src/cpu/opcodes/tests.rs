@@ -469,3 +469,25 @@ fn decrements_memory_byte_with_half_carry() {
     assert_eq!(cpu_state.registers.f, 0x60);
     assert_eq!(cpu_state.clock.total_clock_cycles, 12);
 }
+
+#[test]
+fn increments_register_pair() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x03]);
+    cpu_state.registers.b = 0x3C;
+    cpu_state.registers.c = 0x4D;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.b, 0x3C);
+    assert_eq!(cpu_state.registers.c, 0x4E);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}
+
+#[test]
+fn decrements_register_pair() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x0B]);
+    cpu_state.registers.b = 0x3C;
+    cpu_state.registers.c = 0x4D;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.b, 0x3C);
+    assert_eq!(cpu_state.registers.c, 0x4C);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}

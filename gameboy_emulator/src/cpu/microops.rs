@@ -49,7 +49,7 @@ pub fn store_in_register(cpu_state: &mut CpuState, register: Register, value: u8
     } 
 }
 
-pub fn read_from_register_pair(cpu_state: &mut CpuState, register_pair: RegisterPair) -> u16 {
+pub fn read_from_register_pair(cpu_state: &mut CpuState, register_pair: &RegisterPair) -> u16 {
     let first_byte = read_from_register(cpu_state, &register_pair.first);
     let second_byte = read_from_register(cpu_state, &register_pair.second);
     ((first_byte as u16) << 8) | (second_byte as u16 & 0xFF)
