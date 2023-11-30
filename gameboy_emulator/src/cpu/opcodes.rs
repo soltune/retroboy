@@ -171,6 +171,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             address -= 1;
             microops::store_in_register_pair(cpu_state, REGISTER_HL, address);           
         },
+        0x33 => {
+            cpu_state.registers.stack_pointer = cpu_state.registers.stack_pointer.wrapping_add(1);
+            microops::run_extra_machine_cycle(cpu_state);
+        },
         0x34 =>
             increment_memory_byte(cpu_state),
         0x35 =>
@@ -182,6 +186,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             load_memory_byte_in_destination_register(cpu_state, address, Register::A);
             address -= 1;
             microops::store_in_register_pair(cpu_state, REGISTER_HL, address);
+        },
+        0x3B => {
+            cpu_state.registers.stack_pointer = cpu_state.registers.stack_pointer.wrapping_sub(1);
+            microops::run_extra_machine_cycle(cpu_state);
         },
         0x3C =>
             alu::increment_register(cpu_state, Register::A),

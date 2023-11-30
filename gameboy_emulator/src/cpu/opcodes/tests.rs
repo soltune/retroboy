@@ -491,3 +491,21 @@ fn decrements_register_pair() {
     assert_eq!(cpu_state.registers.c, 0x4C);
     assert_eq!(cpu_state.clock.total_clock_cycles, 8);
 }
+
+#[test]
+fn increments_stack_pointer() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x33]);
+    cpu_state.registers.stack_pointer = 0x1A33;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.stack_pointer, 0x1A34);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}
+
+#[test]
+fn decrements_stack_pointer() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x3B]);
+    cpu_state.registers.stack_pointer = 0x1A33;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.stack_pointer, 0x1A32);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}
