@@ -15,6 +15,20 @@ pub fn add_value_to_register(cpu_state: &mut CpuState, register: Register, value
     microops::set_flag_c(cpu_state, (value as u16 + byte as u16) > 0xFF);
 }
 
+pub fn add_value_to_register_pair(cpu_state: &mut CpuState, register_pair: RegisterPair, value: u16) {
+    let word = microops::read_from_register_pair(cpu_state, &register_pair);
+    let sum = word.wrapping_add(value);
+
+    microops::store_in_register_pair(cpu_state, register_pair, sum);
+
+    microops::set_flag_z(cpu_state, false);
+    microops::set_flag_n(cpu_state, false);
+    microops::set_flag_h(cpu_state, (value & 0xFFF) + (word & 0xFFF) > 0xFFF);
+    microops::set_flag_c(cpu_state, (value as u32 + word as u32) > 0xFFFF);
+
+    microops::run_extra_machine_cycle(cpu_state);
+}
+
 pub fn add_value_and_carry_to_register(cpu_state: &mut CpuState, register: Register, value: u8) {
     let carry_value = if microops::is_c_flag_set(cpu_state) { 1 as u8 } else { 0 as u8 };
     add_value_to_register(cpu_state, register, value.wrapping_add(carry_value));

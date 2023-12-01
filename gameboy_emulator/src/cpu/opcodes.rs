@@ -89,6 +89,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let address = read_next_instruction_word(cpu_state);
             microops::store_word_in_memory(cpu_state, address, cpu_state.registers.stack_pointer);
         },
+        0x09 => {
+            let word = microops::read_from_register_pair(cpu_state, &REGISTER_BC);
+            alu::add_value_to_register_pair(cpu_state, REGISTER_HL, word);
+        },
         0x0A => {
             let address = microops::read_from_register_pair(cpu_state, &REGISTER_BC);
             load_memory_byte_in_destination_register(cpu_state, address, Register::A);
@@ -123,6 +127,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         },
         0x1B =>
             decrement_register_pair(cpu_state, REGISTER_DE),
+        0x19 => {
+            let word = microops::read_from_register_pair(cpu_state, &REGISTER_DE);
+            alu::add_value_to_register_pair(cpu_state, REGISTER_HL, word);
+        },
         0x1C =>
             alu::increment_register(cpu_state, Register::E),
         0x1D =>
@@ -147,6 +155,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             alu::decrement_register(cpu_state, Register::H),
         0x26 =>
             load_immediate_value(cpu_state, Register::H),
+        0x29 => {
+            let word = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
+            alu::add_value_to_register_pair(cpu_state, REGISTER_HL, word);
+        },
         0x2A => {
             let mut address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
             load_memory_byte_in_destination_register(cpu_state, address, Register::A);
@@ -181,6 +193,8 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             decrement_memory_byte(cpu_state),
         0x36 =>
             load_immediate_value_in_memory(cpu_state, REGISTER_HL),
+        0x39 =>
+            alu::add_value_to_register_pair(cpu_state, REGISTER_HL, cpu_state.registers.stack_pointer),
         0x3A => {
             let mut address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
             load_memory_byte_in_destination_register(cpu_state, address, Register::A);
