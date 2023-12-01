@@ -673,6 +673,19 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let value = read_next_instruction_byte(cpu_state);
             alu::logical_and_with_register(cpu_state, Register::A, value);
         },
+        0xE8 => {
+            let signed_byte = read_next_instruction_byte(cpu_state) as i8;
+            let sum = cpu_state.registers.stack_pointer.wrapping_add_signed(signed_byte.into());
+            
+            microops::set_flag_z(cpu_state, false);
+            microops::set_flag_n(cpu_state, false);
+            microops::set_flag_h(cpu_state, (sum & 0xF) < (cpu_state.registers.stack_pointer & 0xF));
+            microops::set_flag_c(cpu_state, (sum & 0xFF) < (cpu_state.registers.stack_pointer & 0xFF));
+
+            cpu_state.registers.stack_pointer = sum;
+
+            microops::run_extra_machine_cycle(cpu_state);
+        },
         0xEA => {
             let address = read_next_instruction_word(cpu_state);
             load_source_register_in_memory(cpu_state, Register::A, address);

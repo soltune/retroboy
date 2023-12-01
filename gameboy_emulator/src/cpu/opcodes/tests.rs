@@ -541,3 +541,23 @@ fn adds_register_pair_and_register_pair_hl_with_half_carry() {
     assert_eq!(cpu_state.registers.f, 0x20);
     assert_eq!(cpu_state.clock.total_clock_cycles, 8);
 }
+
+#[test]
+fn loads_stack_pointer_plus_immediate_byte_into_stack_pointer_with_half_carry() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xE8, 0x19]);
+    cpu_state.registers.stack_pointer = 0xB207;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.stack_pointer, 0xB220);
+    assert_eq!(cpu_state.registers.f, 0x20);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+}
+
+#[test]
+fn loads_stack_pointer_plus_immediate_byte_into_stack_pointer_with_carry() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xE8, 0x19]);
+    cpu_state.registers.stack_pointer = 0xB2F7;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.stack_pointer, 0xB310);
+    assert_eq!(cpu_state.registers.f, 0x30);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+}
