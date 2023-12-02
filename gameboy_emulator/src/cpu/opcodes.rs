@@ -209,6 +209,11 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             decrement_memory_byte(cpu_state),
         0x36 =>
             load_immediate_value_in_memory(cpu_state, REGISTER_HL),
+        0x37 => {
+            microops::set_flag_c(cpu_state, true);
+            microops::set_flag_h(cpu_state, false);
+            microops::set_flag_n(cpu_state, false);
+        },
         0x39 =>
             alu::add_value_to_register_pair(cpu_state, REGISTER_HL, cpu_state.registers.stack_pointer),
         0x3A => {

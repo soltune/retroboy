@@ -581,3 +581,11 @@ fn swaps_nibbles_in_memory_byte() {
     assert_eq!(cpu_state.memory.rom[0x4AB1], 0xCB);
     assert_eq!(cpu_state.clock.total_clock_cycles, 16);
 }
+
+#[test]
+fn sets_carry_flag() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x37]);
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.f, 0x10);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+}
