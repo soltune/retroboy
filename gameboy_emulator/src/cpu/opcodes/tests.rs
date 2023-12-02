@@ -561,3 +561,23 @@ fn loads_stack_pointer_plus_immediate_byte_into_stack_pointer_with_carry() {
     assert_eq!(cpu_state.registers.f, 0x30);
     assert_eq!(cpu_state.clock.total_clock_cycles, 12);
 }
+
+#[test]
+fn swaps_nibbles_in_register() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x37]);
+    cpu_state.registers.a = 0xA2;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0x2A);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}
+
+#[test]
+fn swaps_nibbles_in_memory_byte() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x36]);
+    cpu_state.memory.rom[0x4AB1] = 0xBC;
+    cpu_state.registers.h = 0x4A;
+    cpu_state.registers.l = 0xB1;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.memory.rom[0x4AB1], 0xCB);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 16);
+}
