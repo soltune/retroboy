@@ -601,7 +601,7 @@ fn complement_a_register() {
 }
 
 #[test]
-fn  complement_c_flag() {
+fn complement_c_flag() {
     let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x3F]);
     cpu_state.registers.f = 0x30;
     execute_opcode(&mut cpu_state);
