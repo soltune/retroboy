@@ -189,6 +189,11 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             alu::decrement_register(cpu_state, Register::L),
         0x2E =>
             load_immediate_value(cpu_state, Register::L),
+        0x2F => {
+            cpu_state.registers.a = cpu_state.registers.a ^ 0xFF;
+            microops::set_flag_n(cpu_state, true);
+            microops::set_flag_h(cpu_state, true);
+        },
         0x31 => {
             let word = read_next_instruction_word(cpu_state);
             cpu_state.registers.stack_pointer = word;            

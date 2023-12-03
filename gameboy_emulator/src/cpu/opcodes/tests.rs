@@ -589,3 +589,13 @@ fn sets_carry_flag() {
     assert_eq!(cpu_state.registers.f, 0x10);
     assert_eq!(cpu_state.clock.total_clock_cycles, 4);
 }
+
+#[test]
+fn complement_a_register() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x2F]);
+    cpu_state.registers.a = 0x4C;
+    execute_opcode(&mut cpu_state);
+    cpu_state.registers.a = 0xB3;
+    assert_eq!(cpu_state.registers.f, 0x60);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+}
