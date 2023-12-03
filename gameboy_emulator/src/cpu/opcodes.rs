@@ -237,6 +237,12 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             alu::decrement_register(cpu_state, Register::A),
         0x3E =>
             load_immediate_value(cpu_state, Register::A),
+        0x3F => {
+            let c_flag_set = microops::is_c_flag_set(cpu_state);
+            microops::set_flag_c(cpu_state, !c_flag_set);
+            microops::set_flag_n(cpu_state, false);
+            microops::set_flag_h(cpu_state, false);
+        },
         0x40 =>
             load_source_register_in_destination_register(cpu_state, Register::B, Register::B),
         0x41 =>

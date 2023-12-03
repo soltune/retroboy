@@ -595,7 +595,16 @@ fn complement_a_register() {
     let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x2F]);
     cpu_state.registers.a = 0x4C;
     execute_opcode(&mut cpu_state);
-    cpu_state.registers.a = 0xB3;
+    assert_eq!(cpu_state.registers.a, 0xB3);
     assert_eq!(cpu_state.registers.f, 0x60);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+}
+
+#[test]
+fn  complement_c_flag() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x3F]);
+    cpu_state.registers.f = 0x30;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.f, 0x00);
     assert_eq!(cpu_state.clock.total_clock_cycles, 4);
 }
