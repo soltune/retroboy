@@ -608,3 +608,12 @@ fn complement_c_flag() {
     assert_eq!(cpu_state.registers.f, 0x00);
     assert_eq!(cpu_state.clock.total_clock_cycles, 4);
 }
+
+#[test]
+fn decimal_adjusts_register_a() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x27]);
+    cpu_state.registers.a = 0xC0;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0x20);
+    assert_eq!(cpu_state.registers.f, 0x10);
+}
