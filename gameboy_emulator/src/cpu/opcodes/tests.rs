@@ -617,3 +617,21 @@ fn decimal_adjusts_register_a() {
     assert_eq!(cpu_state.registers.a, 0x20);
     assert_eq!(cpu_state.registers.f, 0x10);
 }
+
+#[test]
+fn rotates_register_a_left() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x07]);
+    cpu_state.registers.a = 0xA7;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0x4F);
+    assert_eq!(cpu_state.registers.f, 0x10);
+}
+
+#[test]
+fn rotates_register_a_left_through_carry() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x17]);
+    cpu_state.registers.a = 0xA7;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0x4E);
+    assert_eq!(cpu_state.registers.f, 0x10);
+}

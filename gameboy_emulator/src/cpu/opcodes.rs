@@ -80,6 +80,29 @@ fn swap_nibbles_in_memory_byte(cpu_state: &mut CpuState, address: u16) {
     microops::store_byte_in_memory(cpu_state, address, swap_nibbles(byte));
 }
 
+fn rotate_register_left(cpu_state: &mut CpuState, register: Register) {
+    let value = microops::read_from_register(cpu_state, &register);
+    let most_significant_bit = value >> 7;
+    let rotated_value = value << 1 | most_significant_bit;
+    microops::store_in_register(cpu_state, register, rotated_value);
+    microops::set_flag_z(cpu_state, rotated_value == 0);
+    microops::set_flag_n(cpu_state, false);
+    microops::set_flag_h(cpu_state, false);
+    microops::set_flag_c(cpu_state, most_significant_bit == 0x01);
+}
+
+fn rotate_register_left_through_carry(cpu_state: &mut CpuState, register: Register) {
+    let value = microops::read_from_register(cpu_state, &register);
+    let c_flag = if microops::is_c_flag_set(cpu_state) { 0x1 } else { 0x0 };
+    let most_significant_bit = value >> 7;
+    let rotated_value = value << 1 | c_flag;
+    microops::store_in_register(cpu_state, register, rotated_value);
+    microops::set_flag_z(cpu_state, rotated_value == 0);
+    microops::set_flag_n(cpu_state, false);
+    microops::set_flag_h(cpu_state, false);
+    microops::set_flag_c(cpu_state, most_significant_bit == 0x01);
+}
+
 pub fn execute_opcode(cpu_state: &mut CpuState) {
     let opcode = read_next_instruction_byte(cpu_state);
     match opcode {
@@ -101,6 +124,8 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             alu::decrement_register(cpu_state, Register::B),
         0x06 =>
             load_immediate_value(cpu_state, Register::B),
+        0x07 =>
+            rotate_register_left(cpu_state, Register::A),
         0x08 => {
             let address = read_next_instruction_word(cpu_state);
             microops::store_word_in_memory(cpu_state, address, cpu_state.registers.stack_pointer);
@@ -137,6 +162,8 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             alu::decrement_register(cpu_state, Register::D),
         0x16 =>
             load_immediate_value(cpu_state, Register::D),
+        0x17 =>
+            rotate_register_left_through_carry(cpu_state, Register::A),
         0x1A => {
             let address = microops::read_from_register_pair(cpu_state,&REGISTER_DE);
             load_memory_byte_in_destination_register(cpu_state, address, Register::A)
