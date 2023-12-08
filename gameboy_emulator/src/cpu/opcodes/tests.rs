@@ -616,6 +616,7 @@ fn decimal_adjusts_register_a() {
     execute_opcode(&mut cpu_state);
     assert_eq!(cpu_state.registers.a, 0x20);
     assert_eq!(cpu_state.registers.f, 0x10);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
 }
 
 #[test]
@@ -625,6 +626,7 @@ fn rotates_register_a_left() {
     execute_opcode(&mut cpu_state);
     assert_eq!(cpu_state.registers.a, 0x4F);
     assert_eq!(cpu_state.registers.f, 0x10);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
 }
 
 #[test]
@@ -634,4 +636,25 @@ fn rotates_register_a_left_through_carry() {
     execute_opcode(&mut cpu_state);
     assert_eq!(cpu_state.registers.a, 0x4E);
     assert_eq!(cpu_state.registers.f, 0x10);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+}
+
+#[test]
+fn rotates_register_a_right() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x0F]);
+    cpu_state.registers.a = 0xA7;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0xD3);
+    assert_eq!(cpu_state.registers.f, 0x10);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+}
+
+#[test]
+fn rotates_register_a_right_through_carry() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x1F]);
+    cpu_state.registers.a = 0xA7;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0x53);
+    assert_eq!(cpu_state.registers.f, 0x10);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
 }

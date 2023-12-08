@@ -103,6 +103,29 @@ fn rotate_register_left_through_carry(cpu_state: &mut CpuState, register: Regist
     microops::set_flag_c(cpu_state, most_significant_bit == 0x01);
 }
 
+fn rotate_register_right(cpu_state: &mut CpuState, register: Register) {
+    let value = microops::read_from_register(cpu_state, &register);
+    let least_significant_bit = value & 0x1;
+    let rotated_value: u8 = least_significant_bit << 7 | value >> 1;
+    microops::store_in_register(cpu_state, register, rotated_value);
+    microops::set_flag_z(cpu_state, rotated_value == 0);
+    microops::set_flag_n(cpu_state, false);
+    microops::set_flag_h(cpu_state, false);
+    microops::set_flag_c(cpu_state, least_significant_bit == 0x01);
+}
+
+fn rotate_register_right_through_carry(cpu_state: &mut CpuState, register: Register) {
+    let value = microops::read_from_register(cpu_state, &register);
+    let c_flag = if microops::is_c_flag_set(cpu_state) { 0x1 } else { 0x0 };
+    let least_significant_bit = value & 0x1;
+    let rotated_value = c_flag << 7 | value >> 1;
+    microops::store_in_register(cpu_state, register, rotated_value);
+    microops::set_flag_z(cpu_state, rotated_value == 0);
+    microops::set_flag_n(cpu_state, false);
+    microops::set_flag_h(cpu_state, false);
+    microops::set_flag_c(cpu_state, least_significant_bit == 0x01);
+}
+
 pub fn execute_opcode(cpu_state: &mut CpuState) {
     let opcode = read_next_instruction_byte(cpu_state);
     match opcode {
@@ -146,6 +169,8 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             alu::decrement_register(cpu_state, Register::C),
         0x0E =>
             load_immediate_value(cpu_state, Register::C),
+        0x0F =>
+            rotate_register_right(cpu_state, Register::A),
         0x11 => {
             let word = read_next_instruction_word(cpu_state);
             microops::store_in_register_pair(cpu_state, REGISTER_DE, word);
@@ -180,6 +205,8 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             alu::decrement_register(cpu_state, Register::E),
         0x1E =>
             load_immediate_value(cpu_state, Register::E),
+        0x1F =>
+            rotate_register_right_through_carry(cpu_state, Register::A),
         0x21 => {
             let word = read_next_instruction_word(cpu_state);
             microops::store_in_register_pair(cpu_state, REGISTER_HL, word);
