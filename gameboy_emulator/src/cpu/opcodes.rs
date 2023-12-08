@@ -873,6 +873,62 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
 fn execute_cb_opcode(cpu_state: &mut CpuState) {
     let opcode = read_next_instruction_byte(cpu_state);
     match opcode {
+        0x00 =>
+            rotate_register_left(cpu_state, Register::B),
+        0x01 =>
+            rotate_register_left(cpu_state, Register::C),
+        0x02 =>
+            rotate_register_left(cpu_state, Register::D),
+        0x03 =>
+            rotate_register_left(cpu_state, Register::E),
+        0x04 =>
+            rotate_register_left(cpu_state, Register::H),
+        0x05 =>
+            rotate_register_left(cpu_state, Register::L),
+        0x07 =>
+            rotate_register_left(cpu_state, Register::A),
+        0x08 =>
+            rotate_register_right(cpu_state, Register::B),
+        0x09 =>
+            rotate_register_right(cpu_state, Register::C),
+        0x0A =>
+            rotate_register_right(cpu_state, Register::D),
+        0x0B =>
+            rotate_register_right(cpu_state, Register::E),
+        0x0C =>
+            rotate_register_right(cpu_state, Register::H),
+        0x0D =>
+            rotate_register_right(cpu_state, Register::L),
+        0x0F =>
+            rotate_register_right(cpu_state, Register::A),
+        0x10 =>
+            rotate_register_left_through_carry(cpu_state, Register::B),
+        0x11 =>
+            rotate_register_left_through_carry(cpu_state, Register::C),
+        0x12 =>
+            rotate_register_left_through_carry(cpu_state, Register::D),
+        0x13 =>
+            rotate_register_left_through_carry(cpu_state, Register::E),
+        0x14 =>
+            rotate_register_left_through_carry(cpu_state, Register::H),
+        0x15 =>
+            rotate_register_left_through_carry(cpu_state, Register::L),
+        0x17 =>
+            rotate_register_left_through_carry(cpu_state, Register::A),
+        0x18 =>
+            rotate_register_right_through_carry(cpu_state, Register::B),
+        0x19 =>
+            rotate_register_right_through_carry(cpu_state, Register::C),
+        0x1A =>
+            rotate_register_right_through_carry(cpu_state, Register::D),
+        0x1B =>
+            rotate_register_right_through_carry(cpu_state, Register::E),
+        0x1C =>
+            rotate_register_right_through_carry(cpu_state, Register::H),
+        0x1D =>
+            rotate_register_right_through_carry(cpu_state, Register::L),    
+        0x1F =>
+            rotate_register_right_through_carry(cpu_state, Register::A),
         0x30 =>
             swap_nibbles_in_register(cpu_state, Register::B),
         0x31 =>
