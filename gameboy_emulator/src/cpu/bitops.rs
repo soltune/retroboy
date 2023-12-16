@@ -94,3 +94,19 @@ pub fn rotate_memory_byte_right_through_carry(cpu_state: &mut CpuState) {
     let rotated_value = rotate_right_through_carry(cpu_state, byte);
     microops::store_byte_in_memory(cpu_state, address, rotated_value);
 }
+
+fn swap_nibbles(byte: u8) -> u8 {
+    let first_nibble = (byte >> 4) & 0xF;
+    let second_nibble = byte & 0xF;
+    (second_nibble << 4) | first_nibble
+}
+
+pub fn swap_nibbles_in_register(cpu_state: &mut CpuState, register: Register) {
+    let byte = microops::read_from_register(cpu_state, &register);
+    microops::store_in_register(cpu_state, register, swap_nibbles(byte));
+}
+
+pub fn swap_nibbles_in_memory_byte(cpu_state: &mut CpuState, address: u16) {
+    let byte = microops::read_byte_from_memory(cpu_state, address);
+    microops::store_byte_in_memory(cpu_state, address, swap_nibbles(byte));
+}

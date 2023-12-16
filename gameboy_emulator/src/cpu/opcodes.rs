@@ -65,22 +65,6 @@ fn handle_illegal_opcode(opcode: u8) {
     panic!("Encountered illegal opcode {:#04X}", opcode);
 }
 
-fn swap_nibbles(byte: u8) -> u8 {
-    let first_nibble = (byte >> 4) & 0xF;
-    let second_nibble = byte & 0xF;
-    (second_nibble << 4) | first_nibble
-}
-
-fn swap_nibbles_in_register(cpu_state: &mut CpuState, register: Register) {
-    let byte = microops::read_from_register(cpu_state, &register);
-    microops::store_in_register(cpu_state, register, swap_nibbles(byte));
-}
-
-fn swap_nibbles_in_memory_byte(cpu_state: &mut CpuState, address: u16) {
-    let byte = microops::read_byte_from_memory(cpu_state, address);
-    microops::store_byte_in_memory(cpu_state, address, swap_nibbles(byte));
-}
-
 pub fn execute_opcode(cpu_state: &mut CpuState) {
     let opcode = read_next_instruction_byte(cpu_state);
     match opcode {
@@ -893,23 +877,23 @@ fn execute_cb_opcode(cpu_state: &mut CpuState) {
         0x1F =>
             bitops::rotate_register_right_through_carry(cpu_state, Register::A),
         0x30 =>
-            swap_nibbles_in_register(cpu_state, Register::B),
+            bitops::swap_nibbles_in_register(cpu_state, Register::B),
         0x31 =>
-            swap_nibbles_in_register(cpu_state, Register::C),
+            bitops::swap_nibbles_in_register(cpu_state, Register::C),
         0x32 =>
-            swap_nibbles_in_register(cpu_state, Register::D),
+            bitops::swap_nibbles_in_register(cpu_state, Register::D),
         0x33 =>
-            swap_nibbles_in_register(cpu_state, Register::E),
+            bitops::swap_nibbles_in_register(cpu_state, Register::E),
         0x34 =>
-            swap_nibbles_in_register(cpu_state, Register::H),
+            bitops::swap_nibbles_in_register(cpu_state, Register::H),
         0x35 =>
-            swap_nibbles_in_register(cpu_state, Register::L),
+            bitops::swap_nibbles_in_register(cpu_state, Register::L),
         0x36 => {
             let address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
-            swap_nibbles_in_memory_byte(cpu_state, address);
+            bitops::swap_nibbles_in_memory_byte(cpu_state, address);
         },
         0x37 =>
-            swap_nibbles_in_register(cpu_state, Register::A),
+            bitops::swap_nibbles_in_register(cpu_state, Register::A),
         _ =>
             ()
     }
