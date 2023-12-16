@@ -75,4 +75,5 @@ pub fn load_rom_by_filepath(cpu_state: &mut CpuState, filepath: &str) -> io::Res
 
 mod microops;
 mod alu;
+mod bitops;
 pub mod opcodes;

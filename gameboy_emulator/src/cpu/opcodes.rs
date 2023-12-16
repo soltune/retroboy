@@ -1,6 +1,7 @@
 use crate::cpu::{Register, RegisterPair, CpuState, REGISTER_AF, REGISTER_BC, REGISTER_DE, REGISTER_HL};
 use crate::cpu::microops;
 use crate::cpu::alu;
+use crate::cpu::bitops;
 
 use super::alu::{increment_memory_byte, decrement_memory_byte, increment_register_pair, decrement_register_pair};
 
@@ -80,52 +81,6 @@ fn swap_nibbles_in_memory_byte(cpu_state: &mut CpuState, address: u16) {
     microops::store_byte_in_memory(cpu_state, address, swap_nibbles(byte));
 }
 
-fn rotate_register_left(cpu_state: &mut CpuState, register: Register) {
-    let value = microops::read_from_register(cpu_state, &register);
-    let most_significant_bit = value >> 7;
-    let rotated_value = value << 1 | most_significant_bit;
-    microops::store_in_register(cpu_state, register, rotated_value);
-    microops::set_flag_z(cpu_state, rotated_value == 0);
-    microops::set_flag_n(cpu_state, false);
-    microops::set_flag_h(cpu_state, false);
-    microops::set_flag_c(cpu_state, most_significant_bit == 0x01);
-}
-
-fn rotate_register_left_through_carry(cpu_state: &mut CpuState, register: Register) {
-    let value = microops::read_from_register(cpu_state, &register);
-    let c_flag = if microops::is_c_flag_set(cpu_state) { 0x1 } else { 0x0 };
-    let most_significant_bit = value >> 7;
-    let rotated_value = value << 1 | c_flag;
-    microops::store_in_register(cpu_state, register, rotated_value);
-    microops::set_flag_z(cpu_state, rotated_value == 0);
-    microops::set_flag_n(cpu_state, false);
-    microops::set_flag_h(cpu_state, false);
-    microops::set_flag_c(cpu_state, most_significant_bit == 0x01);
-}
-
-fn rotate_register_right(cpu_state: &mut CpuState, register: Register) {
-    let value = microops::read_from_register(cpu_state, &register);
-    let least_significant_bit = value & 0x1;
-    let rotated_value: u8 = least_significant_bit << 7 | value >> 1;
-    microops::store_in_register(cpu_state, register, rotated_value);
-    microops::set_flag_z(cpu_state, rotated_value == 0);
-    microops::set_flag_n(cpu_state, false);
-    microops::set_flag_h(cpu_state, false);
-    microops::set_flag_c(cpu_state, least_significant_bit == 0x01);
-}
-
-fn rotate_register_right_through_carry(cpu_state: &mut CpuState, register: Register) {
-    let value = microops::read_from_register(cpu_state, &register);
-    let c_flag = if microops::is_c_flag_set(cpu_state) { 0x1 } else { 0x0 };
-    let least_significant_bit = value & 0x1;
-    let rotated_value = c_flag << 7 | value >> 1;
-    microops::store_in_register(cpu_state, register, rotated_value);
-    microops::set_flag_z(cpu_state, rotated_value == 0);
-    microops::set_flag_n(cpu_state, false);
-    microops::set_flag_h(cpu_state, false);
-    microops::set_flag_c(cpu_state, least_significant_bit == 0x01);
-}
-
 pub fn execute_opcode(cpu_state: &mut CpuState) {
     let opcode = read_next_instruction_byte(cpu_state);
     match opcode {
@@ -148,7 +103,7 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         0x06 =>
             load_immediate_value(cpu_state, Register::B),
         0x07 =>
-            rotate_register_left(cpu_state, Register::A),
+            bitops::rotate_register_left(cpu_state, Register::A),
         0x08 => {
             let address = read_next_instruction_word(cpu_state);
             microops::store_word_in_memory(cpu_state, address, cpu_state.registers.stack_pointer);
@@ -170,7 +125,7 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         0x0E =>
             load_immediate_value(cpu_state, Register::C),
         0x0F =>
-            rotate_register_right(cpu_state, Register::A),
+            bitops::rotate_register_right(cpu_state, Register::A),
         0x11 => {
             let word = read_next_instruction_word(cpu_state);
             microops::store_in_register_pair(cpu_state, REGISTER_DE, word);
@@ -188,7 +143,7 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         0x16 =>
             load_immediate_value(cpu_state, Register::D),
         0x17 =>
-            rotate_register_left_through_carry(cpu_state, Register::A),
+            bitops::rotate_register_left_through_carry(cpu_state, Register::A),
         0x1A => {
             let address = microops::read_from_register_pair(cpu_state,&REGISTER_DE);
             load_memory_byte_in_destination_register(cpu_state, address, Register::A)
@@ -206,7 +161,7 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         0x1E =>
             load_immediate_value(cpu_state, Register::E),
         0x1F =>
-            rotate_register_right_through_carry(cpu_state, Register::A),
+            bitops::rotate_register_right_through_carry(cpu_state, Register::A),
         0x21 => {
             let word = read_next_instruction_word(cpu_state);
             microops::store_in_register_pair(cpu_state, REGISTER_HL, word);
@@ -874,61 +829,69 @@ fn execute_cb_opcode(cpu_state: &mut CpuState) {
     let opcode = read_next_instruction_byte(cpu_state);
     match opcode {
         0x00 =>
-            rotate_register_left(cpu_state, Register::B),
+            bitops::rotate_register_left(cpu_state, Register::B),
         0x01 =>
-            rotate_register_left(cpu_state, Register::C),
+            bitops::rotate_register_left(cpu_state, Register::C),
         0x02 =>
-            rotate_register_left(cpu_state, Register::D),
+            bitops::rotate_register_left(cpu_state, Register::D),
         0x03 =>
-            rotate_register_left(cpu_state, Register::E),
+            bitops::rotate_register_left(cpu_state, Register::E),
         0x04 =>
-            rotate_register_left(cpu_state, Register::H),
+            bitops::rotate_register_left(cpu_state, Register::H),
         0x05 =>
-            rotate_register_left(cpu_state, Register::L),
+            bitops::rotate_register_left(cpu_state, Register::L),
+        0x06 =>
+            bitops::rotate_memory_byte_left(cpu_state),
         0x07 =>
-            rotate_register_left(cpu_state, Register::A),
+            bitops::rotate_register_left(cpu_state, Register::A),
         0x08 =>
-            rotate_register_right(cpu_state, Register::B),
+            bitops::rotate_register_right(cpu_state, Register::B),
         0x09 =>
-            rotate_register_right(cpu_state, Register::C),
+            bitops::rotate_register_right(cpu_state, Register::C),
         0x0A =>
-            rotate_register_right(cpu_state, Register::D),
+            bitops::rotate_register_right(cpu_state, Register::D),
         0x0B =>
-            rotate_register_right(cpu_state, Register::E),
+            bitops::rotate_register_right(cpu_state, Register::E),
         0x0C =>
-            rotate_register_right(cpu_state, Register::H),
+            bitops::rotate_register_right(cpu_state, Register::H),
         0x0D =>
-            rotate_register_right(cpu_state, Register::L),
+            bitops::rotate_register_right(cpu_state, Register::L),
+        0x0E =>
+            bitops::rotate_memory_byte_right(cpu_state),
         0x0F =>
-            rotate_register_right(cpu_state, Register::A),
+            bitops::rotate_register_right(cpu_state, Register::A),
         0x10 =>
-            rotate_register_left_through_carry(cpu_state, Register::B),
+            bitops::rotate_register_left_through_carry(cpu_state, Register::B),
         0x11 =>
-            rotate_register_left_through_carry(cpu_state, Register::C),
+            bitops::rotate_register_left_through_carry(cpu_state, Register::C),
         0x12 =>
-            rotate_register_left_through_carry(cpu_state, Register::D),
+            bitops::rotate_register_left_through_carry(cpu_state, Register::D),
         0x13 =>
-            rotate_register_left_through_carry(cpu_state, Register::E),
+            bitops::rotate_register_left_through_carry(cpu_state, Register::E),
         0x14 =>
-            rotate_register_left_through_carry(cpu_state, Register::H),
+            bitops::rotate_register_left_through_carry(cpu_state, Register::H),
         0x15 =>
-            rotate_register_left_through_carry(cpu_state, Register::L),
+            bitops::rotate_register_left_through_carry(cpu_state, Register::L),
+        0x16 =>
+            bitops::rotate_memory_byte_left_through_carry(cpu_state),
         0x17 =>
-            rotate_register_left_through_carry(cpu_state, Register::A),
+            bitops::rotate_register_left_through_carry(cpu_state, Register::A),
         0x18 =>
-            rotate_register_right_through_carry(cpu_state, Register::B),
+            bitops::rotate_register_right_through_carry(cpu_state, Register::B),
         0x19 =>
-            rotate_register_right_through_carry(cpu_state, Register::C),
+            bitops::rotate_register_right_through_carry(cpu_state, Register::C),
         0x1A =>
-            rotate_register_right_through_carry(cpu_state, Register::D),
+            bitops::rotate_register_right_through_carry(cpu_state, Register::D),
         0x1B =>
-            rotate_register_right_through_carry(cpu_state, Register::E),
+            bitops::rotate_register_right_through_carry(cpu_state, Register::E),
         0x1C =>
-            rotate_register_right_through_carry(cpu_state, Register::H),
+            bitops::rotate_register_right_through_carry(cpu_state, Register::H),
         0x1D =>
-            rotate_register_right_through_carry(cpu_state, Register::L),    
+            bitops::rotate_register_right_through_carry(cpu_state, Register::L),    
+        0x1E =>
+            bitops::rotate_memory_byte_right_through_carry(cpu_state),
         0x1F =>
-            rotate_register_right_through_carry(cpu_state, Register::A),
+            bitops::rotate_register_right_through_carry(cpu_state, Register::A),
         0x30 =>
             swap_nibbles_in_register(cpu_state, Register::B),
         0x31 =>
