@@ -189,3 +189,39 @@ pub fn test_memory_bit(cpu_state: &mut CpuState, bit_index: u8) {
     let byte = microops::read_byte_from_memory(cpu_state, address);
     test_bit(cpu_state, byte, bit_index);
 }
+
+fn reset_bit(byte: u8, bit_index: u8) -> u8 {
+    let mask: u8 = !(1 << bit_index);
+    byte & mask
+}
+
+pub fn reset_register_bit(cpu_state: &mut CpuState, register: Register, bit_index: u8) {
+    let byte = microops::read_from_register(cpu_state, &register);
+    let updated_byte = reset_bit(byte, bit_index);
+    microops::store_in_register(cpu_state, register, updated_byte);
+}
+
+pub fn reset_memory_bit(cpu_state: &mut CpuState, bit_index: u8) {
+    let address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
+    let byte = microops::read_byte_from_memory(cpu_state, address);
+    let updated_byte = reset_bit(byte, bit_index);
+    microops::store_byte_in_memory(cpu_state, address, updated_byte);
+}
+
+fn set_bit(byte: u8, bit_index: u8) -> u8 {
+    let mask: u8 = 1 << bit_index;
+    byte | mask
+}
+
+pub fn set_register_bit(cpu_state: &mut CpuState, register: Register, bit_index: u8) {
+    let byte = microops::read_from_register(cpu_state, &register);
+    let updated_byte = set_bit(byte, bit_index);
+    microops::store_in_register(cpu_state, register, updated_byte);
+}
+
+pub fn set_memory_bit(cpu_state: &mut CpuState, bit_index: u8) {
+    let address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
+    let byte = microops::read_byte_from_memory(cpu_state, address);
+    let updated_byte = set_bit(byte, bit_index);
+    microops::store_byte_in_memory(cpu_state, address, updated_byte);
+}

@@ -1070,8 +1070,262 @@ fn execute_cb_opcode(cpu_state: &mut CpuState) {
             bitops::test_memory_bit(cpu_state, 7),
         0x7F =>
             bitops::test_register_bit(cpu_state, Register::A, 7),
-        _ =>
-            ()
+        0x80 =>
+            bitops::reset_register_bit(cpu_state, Register::B, 0),
+        0x81 =>
+            bitops::reset_register_bit(cpu_state, Register::C, 0),
+        0x82 =>
+            bitops::reset_register_bit(cpu_state, Register::D, 0),
+        0x83 =>
+            bitops::reset_register_bit(cpu_state, Register::E, 0),
+        0x84 =>
+            bitops::reset_register_bit(cpu_state, Register::H, 0),
+        0x85 =>
+            bitops::reset_register_bit(cpu_state, Register::L, 0),
+        0x86 =>
+            bitops::reset_memory_bit(cpu_state, 0),
+        0x87 =>
+            bitops::reset_register_bit(cpu_state, Register::A, 0),
+        0x88 =>
+            bitops::reset_register_bit(cpu_state, Register::B, 1),
+        0x89 =>
+            bitops::reset_register_bit(cpu_state, Register::C, 1),
+        0x8A =>
+            bitops::reset_register_bit(cpu_state, Register::D, 1),
+        0x8B =>
+            bitops::reset_register_bit(cpu_state, Register::E, 1),
+        0x8C =>
+            bitops::reset_register_bit(cpu_state, Register::H, 1),
+        0x8D =>
+            bitops::reset_register_bit(cpu_state, Register::L, 1),
+        0x8E =>
+            bitops::reset_memory_bit(cpu_state, 1),
+        0x8F =>
+            bitops::reset_register_bit(cpu_state, Register::A, 1),
+        0x90 =>
+            bitops::reset_register_bit(cpu_state, Register::B, 2),
+        0x91 =>
+            bitops::reset_register_bit(cpu_state, Register::C, 2),
+        0x92 =>
+            bitops::reset_register_bit(cpu_state, Register::D, 2),
+        0x93 =>
+            bitops::reset_register_bit(cpu_state, Register::E, 2),
+        0x94 =>
+            bitops::reset_register_bit(cpu_state, Register::H, 2),
+        0x95 =>
+            bitops::reset_register_bit(cpu_state, Register::L, 2),
+        0x96 =>
+            bitops::reset_memory_bit(cpu_state, 2),
+        0x97 =>
+            bitops::reset_register_bit(cpu_state, Register::A, 2),
+        0x98 =>
+            bitops::reset_register_bit(cpu_state, Register::B, 3),
+        0x99 =>
+            bitops::reset_register_bit(cpu_state, Register::C, 3),
+        0x9A =>
+            bitops::reset_register_bit(cpu_state, Register::D, 3),
+        0x9B =>
+            bitops::reset_register_bit(cpu_state, Register::E, 3),
+        0x9C =>
+            bitops::reset_register_bit(cpu_state, Register::H, 3),
+        0x9D =>
+            bitops::reset_register_bit(cpu_state, Register::L, 3),
+        0x9E =>
+            bitops::reset_memory_bit(cpu_state, 3),
+        0x9F =>
+            bitops::reset_register_bit(cpu_state, Register::A, 3),
+        0xA0 =>
+            bitops::reset_register_bit(cpu_state, Register::B, 4),
+        0xA1 =>
+            bitops::reset_register_bit(cpu_state, Register::C, 4),
+        0xA2 =>
+            bitops::reset_register_bit(cpu_state, Register::D, 4),
+        0xA3 =>
+            bitops::reset_register_bit(cpu_state, Register::E, 4),
+        0xA4 =>
+            bitops::reset_register_bit(cpu_state, Register::H, 4),
+        0xA5 =>
+            bitops::reset_register_bit(cpu_state, Register::L, 4),
+        0xA6 =>
+            bitops::reset_memory_bit(cpu_state, 4),
+        0xA7 =>
+            bitops::reset_register_bit(cpu_state, Register::A, 4),
+        0xA8 =>
+            bitops::reset_register_bit(cpu_state, Register::B, 5),
+        0xA9 =>
+            bitops::reset_register_bit(cpu_state, Register::C, 5),
+        0xAA =>
+            bitops::reset_register_bit(cpu_state, Register::D, 5),
+        0xAB =>
+            bitops::reset_register_bit(cpu_state, Register::E, 5),
+        0xAC =>
+            bitops::reset_register_bit(cpu_state, Register::H, 5),
+        0xAD =>
+            bitops::reset_register_bit(cpu_state, Register::L, 5),
+        0xAE =>
+            bitops::reset_memory_bit(cpu_state, 5),
+        0xAF =>
+            bitops::reset_register_bit(cpu_state, Register::A, 5),
+        0xB0 =>
+            bitops::reset_register_bit(cpu_state, Register::B, 6),
+        0xB1 =>
+            bitops::reset_register_bit(cpu_state, Register::C, 6),
+        0xB2 =>
+            bitops::reset_register_bit(cpu_state, Register::D, 6),
+        0xB3 =>
+            bitops::reset_register_bit(cpu_state, Register::E, 6),
+        0xB4 =>
+            bitops::reset_register_bit(cpu_state, Register::H, 6),
+        0xB5 =>
+            bitops::reset_register_bit(cpu_state, Register::L, 6),
+        0xB6 =>
+            bitops::reset_memory_bit(cpu_state, 6),
+        0xB7 =>
+            bitops::reset_register_bit(cpu_state, Register::A, 6),
+        0xB8 =>
+            bitops::reset_register_bit(cpu_state, Register::B, 7),
+        0xB9 =>
+            bitops::reset_register_bit(cpu_state, Register::C, 7),
+        0xBA =>
+            bitops::reset_register_bit(cpu_state, Register::D, 7),
+        0xBB =>
+            bitops::reset_register_bit(cpu_state, Register::E, 7),
+        0xBC =>
+            bitops::reset_register_bit(cpu_state, Register::H, 7),
+        0xBD =>
+            bitops::reset_register_bit(cpu_state, Register::L, 7),
+        0xBE =>
+            bitops::reset_memory_bit(cpu_state, 7),
+        0xBF =>
+            bitops::reset_register_bit(cpu_state, Register::A, 7),
+        0xC0 =>
+            bitops::set_register_bit(cpu_state, Register::B, 0),
+        0xC1 =>
+            bitops::set_register_bit(cpu_state, Register::C, 0),
+        0xC2 =>
+            bitops::set_register_bit(cpu_state, Register::D, 0),
+        0xC3 =>
+            bitops::set_register_bit(cpu_state, Register::E, 0),
+        0xC4 =>
+            bitops::set_register_bit(cpu_state, Register::H, 0),
+        0xC5 =>
+            bitops::set_register_bit(cpu_state, Register::L, 0),
+        0xC6 =>
+            bitops::set_memory_bit(cpu_state, 0),
+        0xC7 =>
+            bitops::set_register_bit(cpu_state, Register::A, 0),
+        0xC8 =>
+            bitops::set_register_bit(cpu_state, Register::B, 1),
+        0xC9 =>
+            bitops::set_register_bit(cpu_state, Register::C, 1),
+        0xCA =>
+            bitops::set_register_bit(cpu_state, Register::D, 1),
+        0xCB =>
+            bitops::set_register_bit(cpu_state, Register::E, 1),
+        0xCC =>
+            bitops::set_register_bit(cpu_state, Register::H, 1),
+        0xCD =>
+            bitops::set_register_bit(cpu_state, Register::L, 1),
+        0xCE =>
+            bitops::set_memory_bit(cpu_state, 1),
+        0xCF =>
+            bitops::set_register_bit(cpu_state, Register::A, 1),
+        0xD0 =>
+            bitops::set_register_bit(cpu_state, Register::B, 2),
+        0xD1 =>
+            bitops::set_register_bit(cpu_state, Register::C, 2),
+        0xD2 =>
+            bitops::set_register_bit(cpu_state, Register::D, 2),
+        0xD3 =>
+            bitops::set_register_bit(cpu_state, Register::E, 2),
+        0xD4 =>
+            bitops::set_register_bit(cpu_state, Register::H, 2),
+        0xD5 =>
+            bitops::set_register_bit(cpu_state, Register::L, 2),
+        0xD6 =>
+            bitops::set_memory_bit(cpu_state, 2),
+        0xD7 =>
+            bitops::set_register_bit(cpu_state, Register::A, 2),
+        0xD8 =>
+            bitops::set_register_bit(cpu_state, Register::B, 3),
+        0xD9 =>
+            bitops::set_register_bit(cpu_state, Register::C, 3),
+        0xDA =>
+            bitops::set_register_bit(cpu_state, Register::D, 3),
+        0xDB =>
+            bitops::set_register_bit(cpu_state, Register::E, 3),
+        0xDC =>
+            bitops::set_register_bit(cpu_state, Register::H, 3),
+        0xDD =>
+            bitops::set_register_bit(cpu_state, Register::L, 3),
+        0xDE =>
+            bitops::set_memory_bit(cpu_state, 3),
+        0xDF =>
+            bitops::set_register_bit(cpu_state, Register::A, 3),
+        0xE0 =>
+            bitops::set_register_bit(cpu_state, Register::B, 4),
+        0xE1 =>
+            bitops::set_register_bit(cpu_state, Register::C, 4),
+        0xE2 =>
+            bitops::set_register_bit(cpu_state, Register::D, 4),
+        0xE3 =>
+            bitops::set_register_bit(cpu_state, Register::E, 4),
+        0xE4 =>
+            bitops::set_register_bit(cpu_state, Register::H, 4),
+        0xE5 =>
+            bitops::set_register_bit(cpu_state, Register::L, 4),
+        0xE6 =>
+            bitops::set_memory_bit(cpu_state, 4),
+        0xE7 =>
+            bitops::set_register_bit(cpu_state, Register::A, 4),
+        0xE8 =>
+            bitops::set_register_bit(cpu_state, Register::B, 5),
+        0xE9 =>
+            bitops::set_register_bit(cpu_state, Register::C, 5),
+        0xEA =>
+            bitops::set_register_bit(cpu_state, Register::D, 5),
+        0xEB =>
+            bitops::set_register_bit(cpu_state, Register::E, 5),
+        0xEC =>
+            bitops::set_register_bit(cpu_state, Register::H, 5),
+        0xED =>
+            bitops::set_register_bit(cpu_state, Register::L, 5),
+        0xEE =>
+            bitops::set_memory_bit(cpu_state, 5),
+        0xEF =>
+            bitops::set_register_bit(cpu_state, Register::A, 5),
+        0xF0 =>
+            bitops::set_register_bit(cpu_state, Register::B, 6),
+        0xF1 =>
+            bitops::set_register_bit(cpu_state, Register::C, 6),
+        0xF2 =>
+            bitops::set_register_bit(cpu_state, Register::D, 6),
+        0xF3 =>
+            bitops::set_register_bit(cpu_state, Register::E, 6),
+        0xF4 =>
+            bitops::set_register_bit(cpu_state, Register::H, 6),
+        0xF5 =>
+            bitops::set_register_bit(cpu_state, Register::L, 6),
+        0xF6 =>
+            bitops::set_memory_bit(cpu_state, 6),
+        0xF7 =>
+            bitops::set_register_bit(cpu_state, Register::A, 6),
+        0xF8 =>
+            bitops::set_register_bit(cpu_state, Register::B, 7),
+        0xF9 =>
+            bitops::set_register_bit(cpu_state, Register::C, 7),
+        0xFA =>
+            bitops::set_register_bit(cpu_state, Register::D, 7),
+        0xFB =>
+            bitops::set_register_bit(cpu_state, Register::E, 7),
+        0xFC =>
+            bitops::set_register_bit(cpu_state, Register::H, 7),
+        0xFD =>
+            bitops::set_register_bit(cpu_state, Register::L, 7),
+        0xFE =>
+            bitops::set_memory_bit(cpu_state, 7),
+        0xFF =>
+            bitops::set_register_bit(cpu_state, Register::A, 7),
     }
 }
 
