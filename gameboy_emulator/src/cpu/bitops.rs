@@ -110,3 +110,63 @@ pub fn swap_nibbles_in_memory_byte(cpu_state: &mut CpuState, address: u16) {
     let byte = microops::read_byte_from_memory(cpu_state, address);
     microops::store_byte_in_memory(cpu_state, address, swap_nibbles(byte));
 }
+
+fn shift_left(cpu_state: &mut CpuState, byte: u8) -> u8 {
+    let most_significant_bit = byte >> 7;
+    let shifted_value = byte << 1;
+    microops::set_flag_z(cpu_state, shifted_value == 0);
+    microops::set_flag_n(cpu_state, false);
+    microops::set_flag_h(cpu_state, false);
+    microops::set_flag_c(cpu_state, most_significant_bit == 0x01);
+    shifted_value
+}
+
+pub fn shift_register_left(cpu_state: &mut CpuState, register: Register) {
+    let byte = microops::read_from_register(cpu_state, &register);
+    let shifted_value = shift_left(cpu_state, byte);
+    microops::store_in_register(cpu_state, register, shifted_value);
+}
+
+pub fn shift_memory_byte_left(cpu_state: &mut CpuState) {
+    let address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
+    let byte = microops::read_byte_from_memory(cpu_state, address);
+    let shifted_value = shift_left(cpu_state, byte);
+    microops::store_byte_in_memory(cpu_state, address, shifted_value);
+}
+
+fn shift_right(cpu_state: &mut CpuState, byte: u8, maintain_msb: bool) -> u8 {
+    let least_significant_bit = byte & 0x1;
+    let updated_most_significant_bit = if maintain_msb { byte & 0x80 } else { 0 };
+    let shifted_value = byte >> 1 | updated_most_significant_bit;
+    microops::set_flag_z(cpu_state, shifted_value == 0);
+    microops::set_flag_n(cpu_state, false);
+    microops::set_flag_h(cpu_state, false);
+    microops::set_flag_c(cpu_state, least_significant_bit == 0x01);
+    shifted_value
+}
+
+pub fn shift_register_right_maintaining_msb(cpu_state: &mut CpuState, register: Register) {
+    let byte = microops::read_from_register(cpu_state, &register);
+    let shifted_value = shift_right(cpu_state, byte, true);
+    microops::store_in_register(cpu_state, register, shifted_value);
+}
+
+pub fn shift_memory_byte_right_maintaining_msb(cpu_state: &mut CpuState) {
+    let address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
+    let byte = microops::read_byte_from_memory(cpu_state, address);
+    let shifted_value = shift_right(cpu_state, byte, true);
+    microops::store_byte_in_memory(cpu_state, address, shifted_value);
+}
+
+pub fn shift_register_right(cpu_state: &mut CpuState, register: Register) {
+    let byte = microops::read_from_register(cpu_state, &register);
+    let shifted_value = shift_right(cpu_state, byte, false);
+    microops::store_in_register(cpu_state, register, shifted_value);
+}
+
+pub fn shift_memory_byte_right(cpu_state: &mut CpuState) {
+    let address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
+    let byte = microops::read_byte_from_memory(cpu_state, address);
+    let shifted_value = shift_right(cpu_state, byte, false);
+    microops::store_byte_in_memory(cpu_state, address, shifted_value);
+}

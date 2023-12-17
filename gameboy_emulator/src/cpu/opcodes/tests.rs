@@ -706,3 +706,69 @@ fn rotates_memory_location_hl_right_through_carry() {
     assert_eq!(cpu_state.registers.f, 0x10);
     assert_eq!(cpu_state.clock.total_clock_cycles, 16);
 }
+
+#[test]
+fn shifts_register_a_left() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x27]);
+    cpu_state.registers.a = 0xA7;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0x4E);
+    assert_eq!(cpu_state.registers.f, 0x10);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}
+
+#[test]
+fn shifts_memory_location_hl_left() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x26]);
+    cpu_state.registers.h = 0x1A;
+    cpu_state.registers.l = 0x51;
+    cpu_state.memory.rom[0x1A51] = 0xA7;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.memory.rom[0x1A51], 0x4E);
+    assert_eq!(cpu_state.registers.f, 0x10);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 16);
+}
+
+#[test]
+fn shifts_register_a_right_maintaining_msb() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x2F]);
+    cpu_state.registers.a = 0xA7;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0xD3);
+    assert_eq!(cpu_state.registers.f, 0x10);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}
+
+#[test]
+fn shifts_memory_location_hl_right_maintaining_msb() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x2E]);
+    cpu_state.registers.h = 0x1A;
+    cpu_state.registers.l = 0x51;
+    cpu_state.memory.rom[0x1A51] = 0xA7;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.memory.rom[0x1A51], 0xD3);
+    assert_eq!(cpu_state.registers.f, 0x10);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 16);
+}
+
+#[test]
+fn shifts_register_a_right() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x3F]);
+    cpu_state.registers.a = 0xA7;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.a, 0x53);
+    assert_eq!(cpu_state.registers.f, 0x10);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}
+
+#[test]
+fn shifts_memory_location_hl_right() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x3E]);
+    cpu_state.registers.h = 0x1A;
+    cpu_state.registers.l = 0x51;
+    cpu_state.memory.rom[0x1A51] = 0xA7;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.memory.rom[0x1A51], 0x53);
+    assert_eq!(cpu_state.registers.f, 0x10);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 16);
+}

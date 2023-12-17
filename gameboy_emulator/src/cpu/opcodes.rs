@@ -876,6 +876,38 @@ fn execute_cb_opcode(cpu_state: &mut CpuState) {
             bitops::rotate_memory_byte_right_through_carry(cpu_state),
         0x1F =>
             bitops::rotate_register_right_through_carry(cpu_state, Register::A),
+        0x20 =>
+            bitops::shift_register_left(cpu_state, Register::B),
+        0x21 =>
+            bitops::shift_register_left(cpu_state, Register::C),
+        0x22 =>
+            bitops::shift_register_left(cpu_state, Register::D),
+        0x23 =>
+            bitops::shift_register_left(cpu_state, Register::E),
+        0x24 =>
+            bitops::shift_register_left(cpu_state, Register::H),
+        0x25 =>
+            bitops::shift_register_left(cpu_state, Register::L),
+        0x26 =>
+            bitops::shift_memory_byte_left(cpu_state),
+        0x27 =>
+            bitops::shift_register_left(cpu_state, Register::A),
+        0x28 =>
+            bitops::shift_register_right_maintaining_msb(cpu_state, Register::B),
+        0x29 =>
+            bitops::shift_register_right_maintaining_msb(cpu_state, Register::C),
+        0x2A =>
+            bitops::shift_register_right_maintaining_msb(cpu_state, Register::D),
+        0x2B =>
+            bitops::shift_register_right_maintaining_msb(cpu_state, Register::E),
+        0x2C =>
+            bitops::shift_register_right_maintaining_msb(cpu_state, Register::H),
+        0x2D =>
+            bitops::shift_register_right_maintaining_msb(cpu_state, Register::L),
+        0x2E =>
+            bitops::shift_memory_byte_right_maintaining_msb(cpu_state),
+        0x2F =>
+            bitops::shift_register_right_maintaining_msb(cpu_state, Register::A),
         0x30 =>
             bitops::swap_nibbles_in_register(cpu_state, Register::B),
         0x31 =>
@@ -894,6 +926,22 @@ fn execute_cb_opcode(cpu_state: &mut CpuState) {
         },
         0x37 =>
             bitops::swap_nibbles_in_register(cpu_state, Register::A),
+        0x38 =>
+            bitops::shift_register_right(cpu_state, Register::B),
+        0x39 =>
+            bitops::shift_register_right(cpu_state, Register::C),
+        0x3A =>
+            bitops::shift_register_right(cpu_state, Register::D),
+        0x3B =>
+            bitops::shift_register_right(cpu_state, Register::E),
+        0x3C =>
+            bitops::shift_register_right(cpu_state, Register::H),
+        0x3D =>
+            bitops::shift_register_right(cpu_state, Register::L),
+        0x3E =>
+            bitops::shift_memory_byte_right(cpu_state),
+        0x3F =>
+            bitops::shift_register_right(cpu_state, Register::A),
         _ =>
             ()
     }
