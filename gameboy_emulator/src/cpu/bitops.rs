@@ -170,3 +170,22 @@ pub fn shift_memory_byte_right(cpu_state: &mut CpuState) {
     let shifted_value = shift_right(cpu_state, byte, false);
     microops::store_byte_in_memory(cpu_state, address, shifted_value);
 }
+
+fn test_bit(cpu_state: &mut CpuState, byte: u8, bit_index: u8) {
+    let mask = 1 << bit_index;
+    let bit_is_set = (mask & byte) > 0;
+    microops::set_flag_z(cpu_state, !bit_is_set);
+    microops::set_flag_n(cpu_state, false);
+    microops::set_flag_h(cpu_state, true);
+}
+
+pub fn test_register_bit(cpu_state: &mut CpuState, register: Register, bit_index: u8) {
+    let byte = microops::read_from_register(cpu_state, &register);
+    test_bit(cpu_state, byte, bit_index);
+}
+
+pub fn test_memory_bit(cpu_state: &mut CpuState, bit_index: u8) {
+    let address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
+    let byte = microops::read_byte_from_memory(cpu_state, address);
+    test_bit(cpu_state, byte, bit_index);
+}

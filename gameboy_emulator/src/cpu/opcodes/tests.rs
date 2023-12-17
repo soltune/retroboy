@@ -772,3 +772,75 @@ fn shifts_memory_location_hl_right() {
     assert_eq!(cpu_state.registers.f, 0x10);
     assert_eq!(cpu_state.clock.total_clock_cycles, 16);
 }
+
+#[test]
+fn test_bit_0_of_register_a() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x47]);
+    cpu_state.registers.a = 0xB5;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.f, 0x20);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}
+
+#[test]
+fn test_bit_1_of_register_a() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x4F]);
+    cpu_state.registers.a = 0xB5;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.f, 0xA0);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}
+
+#[test]
+fn test_bit_2_of_register_a() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x57]);
+    cpu_state.registers.a = 0xB5;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.f, 0x20);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}
+
+#[test]
+fn test_bit_3_of_register_a() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x5F]);
+    cpu_state.registers.a = 0xB5;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.f, 0xA0);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}
+
+#[test]
+fn test_bit_4_of_register_a() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x67]);
+    cpu_state.registers.a = 0xB5;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.f, 0x20);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}
+
+#[test]
+fn test_bit_5_of_register_a() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x6F]);
+    cpu_state.registers.a = 0xB5;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.f, 0x20);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}
+
+#[test]
+fn test_bit_6_of_register_a() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x77]);
+    cpu_state.registers.a = 0xB5;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.f, 0xA0);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}
+
+#[test]
+fn test_bit_7_of_register_a() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x7F]);
+    cpu_state.registers.a = 0xB5;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.f, 0x20);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}
