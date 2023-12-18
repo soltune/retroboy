@@ -92,6 +92,11 @@ pub fn set_flag_c(cpu_state: &mut CpuState, flag: bool) {
     }
 }
 
+pub fn is_z_flag_set(cpu_state: &mut CpuState) -> bool {
+    let value = read_from_register(cpu_state, &Register::F);
+    (value & 0x80) == 0x80
+}
+
 pub fn is_n_flag_set(cpu_state: &mut CpuState) -> bool {
     let value = read_from_register(cpu_state, &Register::F);
     (value & 0x40) == 0x40

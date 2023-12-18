@@ -65,6 +65,12 @@ fn handle_illegal_opcode(opcode: u8) {
     panic!("Encountered illegal opcode {:#04X}", opcode);
 }
 
+fn conditional_jump(cpu_state: &mut CpuState, new_address: u16, condition: bool) {
+    if condition {
+        cpu_state.registers.program_counter = new_address;
+    }   
+}
+
 pub fn execute_opcode(cpu_state: &mut CpuState) {
     let opcode = read_next_instruction_byte(cpu_state);
     match opcode {
@@ -686,6 +692,11 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         },
         0xC1 =>
             pop_word_into_register_pair_from_stack(cpu_state, REGISTER_BC),
+        0xC2 => {
+            let address = read_next_instruction_word(cpu_state);
+            let condition = !microops::is_z_flag_set(cpu_state);
+            conditional_jump(cpu_state, address, condition);
+        },
         0xC3 => {
             cpu_state.registers.program_counter = read_next_instruction_word(cpu_state);
         },
@@ -695,6 +706,11 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let value = read_next_instruction_byte(cpu_state);
             alu::add_value_to_register(cpu_state, Register::A, value);
         },
+        0xCA => {
+            let address = read_next_instruction_word(cpu_state);
+            let condition = microops::is_z_flag_set(cpu_state);
+            conditional_jump(cpu_state, address, condition);
+        },
         0xCB =>
             execute_cb_opcode(cpu_state),
         0xCE => {
@@ -703,6 +719,11 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         },
         0xD1 =>
             pop_word_into_register_pair_from_stack(cpu_state, REGISTER_DE),
+        0xD2 => {
+            let address = read_next_instruction_word(cpu_state);
+            let condition = !microops::is_c_flag_set(cpu_state);
+            conditional_jump(cpu_state, address, condition);
+        },
         0xD3 =>
             handle_illegal_opcode(opcode),
         0xD5 =>
@@ -710,6 +731,11 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         0xD6 => {
             let value = read_next_instruction_byte(cpu_state);
             alu::subtract_value_from_register(cpu_state, Register::A, value);
+        },
+        0xDA => {
+            let address = read_next_instruction_word(cpu_state);
+            let condition = microops::is_c_flag_set(cpu_state);
+            conditional_jump(cpu_state, address, condition);
         },
         0xDB =>
             handle_illegal_opcode(opcode),
