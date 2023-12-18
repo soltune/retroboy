@@ -4,6 +4,7 @@ use crate::cpu::alu;
 use crate::cpu::bitops;
 
 use super::alu::{increment_memory_byte, decrement_memory_byte, increment_register_pair, decrement_register_pair};
+use super::microops::read_from_register_pair;
 
 fn read_next_instruction_byte(cpu_state: &mut CpuState) -> u8 {
     let byte = microops::read_byte_from_memory(cpu_state, cpu_state.registers.program_counter);
@@ -771,6 +772,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             cpu_state.registers.stack_pointer = sum;
 
             microops::run_extra_machine_cycle(cpu_state);
+        },
+        0xE9 => {
+            let address = read_from_register_pair(cpu_state, &REGISTER_HL);
+            cpu_state.registers.program_counter = address;
         },
         0xEA => {
             let address = read_next_instruction_word(cpu_state);

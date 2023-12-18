@@ -1032,3 +1032,13 @@ fn jumps_to_address_nn_if_c_flag_is_set() {
     assert_eq!(cpu_state.registers.program_counter, 0x03);
     assert_eq!(cpu_state.clock.total_clock_cycles, 12);
 }
+
+#[test]
+fn jumps_to_address_hl() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xE9]);
+    cpu_state.registers.h = 0x4B;
+    cpu_state.registers.l = 0x51;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.program_counter, 0x4B51);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+}
