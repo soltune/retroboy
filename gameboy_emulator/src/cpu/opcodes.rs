@@ -135,6 +135,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             load_immediate_value(cpu_state, Register::D),
         0x17 =>
             bitops::rotate_register_left_through_carry(cpu_state, Register::A),
+        0x18 => {
+            let byte = read_next_instruction_byte(cpu_state);
+            cpu_state.registers.program_counter += byte as u16;
+        },
         0x1A => {
             let address = microops::read_from_register_pair(cpu_state,&REGISTER_DE);
             load_memory_byte_in_destination_register(cpu_state, address, Register::A)

@@ -1042,3 +1042,11 @@ fn jumps_to_address_hl() {
     assert_eq!(cpu_state.registers.program_counter, 0x4B51);
     assert_eq!(cpu_state.clock.total_clock_cycles, 4);
 }
+
+#[test]
+fn jumps_to_current_address_plus_n() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x18, 0x05]);
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.program_counter, 0x07);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}
