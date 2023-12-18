@@ -988,3 +988,11 @@ fn set_bit_7_of_register_a() {
     assert_eq!(cpu_state.registers.a, 0xB5);
     assert_eq!(cpu_state.clock.total_clock_cycles, 8);
 }
+
+#[test]
+fn jumps_to_address_nn() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xC3, 0xAA, 0x54]);
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.program_counter, 0x54AA);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+}

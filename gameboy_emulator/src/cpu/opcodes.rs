@@ -686,6 +686,9 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         },
         0xC1 =>
             pop_word_into_register_pair_from_stack(cpu_state, REGISTER_BC),
+        0xC3 => {
+            cpu_state.registers.program_counter = read_next_instruction_word(cpu_state);
+        },
         0xC5 =>
             push_register_pair_to_stack(cpu_state, REGISTER_BC),
         0xC6 => {
