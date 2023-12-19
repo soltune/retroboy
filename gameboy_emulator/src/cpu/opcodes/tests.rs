@@ -1050,3 +1050,39 @@ fn jumps_to_current_address_plus_n() {
     assert_eq!(cpu_state.registers.program_counter, 0x07);
     assert_eq!(cpu_state.clock.total_clock_cycles, 8);
 }
+
+#[test]
+fn jumps_to_curent_address_plus_n_if_z_flag_is_reset() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x20, 0x05]);
+    cpu_state.registers.f = 0x80;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.program_counter, 0x02);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}
+
+#[test]
+fn jumps_to_curent_address_plus_n_if_z_flag_is_set() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x28, 0x05]);
+    cpu_state.registers.f = 0x80;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.program_counter, 0x07);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}
+
+#[test]
+fn jumps_to_curent_address_plus_n_if_c_flag_is_reset() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x30, 0x05]);
+    cpu_state.registers.f = 0x80;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.program_counter, 0x07);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}
+
+#[test]
+fn jumps_to_curent_address_plus_n_if_c_flag_is_set() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x38, 0x05]);
+    cpu_state.registers.f = 0x80;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.program_counter, 0x02);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+}
