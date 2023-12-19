@@ -44,12 +44,16 @@ fn load_immediate_value_in_memory(cpu_state: &mut CpuState, register_pair: Regis
     microops::store_byte_in_memory(cpu_state, address, immediate_byte);
 }
 
-fn push_register_pair_to_stack(cpu_state: &mut CpuState, register_pair: RegisterPair) {
-    let word = microops::read_from_register_pair(cpu_state, &register_pair);
+fn push_word_to_stack(cpu_state: &mut CpuState, word: u16) {
     cpu_state.registers.stack_pointer = cpu_state.registers.stack_pointer - 1;
     microops::store_byte_in_memory(cpu_state, cpu_state.registers.stack_pointer, (word >> 8) as u8);
     cpu_state.registers.stack_pointer = cpu_state.registers.stack_pointer - 1;
     microops::store_byte_in_memory(cpu_state, cpu_state.registers.stack_pointer, (word & 0xFF) as u8);
+}
+
+fn push_register_pair_to_stack(cpu_state: &mut CpuState, register_pair: RegisterPair) {
+    let word = microops::read_from_register_pair(cpu_state, &register_pair);
+    push_word_to_stack(cpu_state, word);
     microops::run_extra_machine_cycle(cpu_state);
 }
 
@@ -738,6 +742,12 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         },
         0xCB =>
             execute_cb_opcode(cpu_state),
+        0xCD => {
+            let word = read_next_instruction_word(cpu_state);
+            push_word_to_stack(cpu_state, cpu_state.registers.program_counter);
+            cpu_state.registers.program_counter = word;
+            microops::run_extra_machine_cycle(cpu_state);
+        },
         0xCE => {
             let value = read_next_instruction_byte(cpu_state);
             alu::add_value_and_carry_to_register(cpu_state, Register::A, value);

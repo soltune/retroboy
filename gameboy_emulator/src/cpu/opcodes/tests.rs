@@ -1086,3 +1086,15 @@ fn jumps_to_curent_address_plus_n_if_c_flag_is_set() {
     assert_eq!(cpu_state.registers.program_counter, 0x02);
     assert_eq!(cpu_state.clock.total_clock_cycles, 8);
 }
+
+#[test]
+fn calls_address_nn() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCD, 0x4A, 0x51]);
+    cpu_state.registers.stack_pointer = 0x2112;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.memory.rom[0x2111], 0x00);
+    assert_eq!(cpu_state.memory.rom[0x2110], 0x03);
+    assert_eq!(cpu_state.registers.stack_pointer, 0x2110);
+    assert_eq!(cpu_state.registers.program_counter, 0x514A);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 24);
+}
