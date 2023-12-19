@@ -1098,3 +1098,55 @@ fn calls_address_nn() {
     assert_eq!(cpu_state.registers.program_counter, 0x514A);
     assert_eq!(cpu_state.clock.total_clock_cycles, 24);
 }
+
+#[test]
+fn calls_address_nn_if_z_flag_is_reset() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xC4, 0x4A, 0x51]);
+    cpu_state.registers.stack_pointer = 0x2112;
+    cpu_state.registers.f = 0x80;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.memory.rom[0x2111], 0x00);
+    assert_eq!(cpu_state.memory.rom[0x2110], 0x00);
+    assert_eq!(cpu_state.registers.stack_pointer, 0x2112);
+    assert_eq!(cpu_state.registers.program_counter, 0x03);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+}
+
+#[test]
+fn calls_address_nn_if_z_flag_is_set() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCC, 0x4A, 0x51]);
+    cpu_state.registers.stack_pointer = 0x2112;
+    cpu_state.registers.f = 0x80;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.memory.rom[0x2111], 0x00);
+    assert_eq!(cpu_state.memory.rom[0x2110], 0x03);
+    assert_eq!(cpu_state.registers.stack_pointer, 0x2110);
+    assert_eq!(cpu_state.registers.program_counter, 0x514A);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 24);
+}
+
+#[test]
+fn calls_address_nn_if_c_flag_is_reset() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xD4, 0x4A, 0x51]);
+    cpu_state.registers.stack_pointer = 0x2112;
+    cpu_state.registers.f = 0x80;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.memory.rom[0x2111], 0x00);
+    assert_eq!(cpu_state.memory.rom[0x2110], 0x03);
+    assert_eq!(cpu_state.registers.stack_pointer, 0x2110);
+    assert_eq!(cpu_state.registers.program_counter, 0x514A);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 24);
+}
+
+#[test]
+fn calls_address_nn_if_c_flag_is_set() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xDC, 0x4A, 0x51]);
+    cpu_state.registers.stack_pointer = 0x2112;
+    cpu_state.registers.f = 0x80;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.memory.rom[0x2111], 0x00);
+    assert_eq!(cpu_state.memory.rom[0x2110], 0x00);
+    assert_eq!(cpu_state.registers.stack_pointer, 0x2112);
+    assert_eq!(cpu_state.registers.program_counter, 0x03);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+}
