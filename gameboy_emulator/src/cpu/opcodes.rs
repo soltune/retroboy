@@ -57,12 +57,16 @@ fn push_register_pair_to_stack(cpu_state: &mut CpuState, register_pair: Register
     push_word_to_stack(cpu_state, word);
 }
 
-fn pop_word_into_register_pair_from_stack(cpu_state: &mut CpuState, register_pair: RegisterPair) {
+fn pop_word_from_stack(cpu_state: &mut CpuState) -> u16 {
     let first_byte = microops::read_byte_from_memory(cpu_state, cpu_state.registers.stack_pointer) as u16;
     cpu_state.registers.stack_pointer = cpu_state.registers.stack_pointer + 1;
     let second_byte = microops::read_byte_from_memory(cpu_state, cpu_state.registers.stack_pointer) as u16;
     cpu_state.registers.stack_pointer = cpu_state.registers.stack_pointer + 1;
-    let word = (second_byte << 8) + first_byte;
+    (second_byte << 8) + first_byte
+}
+
+fn pop_word_into_register_pair_from_stack(cpu_state: &mut CpuState, register_pair: RegisterPair) {
+    let word = pop_word_from_stack(cpu_state);
     microops::store_in_register_pair(cpu_state, register_pair, word);
 }
 
@@ -719,6 +723,15 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let value = microops::read_from_register(cpu_state, &Register::A);
             alu::compare_value_with_register(cpu_state, Register::A, value);
         },
+        0xC0 => {
+            let condition = !microops::is_z_flag_set(cpu_state);
+            if condition {
+                let word = pop_word_from_stack(cpu_state);
+                cpu_state.registers.program_counter = word;
+                microops::run_extra_machine_cycle(cpu_state);
+            }
+            microops::run_extra_machine_cycle(cpu_state);
+        },
         0xC1 =>
             pop_word_into_register_pair_from_stack(cpu_state, REGISTER_BC),
         0xC2 => {
@@ -742,6 +755,24 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         0xC6 => {
             let value = read_next_instruction_byte(cpu_state);
             alu::add_value_to_register(cpu_state, Register::A, value);
+        },
+        0xC7 => {
+            push_word_to_stack(cpu_state, cpu_state.registers.program_counter);
+            cpu_state.registers.program_counter = 0x0;
+        },
+        0xC8 => {
+            let condition = microops::is_z_flag_set(cpu_state);
+            if condition {
+                let word = pop_word_from_stack(cpu_state);
+                cpu_state.registers.program_counter = word;
+                microops::run_extra_machine_cycle(cpu_state);
+            }
+            microops::run_extra_machine_cycle(cpu_state);
+        },
+        0xC9 => {
+            let word = pop_word_from_stack(cpu_state);
+            cpu_state.registers.program_counter = word;
+            microops::run_extra_machine_cycle(cpu_state);
         },
         0xCA => {
             let address = read_next_instruction_word(cpu_state);
@@ -767,6 +798,19 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let value = read_next_instruction_byte(cpu_state);
             alu::add_value_and_carry_to_register(cpu_state, Register::A, value);
         },
+        0xCF => {
+            push_word_to_stack(cpu_state, cpu_state.registers.program_counter);
+            cpu_state.registers.program_counter = 0x08;
+        },
+        0xD0 => {
+            let condition = !microops::is_c_flag_set(cpu_state);
+            if condition {
+                let word = pop_word_from_stack(cpu_state);
+                cpu_state.registers.program_counter = word;
+                microops::run_extra_machine_cycle(cpu_state);
+            }
+            microops::run_extra_machine_cycle(cpu_state);
+        },
         0xD1 =>
             pop_word_into_register_pair_from_stack(cpu_state, REGISTER_DE),
         0xD2 => {
@@ -790,6 +834,19 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let value = read_next_instruction_byte(cpu_state);
             alu::subtract_value_from_register(cpu_state, Register::A, value);
         },
+        0xD7 => {
+            push_word_to_stack(cpu_state, cpu_state.registers.program_counter);
+            cpu_state.registers.program_counter = 0x10;
+        },
+        0xD8 => {
+            let condition = microops::is_c_flag_set(cpu_state);
+            if condition {
+                let word = pop_word_from_stack(cpu_state);
+                cpu_state.registers.program_counter = word;
+                microops::run_extra_machine_cycle(cpu_state);
+            }
+            microops::run_extra_machine_cycle(cpu_state);
+        },
         0xDA => {
             let address = read_next_instruction_word(cpu_state);
             let condition = microops::is_c_flag_set(cpu_state);
@@ -804,7 +861,11 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
                 push_word_to_stack(cpu_state, cpu_state.registers.program_counter);
                 cpu_state.registers.program_counter = word;
             }
-        }
+        },
+        0xDF => {
+            push_word_to_stack(cpu_state, cpu_state.registers.program_counter);
+            cpu_state.registers.program_counter = 0x18;
+        },
         0xE0 => {
             let address = 0xFF00 + read_next_instruction_byte(cpu_state) as u16;
             load_source_register_in_memory(cpu_state, Register::A, address);
@@ -824,6 +885,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         0xE6 => {
             let value = read_next_instruction_byte(cpu_state);
             alu::logical_and_with_register(cpu_state, Register::A, value);
+        },
+        0xE7 => {
+            push_word_to_stack(cpu_state, cpu_state.registers.program_counter);
+            cpu_state.registers.program_counter = 0x20;
         },
         0xE8 => {
             let signed_byte = read_next_instruction_byte(cpu_state) as i8;
@@ -856,6 +921,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let value = read_next_instruction_byte(cpu_state);
             alu::logical_xor_with_register(cpu_state, Register::A, value);
         },
+        0xEF => {
+            push_word_to_stack(cpu_state, cpu_state.registers.program_counter);
+            cpu_state.registers.program_counter = 0x28;
+        },
         0xF0 => {
             let address = 0xFF00 + read_next_instruction_byte(cpu_state) as u16;
             load_memory_byte_in_destination_register(cpu_state, address, Register::A);
@@ -873,6 +942,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         0xF6 => {
             let value = read_next_instruction_byte(cpu_state);
             alu::logical_or_with_register(cpu_state, Register::A, value);
+        },
+        0xF7 => {
+            push_word_to_stack(cpu_state, cpu_state.registers.program_counter);
+            cpu_state.registers.program_counter = 0x30;
         },
         0xF8 => {
             let signed_byte = read_next_instruction_byte(cpu_state) as i8;
@@ -902,6 +975,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         0xFE => {
             let value = read_next_instruction_byte(cpu_state);
             alu::compare_value_with_register(cpu_state, Register::A, value);
+        },
+        0xFF => {
+            push_word_to_stack(cpu_state, cpu_state.registers.program_counter);
+            cpu_state.registers.program_counter = 0x38;
         },
         _ =>
             ()
