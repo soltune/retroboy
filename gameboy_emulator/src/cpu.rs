@@ -73,7 +73,24 @@ pub fn load_rom_by_filepath(cpu_state: &mut CpuState, filepath: &str) -> io::Res
     mmu::load_rom_by_filepath(&mut cpu_state.memory, filepath)
 }
 
+pub fn read_next_instruction_byte(cpu_state: &mut CpuState) -> u8 {
+    let byte = microops::read_byte_from_memory(cpu_state, cpu_state.registers.program_counter);
+    cpu_state.registers.program_counter += 1;
+    byte
+}
+
+pub fn read_next_instruction_word(cpu_state: &mut CpuState) -> u16 {
+    let word = microops::read_word_from_memory(cpu_state, cpu_state.registers.program_counter);
+    cpu_state.registers.program_counter += 2;
+    word
+}
+
+pub fn handle_illegal_opcode(opcode: u8) {
+    panic!("Encountered illegal opcode {:#04X}", opcode);
+}
+
 mod microops;
 mod alu;
 mod bitops;
+mod loads;
 pub mod opcodes;
