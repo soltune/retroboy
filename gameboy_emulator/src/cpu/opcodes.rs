@@ -113,36 +113,8 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             alu::decrement_register(cpu_state, Register::H),
         0x26 =>
             loads::load_immediate_value(cpu_state, Register::H),
-        0x27 => {
-            let c_flag = microops::is_c_flag_set(cpu_state);
-            let n_flag = microops::is_n_flag_set(cpu_state);
-            let h_flag = microops::is_h_flag_set(cpu_state);
-
-            let mut value = microops::read_from_register(cpu_state, &Register::A);
-
-            if n_flag {
-                if c_flag {
-                    value = value.wrapping_sub(0x60);
-                }
-                if h_flag {
-                    value = value.wrapping_sub(0x6);
-                }
-            }
-            else {
-                if c_flag || value > 0x99 {
-                    value = value.wrapping_add(0x60);
-                    microops::set_flag_c(cpu_state, true);
-                }
-                if h_flag || (value & 0xF) > 0x9 {
-                    value = value.wrapping_add(0x6);
-                }
-            }
-
-            microops::store_in_register(cpu_state, Register::A, value);
-
-            microops::set_flag_z(cpu_state, value == 0);
-            microops::set_flag_h(cpu_state, false);
-        },
+        0x27 =>
+            alu::bcd_adjust(cpu_state),
         0x28 =>
             jumps::conditional_relative_jump(cpu_state, microops::is_z_flag_set(cpu_state)),
         0x29 => {

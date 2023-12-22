@@ -156,3 +156,34 @@ pub fn decrement_register_pair(cpu_state: &mut CpuState, register_pair: Register
     microops::store_in_register_pair(cpu_state, register_pair, sum);
     microops::run_extra_machine_cycle(cpu_state);
 }
+
+pub fn bcd_adjust(cpu_state: &mut CpuState) {
+    let c_flag = microops::is_c_flag_set(cpu_state);
+    let n_flag = microops::is_n_flag_set(cpu_state);
+    let h_flag = microops::is_h_flag_set(cpu_state);
+
+    let mut value = microops::read_from_register(cpu_state, &Register::A);
+
+    if n_flag {
+        if c_flag {
+            value = value.wrapping_sub(0x60);
+        }
+        if h_flag {
+            value = value.wrapping_sub(0x6);
+        }
+    }
+    else {
+        if c_flag || value > 0x99 {
+            value = value.wrapping_add(0x60);
+            microops::set_flag_c(cpu_state, true);
+        }
+        if h_flag || (value & 0xF) > 0x9 {
+            value = value.wrapping_add(0x6);
+        }
+    }
+
+    microops::store_in_register(cpu_state, Register::A, value);
+
+    microops::set_flag_z(cpu_state, value == 0);
+    microops::set_flag_h(cpu_state, false);
+}
