@@ -5,13 +5,8 @@ use crate::cpu::bitops;
 use crate::cpu::loads;
 
 use super::alu::{increment_memory_byte, decrement_memory_byte, increment_register_pair, decrement_register_pair};
+use super::jumps::{conditional_relative_jump, conditional_jump_using_immediate_word};
 use super::microops::read_from_register_pair;
-
-fn conditional_jump(cpu_state: &mut CpuState, new_address: u16, condition: bool) {
-    if condition {
-        cpu_state.registers.program_counter = new_address;
-    }   
-}
 
 pub fn execute_opcode(cpu_state: &mut CpuState) {
     let opcode = read_next_instruction_byte(cpu_state);
@@ -98,11 +93,8 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             loads::load_immediate_value(cpu_state, Register::E),
         0x1F =>
             bitops::rotate_register_right_through_carry(cpu_state, Register::A),
-        0x20 => {
-            let byte = read_next_instruction_byte(cpu_state) as u16;
-            let condition = !microops::is_z_flag_set(cpu_state);
-            conditional_jump(cpu_state, cpu_state.registers.program_counter + byte, condition);
-        },
+        0x20 =>
+            conditional_relative_jump(cpu_state, !microops::is_z_flag_set(cpu_state)),
         0x21 => {
             let word = read_next_instruction_word(cpu_state);
             microops::store_in_register_pair(cpu_state, REGISTER_HL, word);
@@ -151,11 +143,8 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             microops::set_flag_z(cpu_state, value == 0);
             microops::set_flag_h(cpu_state, false);
         },
-        0x28 => {
-            let byte = read_next_instruction_byte(cpu_state) as u16;
-            let condition = microops::is_z_flag_set(cpu_state);
-            conditional_jump(cpu_state, cpu_state.registers.program_counter + byte, condition);
-        },
+        0x28 =>
+            conditional_relative_jump(cpu_state, microops::is_z_flag_set(cpu_state)),
         0x29 => {
             let word = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
             alu::add_value_to_register_pair(cpu_state, REGISTER_HL, word);
@@ -179,11 +168,8 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             microops::set_flag_n(cpu_state, true);
             microops::set_flag_h(cpu_state, true);
         },
-        0x30 => {
-            let byte = read_next_instruction_byte(cpu_state) as u16;
-            let condition = !microops::is_c_flag_set(cpu_state);
-            conditional_jump(cpu_state, cpu_state.registers.program_counter + byte, condition);
-        },
+        0x30 =>
+            conditional_relative_jump(cpu_state, !microops::is_c_flag_set(cpu_state)),
         0x31 => {
             let word = read_next_instruction_word(cpu_state);
             cpu_state.registers.stack_pointer = word;            
@@ -209,11 +195,8 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             microops::set_flag_h(cpu_state, false);
             microops::set_flag_n(cpu_state, false);
         },
-        0x38 => {
-            let byte = read_next_instruction_byte(cpu_state) as u16;
-            let condition = microops::is_c_flag_set(cpu_state);
-            conditional_jump(cpu_state, cpu_state.registers.program_counter + byte, condition);
-        },
+        0x38 =>
+            conditional_relative_jump(cpu_state, microops::is_c_flag_set(cpu_state)),
         0x39 =>
             alu::add_value_to_register_pair(cpu_state, REGISTER_HL, cpu_state.registers.stack_pointer),
         0x3A => {
@@ -667,11 +650,8 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         },
         0xC1 =>
             loads::pop_word_into_register_pair_from_stack(cpu_state, REGISTER_BC),
-        0xC2 => {
-            let address = read_next_instruction_word(cpu_state);
-            let condition = !microops::is_z_flag_set(cpu_state);
-            conditional_jump(cpu_state, address, condition);
-        },
+        0xC2 =>
+            conditional_jump_using_immediate_word(cpu_state, !microops::is_z_flag_set(cpu_state)),
         0xC3 => {
             cpu_state.registers.program_counter = read_next_instruction_word(cpu_state);
         },
@@ -707,11 +687,8 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             cpu_state.registers.program_counter = word;
             microops::run_extra_machine_cycle(cpu_state);
         },
-        0xCA => {
-            let address = read_next_instruction_word(cpu_state);
-            let condition = microops::is_z_flag_set(cpu_state);
-            conditional_jump(cpu_state, address, condition);
-        },
+        0xCA =>
+            conditional_jump_using_immediate_word(cpu_state, microops::is_z_flag_set(cpu_state)),
         0xCB =>
             execute_cb_opcode(cpu_state),
         0xCC => {
@@ -746,11 +723,8 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         },
         0xD1 =>
             loads::pop_word_into_register_pair_from_stack(cpu_state, REGISTER_DE),
-        0xD2 => {
-            let address = read_next_instruction_word(cpu_state);
-            let condition = !microops::is_c_flag_set(cpu_state);
-            conditional_jump(cpu_state, address, condition);
-        },
+        0xD2 =>
+            conditional_jump_using_immediate_word(cpu_state, !microops::is_c_flag_set(cpu_state)),
         0xD3 =>
             handle_illegal_opcode(opcode),
         0xD4 => {
@@ -780,11 +754,8 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             }
             microops::run_extra_machine_cycle(cpu_state);
         },
-        0xDA => {
-            let address = read_next_instruction_word(cpu_state);
-            let condition = microops::is_c_flag_set(cpu_state);
-            conditional_jump(cpu_state, address, condition);
-        },
+        0xDA =>
+            conditional_jump_using_immediate_word(cpu_state, microops::is_c_flag_set(cpu_state)),
         0xDB =>
             handle_illegal_opcode(opcode),
         0xDC => {

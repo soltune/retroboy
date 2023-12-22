@@ -94,4 +94,5 @@ mod microops;
 mod alu;
 mod bitops;
 mod loads;
+mod jumps;
 pub mod opcodes;

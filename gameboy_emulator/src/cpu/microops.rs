@@ -23,7 +23,7 @@ pub fn store_word_in_memory(cpu_state: &mut CpuState, address: u16, word: u16) {
     cpu_state.clock.total_clock_cycles += 8;
 }
 
-pub fn read_from_register(cpu_state: &mut CpuState, register: &Register) -> u8 {
+pub fn read_from_register(cpu_state: &CpuState, register: &Register) -> u8 {
     match register {
         Register::A => cpu_state.registers.a,
         Register::B => cpu_state.registers.b,
@@ -92,22 +92,22 @@ pub fn set_flag_c(cpu_state: &mut CpuState, flag: bool) {
     }
 }
 
-pub fn is_z_flag_set(cpu_state: &mut CpuState) -> bool {
+pub fn is_z_flag_set(cpu_state: &CpuState) -> bool {
     let value = read_from_register(cpu_state, &Register::F);
     (value & 0x80) == 0x80
 }
 
-pub fn is_n_flag_set(cpu_state: &mut CpuState) -> bool {
+pub fn is_n_flag_set(cpu_state: &CpuState) -> bool {
     let value = read_from_register(cpu_state, &Register::F);
     (value & 0x40) == 0x40
 }
 
-pub fn is_h_flag_set(cpu_state: &mut CpuState) -> bool {
+pub fn is_h_flag_set(cpu_state: &CpuState) -> bool {
     let value = read_from_register(cpu_state, &Register::F);
     (value & 0x20) == 0x20
 }
 
-pub fn is_c_flag_set(cpu_state: &mut CpuState) -> bool {
+pub fn is_c_flag_set(cpu_state: &CpuState) -> bool {
     let value = read_from_register(cpu_state, &Register::F);
     (value & 0x10) == 0x10
 }
