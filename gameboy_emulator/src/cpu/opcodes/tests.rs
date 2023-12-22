@@ -1229,3 +1229,17 @@ fn returns_from_call_if_c_flag_is_set() {
     assert_eq!(cpu_state.registers.stack_pointer, 0x2110);
     assert_eq!(cpu_state.clock.total_clock_cycles, 8);
 }
+
+#[test]
+fn halts_the_cpu() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x76, 0x15]);
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.program_counter, 0x0);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.program_counter, 0x0);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.program_counter, 0x0);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+}

@@ -12,7 +12,7 @@ pub struct Registers {
     l: u8,
     f: u8,
     program_counter: u16,
-    stack_pointer: u16,
+    stack_pointer: u16
 }
 
 #[derive(Debug)]
@@ -24,7 +24,9 @@ pub struct Clock {
 pub struct CpuState {
     pub registers: Registers,
     pub clock: Clock,
-    pub memory: mmu::Memory
+    pub memory: mmu::Memory,
+    pub halted: bool,
+    pub ime: bool
 }
 
 pub enum Register {
@@ -65,7 +67,9 @@ pub fn initialize_cpu_state() -> CpuState {
         clock: Clock {
             total_clock_cycles: 0,
         },
-        memory: mmu::initialize_memory()
+        memory: mmu::initialize_memory(),
+        halted: false,
+        ime: false
     }
 }
 

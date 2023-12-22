@@ -322,6 +322,11 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
             loads::load_source_register_in_memory(cpu_state, Register::L, address);
         },
+        0x76 => {
+            // TODO: When interrupt occurs, we need to get out of halt mode.
+            cpu_state.halted = true;
+            cpu_state.registers.program_counter -= 1;
+        },
         0x77 => {
             let address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
             loads::load_source_register_in_memory(cpu_state, Register::A, address);
