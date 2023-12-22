@@ -69,8 +69,9 @@ pub fn initialize_cpu_state() -> CpuState {
     }
 }
 
-pub fn load_rom_by_filepath(cpu_state: &mut CpuState, filepath: &str) -> io::Result<()> {
-    mmu::load_rom_by_filepath(&mut cpu_state.memory, filepath)
+pub fn load_rom_by_filepath(cpu_state: CpuState, filepath: &str) -> io::Result<CpuState> {
+    let loaded_memory = mmu::load_rom_by_filepath(cpu_state.memory, filepath)?;
+    Ok(CpuState { memory: loaded_memory, ..cpu_state })
 }
 
 pub fn read_next_instruction_byte(cpu_state: &mut CpuState) -> u8 {

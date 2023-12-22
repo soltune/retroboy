@@ -2,13 +2,13 @@ use crate::mmu;
 use crate::cpu::{Register, RegisterPair, CpuState};
 
 pub fn read_byte_from_memory(cpu_state: &mut CpuState, address: u16) -> u8 {
-    let byte = mmu::read_byte(&mut cpu_state.memory, address);
+    let byte = mmu::read_byte(&cpu_state.memory, address);
     cpu_state.clock.total_clock_cycles += 4;
     byte
 }
 
 pub fn read_word_from_memory(cpu_state: &mut CpuState, address: u16) -> u16 {
-    let word = mmu::read_word(&mut cpu_state.memory, address);
+    let word = mmu::read_word(&cpu_state.memory, address);
     cpu_state.clock.total_clock_cycles += 8;
     word
 }

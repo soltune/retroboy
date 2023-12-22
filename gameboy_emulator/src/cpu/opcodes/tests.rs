@@ -5,8 +5,8 @@ use crate::mmu;
 fn init_cpu_with_test_instructions(test_instructions: Vec<u8>) -> cpu::CpuState {
     let mut cpu_state = cpu::initialize_cpu_state();
     cpu_state.memory.in_bios = false;
-    mmu::load_rom_buffer(&mut cpu_state.memory, test_instructions);
-    cpu_state
+    let updated_memory = mmu::load_rom_buffer(cpu_state.memory, test_instructions);
+    cpu::CpuState { memory: updated_memory, ..cpu_state }
 }
 
 #[test]
