@@ -12,7 +12,9 @@ pub struct Memory {
     pub object_attribute_memory: [u8; 0xa0],
     pub working_ram: [u8; 0x3e00],
     pub external_ram: [u8; 0x2000],
-    pub zero_page_ram: [u8; 0x80]
+    pub zero_page_ram: [u8; 0x80],
+    pub interrupts_enabled: u8,
+    pub interrupt_flags: u8
 }
 
 pub enum MemoryLocation {
@@ -23,6 +25,8 @@ pub enum MemoryLocation {
     WorkingRam,
     ExternalRam,
     ZeroPageRam,
+    InterruptsEnabledRegister,
+    InterruptFlagsRegister,
     Forbidden
 }
 
@@ -35,7 +39,9 @@ pub fn initialize_memory() -> Memory {
         object_attribute_memory: [0; 0xa0],
         working_ram: [0; 0x3e00],
         external_ram: [0; 0x2000],
-        zero_page_ram: [0; 0x80]
+        zero_page_ram: [0; 0x80],
+        interrupts_enabled: 0,
+        interrupt_flags: 0
     }
 }
 
@@ -50,8 +56,12 @@ fn get_memory_location(address: u16, in_bios: bool) -> (MemoryLocation, u16) {
         0xF000 => match address & 0x0F00 {
             0x000..=0xD00 => (MemoryLocation::WorkingRam, address & 0x1FFF),
             0xE00 if address < 0xFEA0 => (MemoryLocation::ObjectAttributeMemory, address & 0xFF),
+            0xF00 if address == 0xFFFF => (MemoryLocation::InterruptsEnabledRegister, address),
             0xF00 if address >= 0xFF80 => (MemoryLocation::ZeroPageRam, address & 0x7F),
-            _ => (MemoryLocation::Forbidden, address),
+            _ => match address & 0x00F0 {
+                0x00 if (address == 0xFF0F) => (MemoryLocation::InterruptFlagsRegister, address),
+                _ => (MemoryLocation::Forbidden, address)
+            }
         },
         _ => (MemoryLocation::Forbidden, address),
     }
@@ -74,6 +84,10 @@ pub fn read_byte(memory: &Memory, address: u16) -> u8 {
             memory.external_ram[localized_address as usize],
         MemoryLocation::ZeroPageRam =>
             memory.zero_page_ram[localized_address as usize],
+        MemoryLocation::InterruptsEnabledRegister =>
+            memory.interrupts_enabled,
+        MemoryLocation::InterruptFlagsRegister =>
+            memory.interrupt_flags,
         MemoryLocation::Forbidden =>
             0x00
     }
@@ -96,6 +110,10 @@ pub fn write_byte(memory: &mut Memory, address: u16, value: u8) {
             memory.external_ram[localized_address as usize] = value,
         MemoryLocation::ZeroPageRam =>
             memory.zero_page_ram[localized_address as usize] = value,
+        MemoryLocation::InterruptsEnabledRegister =>
+            memory.interrupts_enabled = value,
+        MemoryLocation::InterruptFlagsRegister =>
+            memory.interrupt_flags = value,
         MemoryLocation::Forbidden =>
             ()
     }

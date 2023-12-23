@@ -44,6 +44,9 @@ fn setup_test_memory_data() -> Memory {
     memory.zero_page_ram[0x21] = 0x44;
     memory.zero_page_ram[0x5B] = 0x5F;
 
+    memory.interrupts_enabled = 0x1F;
+    memory.interrupt_flags = 0xA;
+
     memory.in_bios = false;
 
     memory
@@ -120,6 +123,18 @@ fn reads_zero_values_outside_of_object_attribute_memory() {
 fn reads_from_zero_page_ram() {
     let memory = setup_test_memory_data();
     assert_eq!(read_byte(&memory, 0xFFA0), 0xBB);
+}
+
+#[test]
+fn reads_from_interrupts_enabled_register() {
+    let memory: Memory = setup_test_memory_data();
+    assert_eq!(read_byte(&memory, 0xFFFF), 0x1F);
+}
+
+#[test]
+fn reads_from_interrupt_flags_register() {
+    let memory: Memory = setup_test_memory_data();
+    assert_eq!(read_byte(&memory, 0xFF0F), 0xA);
 }
 
 #[test]
