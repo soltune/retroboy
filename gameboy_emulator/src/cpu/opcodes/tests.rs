@@ -1243,3 +1243,51 @@ fn halts_the_cpu() {
     assert_eq!(cpu_state.registers.program_counter, 0x0);
     assert_eq!(cpu_state.clock.total_clock_cycles, 12);
 }
+
+#[test]
+fn enables_interrupts() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xFB, 0x00, 0x00, 0x00]);
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.interrupts.enable_delay, 2);
+    assert_eq!(cpu_state.interrupts.enabled, false);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.interrupts.enable_delay, 1);
+    assert_eq!(cpu_state.interrupts.enabled, false);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.interrupts.enable_delay, 0);
+    assert_eq!(cpu_state.interrupts.enabled, true);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+}
+
+#[test]
+fn disables_interrupts() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xF3, 0x00, 0x00, 0x00]);
+    cpu_state.interrupts.enabled = true;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.interrupts.disable_delay, 2);
+    assert_eq!(cpu_state.interrupts.enabled, true);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.interrupts.disable_delay, 1);
+    assert_eq!(cpu_state.interrupts.enabled, true);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.interrupts.disable_delay, 0);
+    assert_eq!(cpu_state.interrupts.enabled, false);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+}
+
+#[test]
+fn returns_from_call_then_enables_interrupts() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xD9]);
+    cpu_state.registers.stack_pointer = 0x2110;
+    cpu_state.memory.rom[0x2111] = 0xB1;
+    cpu_state.memory.rom[0x2110] = 0xDD;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.program_counter, 0xB1DD);
+    assert_eq!(cpu_state.registers.stack_pointer, 0x2112);
+    assert_eq!(cpu_state.interrupts.enabled, true);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 16);
+}

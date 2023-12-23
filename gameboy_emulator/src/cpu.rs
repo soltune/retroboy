@@ -21,12 +21,19 @@ pub struct Clock {
 }
 
 #[derive(Debug)]
+pub struct Interrupts {
+    enable_delay: u8,
+    disable_delay: u8,
+    enabled: bool
+}
+
+#[derive(Debug)]
 pub struct CpuState {
     pub registers: Registers,
     pub clock: Clock,
     pub memory: mmu::Memory,
     pub halted: bool,
-    pub ime: bool
+    pub interrupts: Interrupts
 }
 
 pub enum Register {
@@ -69,7 +76,11 @@ pub fn initialize_cpu_state() -> CpuState {
         },
         memory: mmu::initialize_memory(),
         halted: false,
-        ime: false
+        interrupts: Interrupts {
+            enable_delay: 0,
+            disable_delay: 0,
+            enabled: false
+        }
     }
 }
 

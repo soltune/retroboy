@@ -7,6 +7,20 @@ use crate::cpu::loads;
 
 pub fn execute_opcode(cpu_state: &mut CpuState) {
     let opcode = read_next_instruction_byte(cpu_state);
+
+    if cpu_state.interrupts.enable_delay > 0 {
+        if cpu_state.interrupts.enable_delay == 1 {
+            cpu_state.interrupts.enabled = true;
+        }
+        cpu_state.interrupts.enable_delay -= 1;
+    }
+    else if cpu_state.interrupts.disable_delay > 0 {
+        if cpu_state.interrupts.disable_delay == 1 {
+            cpu_state.interrupts.enabled = false;
+        }
+        cpu_state.interrupts.disable_delay -= 1;
+    }
+
     match opcode {
         0x00 =>
             (),
@@ -670,6 +684,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             jumps::restart(cpu_state, 0x10),
         0xD8 =>
             jumps::conditional_stack_return(cpu_state, microops::is_c_flag_set(cpu_state)),
+        0xD9 => {
+            jumps::stack_return(cpu_state);
+            cpu_state.interrupts.enabled = true;
+        },
         0xDA =>
             jumps::conditional_jump_using_immediate_word(cpu_state, microops::is_c_flag_set(cpu_state)),
         0xDB =>
@@ -743,6 +761,9 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             let address = 0xFF00 + microops::read_from_register(cpu_state, &Register::C) as u16;
             loads::load_memory_byte_in_destination_register(cpu_state, address, Register::A);
         },
+        0xF3 => {
+            cpu_state.interrupts.disable_delay = 2;
+        },
         0xF4 =>
             handle_illegal_opcode(opcode),
         0xF5 =>
@@ -773,6 +794,9 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         0xFA => {
             let address = read_next_instruction_word(cpu_state);
             loads::load_memory_byte_in_destination_register(cpu_state, address, Register::A);
+        },
+        0xFB => {
+            cpu_state.interrupts.enable_delay = 2;
         },
         0xFC =>
             handle_illegal_opcode(opcode),
