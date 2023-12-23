@@ -311,7 +311,7 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             loads::load_memory_byte_in_destination_register(cpu_state, address, Register::L)
         },
         0x6F =>
-        loads::load_source_register_in_destination_register(cpu_state, Register::A, Register::L),
+            loads::load_source_register_in_destination_register(cpu_state, Register::A, Register::L),
         0x70 => {
             let address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
             loads::load_source_register_in_memory(cpu_state, Register::B, address);
