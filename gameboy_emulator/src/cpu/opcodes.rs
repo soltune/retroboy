@@ -2,10 +2,9 @@ use crate::cpu::{Register, CpuState, REGISTER_AF, REGISTER_BC, REGISTER_DE, REGI
 use crate::cpu::microops;
 use crate::cpu::alu;
 use crate::cpu::bitops;
+use crate::cpu::interrupts;
 use crate::cpu::jumps;
 use crate::cpu::loads;
-
-use super::interrupts;
 
 pub fn execute_opcode(cpu_state: &mut CpuState) {
     let opcode = read_next_instruction_byte(cpu_state);
