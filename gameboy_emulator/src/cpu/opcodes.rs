@@ -5,6 +5,8 @@ use crate::cpu::bitops;
 use crate::cpu::jumps;
 use crate::cpu::loads;
 
+use super::interrupts;
+
 pub fn execute_opcode(cpu_state: &mut CpuState) {
     let opcode = read_next_instruction_byte(cpu_state);
 
@@ -337,9 +339,14 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             loads::load_source_register_in_memory(cpu_state, Register::L, address);
         },
         0x76 => {
-            // TODO: When interrupt occurs, we need to get out of halt mode.
-            cpu_state.halted = true;
-            cpu_state.registers.program_counter -= 1;
+            if cpu_state.halted && interrupts::interrupts_fired(cpu_state) {
+                cpu_state.halted = false;
+                cpu_state.registers.program_counter += 1;
+            }
+            else {
+                cpu_state.halted = true;
+                cpu_state.registers.program_counter -= 1;
+            }
         },
         0x77 => {
             let address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
@@ -809,8 +816,10 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
         0xFF =>
             jumps::restart(cpu_state, 0x38),
         _ =>
-            ()
+            (),
     }
+
+    interrupts::handle_fired_interrupt(cpu_state);
 }
 
 fn execute_cb_opcode(cpu_state: &mut CpuState) {

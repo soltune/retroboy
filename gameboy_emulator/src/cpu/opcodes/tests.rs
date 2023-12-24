@@ -1231,17 +1231,30 @@ fn returns_from_call_if_c_flag_is_set() {
 }
 
 #[test]
-fn halts_the_cpu() {
+fn halts_the_cpu_until_interrupt() {
     let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x76, 0x15]);
     execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.halted, true);
     assert_eq!(cpu_state.registers.program_counter, 0x0);
     assert_eq!(cpu_state.clock.total_clock_cycles, 4);
     execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.halted, true);
     assert_eq!(cpu_state.registers.program_counter, 0x0);
     assert_eq!(cpu_state.clock.total_clock_cycles, 8);
     execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.halted, true);
     assert_eq!(cpu_state.registers.program_counter, 0x0);
     assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+
+    cpu_state.interrupts.enabled = true;
+    cpu_state.registers.stack_pointer = 0x2112;
+    cpu_state.memory.interrupts_enabled = 0x1F;
+    cpu_state.memory.interrupt_flags = 0x01;
+
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.halted, false);
+    assert_eq!(cpu_state.registers.program_counter, 0x40);
+    assert_eq!(cpu_state.clock.total_clock_cycles, 28);
 }
 
 #[test]
@@ -1290,4 +1303,79 @@ fn returns_from_call_then_enables_interrupts() {
     assert_eq!(cpu_state.registers.stack_pointer, 0x2112);
     assert_eq!(cpu_state.interrupts.enabled, true);
     assert_eq!(cpu_state.clock.total_clock_cycles, 16);
+}
+
+#[test]
+fn runs_vertical_blank_isr() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x00]);
+    cpu_state.registers.stack_pointer = 0x2112;
+    cpu_state.interrupts.enabled = true;
+    cpu_state.memory.interrupts_enabled = 0x1F;
+    cpu_state.memory.interrupt_flags = 0x01;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.stack_pointer, 0x2110);
+    assert_eq!(cpu_state.interrupts.enabled, false);
+    assert_eq!(cpu_state.registers.program_counter, 0x40);
+    assert_eq!(cpu_state.memory.interrupts_enabled, 0x1F);
+    assert_eq!(cpu_state.memory.interrupt_flags, 0x00);
+}
+
+#[test]
+fn runs_lcd_status_isr() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x00]);
+    cpu_state.registers.stack_pointer = 0x2112;
+    cpu_state.interrupts.enabled = true;
+    cpu_state.memory.interrupts_enabled = 0x1F;
+    cpu_state.memory.interrupt_flags = 0x02;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.stack_pointer, 0x2110);
+    assert_eq!(cpu_state.interrupts.enabled, false);
+    assert_eq!(cpu_state.registers.program_counter, 0x48);
+    assert_eq!(cpu_state.memory.interrupts_enabled, 0x1F);
+    assert_eq!(cpu_state.memory.interrupt_flags, 0x00);
+}
+
+#[test]
+fn runs_timer_overflow_isr() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x00]);
+    cpu_state.registers.stack_pointer = 0x2112;
+    cpu_state.interrupts.enabled = true;
+    cpu_state.memory.interrupts_enabled = 0x1F;
+    cpu_state.memory.interrupt_flags = 0x04;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.stack_pointer, 0x2110);
+    assert_eq!(cpu_state.interrupts.enabled, false);
+    assert_eq!(cpu_state.registers.program_counter, 0x50);
+    assert_eq!(cpu_state.memory.interrupts_enabled, 0x1F);
+    assert_eq!(cpu_state.memory.interrupt_flags, 0x00);
+}
+
+#[test]
+fn runs_serial_link_isr() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x00]);
+    cpu_state.registers.stack_pointer = 0x2112;
+    cpu_state.interrupts.enabled = true;
+    cpu_state.memory.interrupts_enabled = 0x1F;
+    cpu_state.memory.interrupt_flags = 0x08;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.stack_pointer, 0x2110);
+    assert_eq!(cpu_state.interrupts.enabled, false);
+    assert_eq!(cpu_state.registers.program_counter, 0x58);
+    assert_eq!(cpu_state.memory.interrupts_enabled, 0x1F);
+    assert_eq!(cpu_state.memory.interrupt_flags, 0x00);
+}
+
+#[test]
+fn runs_joypad_press_isr() {
+    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x00]);
+    cpu_state.registers.stack_pointer = 0x2112;
+    cpu_state.interrupts.enabled = true;
+    cpu_state.memory.interrupts_enabled = 0x1F;
+    cpu_state.memory.interrupt_flags = 0x10;
+    execute_opcode(&mut cpu_state);
+    assert_eq!(cpu_state.registers.stack_pointer, 0x2110);
+    assert_eq!(cpu_state.interrupts.enabled, false);
+    assert_eq!(cpu_state.registers.program_counter, 0x60);
+    assert_eq!(cpu_state.memory.interrupts_enabled, 0x1F);
+    assert_eq!(cpu_state.memory.interrupt_flags, 0x00);
 }

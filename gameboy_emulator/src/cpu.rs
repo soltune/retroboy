@@ -110,4 +110,5 @@ mod alu;
 mod bitops;
 mod loads;
 mod jumps;
+mod interrupts;
 pub mod opcodes;
