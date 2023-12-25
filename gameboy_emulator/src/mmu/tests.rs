@@ -44,8 +44,13 @@ fn setup_test_memory_data() -> Memory {
     memory.zero_page_ram[0x21] = 0x44;
     memory.zero_page_ram[0x5B] = 0x5F;
 
-    memory.interrupts_enabled = 0x1F;
-    memory.interrupt_flags = 0xA;
+    memory.interrupt_registers.enabled = 0x1F;
+    memory.interrupt_registers.flags = 0xA;
+
+    memory.timer_registers.divider = 0x3A;
+    memory.timer_registers.counter = 0x04;
+    memory.timer_registers.modulo = 0x02;
+    memory.timer_registers.control = 0x07;
 
     memory.in_bios = false;
 
@@ -135,6 +140,30 @@ fn reads_from_interrupts_enabled_register() {
 fn reads_from_interrupt_flags_register() {
     let memory: Memory = setup_test_memory_data();
     assert_eq!(read_byte(&memory, 0xFF0F), 0xA);
+}
+
+#[test]
+fn reads_from_timer_divider_register() {
+    let memory: Memory = setup_test_memory_data();
+    assert_eq!(read_byte(&memory, 0xFF04), 0x3A);
+}
+
+#[test]
+fn reads_from_timer_counter_register() {
+    let memory: Memory = setup_test_memory_data();
+    assert_eq!(read_byte(&memory, 0xFF05), 0x04);
+}
+
+#[test]
+fn reads_from_timer_modulo_register() {
+    let memory: Memory = setup_test_memory_data();
+    assert_eq!(read_byte(&memory, 0xFF06), 0x02);
+}
+
+#[test]
+fn reads_from_timer_control_register() {
+    let memory: Memory = setup_test_memory_data();
+    assert_eq!(read_byte(&memory, 0xFF07), 0x07);
 }
 
 #[test]

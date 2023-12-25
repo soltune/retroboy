@@ -9,7 +9,7 @@ pub enum InterruptType {
 }
 
 fn get_fired_interrupt_bits(cpu_state: &CpuState) -> u8 {
-    cpu_state.memory.interrupts_enabled & cpu_state.memory.interrupt_flags & 0x1F
+    cpu_state.memory.interrupt_registers.enabled & cpu_state.memory.interrupt_registers.flags & 0x1F
 }
 
 fn get_fired_interrupt(cpu_state: &CpuState) -> Option<InterruptType> {
@@ -45,17 +45,18 @@ fn get_interrupt_isr(interrupt_type: &InterruptType) -> u8 {
 }
 
 fn turn_off_interrupt_flag(cpu_state: &mut CpuState, interrupt_type: &InterruptType) {
+    let interrupt_registers = &mut cpu_state.memory.interrupt_registers;
     match interrupt_type {
         InterruptType::VBlank =>
-            cpu_state.memory.interrupt_flags = cpu_state.memory.interrupt_flags & !0x01,
+            interrupt_registers.flags = interrupt_registers.flags & !0x01,
         InterruptType::LCDStatus =>
-            cpu_state.memory.interrupt_flags = cpu_state.memory.interrupt_flags & !0x02,
+            interrupt_registers.flags = interrupt_registers.flags & !0x02,
         InterruptType::TimerOverflow =>
-            cpu_state.memory.interrupt_flags = cpu_state.memory.interrupt_flags & !0x04,
+            interrupt_registers.flags = interrupt_registers.flags & !0x04,
         InterruptType::SerialLink =>
-            cpu_state.memory.interrupt_flags = cpu_state.memory.interrupt_flags & !0x08,
+            interrupt_registers.flags = interrupt_registers.flags & !0x08,
         InterruptType::JoypadPress =>
-            cpu_state.memory.interrupt_flags = cpu_state.memory.interrupt_flags & !0x10
+            interrupt_registers.flags = interrupt_registers.flags & !0x10
     }
 }
 

@@ -4,6 +4,20 @@ use std::io::BufReader;
 use std::fs::File;
 
 #[derive(Debug)]
+pub struct TimerRegisters {
+    pub divider: u8,
+    pub counter: u8,
+    pub modulo: u8,
+    pub control: u8
+}
+
+#[derive(Debug)]
+pub struct InterruptRegisters {
+    pub enabled: u8,
+    pub flags: u8
+}
+
+#[derive(Debug)]
 pub struct Memory {
     pub in_bios: bool,
     pub bios: [u8; 0x100],
@@ -13,21 +27,8 @@ pub struct Memory {
     pub working_ram: [u8; 0x3e00],
     pub external_ram: [u8; 0x2000],
     pub zero_page_ram: [u8; 0x80],
-    pub interrupts_enabled: u8,
-    pub interrupt_flags: u8
-}
-
-pub enum MemoryLocation {
-    Bios,
-    Rom,
-    VideoRam,
-    ObjectAttributeMemory,
-    WorkingRam,
-    ExternalRam,
-    ZeroPageRam,
-    InterruptsEnabledRegister,
-    InterruptFlagsRegister,
-    Forbidden
+    pub interrupt_registers: InterruptRegisters,
+    pub timer_registers: TimerRegisters
 }
 
 pub fn initialize_memory() -> Memory {
@@ -40,82 +41,70 @@ pub fn initialize_memory() -> Memory {
         working_ram: [0; 0x3e00],
         external_ram: [0; 0x2000],
         zero_page_ram: [0; 0x80],
-        interrupts_enabled: 0,
-        interrupt_flags: 0
-    }
-}
-
-fn get_memory_location(address: u16, in_bios: bool) -> (MemoryLocation, u16) {
-    match address & 0xF000 {
-        0x0000 if address < 0x0100 && in_bios => (MemoryLocation::Bios, address),
-        0x0000..=0x0FFF => (MemoryLocation::Rom, address),
-        0x1000..=0x7FFF => (MemoryLocation::Rom, address),
-        0x8000..=0x9FFF => (MemoryLocation::VideoRam, address & 0x1FFF),
-        0xA000..=0xBFFF => (MemoryLocation::ExternalRam, address & 0x1FFF),
-        0xC000..=0xEFFF => (MemoryLocation::WorkingRam, address & 0x1FFF),
-        0xF000 => match address & 0x0F00 {
-            0x000..=0xD00 => (MemoryLocation::WorkingRam, address & 0x1FFF),
-            0xE00 if address < 0xFEA0 => (MemoryLocation::ObjectAttributeMemory, address & 0xFF),
-            0xF00 if address == 0xFFFF => (MemoryLocation::InterruptsEnabledRegister, address),
-            0xF00 if address >= 0xFF80 => (MemoryLocation::ZeroPageRam, address & 0x7F),
-            _ => match address & 0x00F0 {
-                0x00 if (address == 0xFF0F) => (MemoryLocation::InterruptFlagsRegister, address),
-                _ => (MemoryLocation::Forbidden, address)
-            }
+        interrupt_registers: InterruptRegisters {
+            enabled: 0,
+            flags: 0
         },
-        _ => (MemoryLocation::Forbidden, address),
+        timer_registers: TimerRegisters {
+            divider: 0,
+            counter: 0,
+            modulo: 0,
+            control: 0
+        }
     }
 }
 
 pub fn read_byte(memory: &Memory, address: u16) -> u8 {
-    let (location, localized_address) = get_memory_location(address, memory.in_bios);
-    match location {
-        MemoryLocation::Bios =>
-            memory.bios[localized_address as usize],
-        MemoryLocation::Rom =>
-            memory.rom[localized_address as usize],
-        MemoryLocation::VideoRam =>
-            memory.video_ram[localized_address as usize],
-        MemoryLocation::ObjectAttributeMemory =>
-            memory.object_attribute_memory[localized_address as usize],
-        MemoryLocation::WorkingRam =>
-            memory.working_ram[localized_address as usize],
-        MemoryLocation::ExternalRam =>
-            memory.external_ram[localized_address as usize],
-        MemoryLocation::ZeroPageRam =>
-            memory.zero_page_ram[localized_address as usize],
-        MemoryLocation::InterruptsEnabledRegister =>
-            memory.interrupts_enabled,
-        MemoryLocation::InterruptFlagsRegister =>
-            memory.interrupt_flags,
-        MemoryLocation::Forbidden =>
-            0x00
+    match address & 0xF000 {
+        0x0000 if address < 0x0100 && memory.in_bios => memory.bios[address as usize],
+        0x0000..=0x0FFF => memory.rom[address as usize],
+        0x1000..=0x7FFF => memory.rom[address as usize],
+        0x8000..=0x9FFF => memory.video_ram[(address & 0x1FFF) as usize],
+        0xA000..=0xBFFF => memory.external_ram[(address & 0x1FFF) as usize],
+        0xC000..=0xEFFF => memory.working_ram[(address & 0x1FFF) as usize],
+        0xF000 => match address & 0x0F00 {
+            0x000..=0xD00 => memory.working_ram[(address & 0x1FFF) as usize],
+            0xE00 if address < 0xFEA0 => memory.object_attribute_memory[(address & 0xFF) as usize],
+            0xF00 if address == 0xFFFF => memory.interrupt_registers.enabled,
+            0xF00 if address >= 0xFF80 => memory.zero_page_ram[(address & 0x7F) as usize],
+            _ => match address & 0xFF {
+                0x0F => memory.interrupt_registers.flags,
+                0x04 => memory.timer_registers.divider,
+                0x05 => memory.timer_registers.counter,
+                0x06 => memory.timer_registers.modulo,
+                0x07 => memory.timer_registers.control,
+                _ => 0x00
+            }
+        },
+        _ => 0x00,
     }
 }
 
 pub fn write_byte(memory: &mut Memory, address: u16, value: u8) {
-    let (location, localized_address) = get_memory_location(address, memory.in_bios);
-    match location {
-        MemoryLocation::Bios =>
-            memory.bios[localized_address as usize] = value,
-        MemoryLocation::Rom =>
-            memory.rom[localized_address as usize] = value,
-        MemoryLocation::VideoRam =>
-            memory.video_ram[localized_address as usize] = value,
-        MemoryLocation::ObjectAttributeMemory =>
-            memory.object_attribute_memory[localized_address as usize] = value,
-        MemoryLocation::WorkingRam =>
-            memory.working_ram[localized_address as usize] = value,
-        MemoryLocation::ExternalRam =>
-            memory.external_ram[localized_address as usize] = value,
-        MemoryLocation::ZeroPageRam =>
-            memory.zero_page_ram[localized_address as usize] = value,
-        MemoryLocation::InterruptsEnabledRegister =>
-            memory.interrupts_enabled = value,
-        MemoryLocation::InterruptFlagsRegister =>
-            memory.interrupt_flags = value,
-        MemoryLocation::Forbidden =>
-            ()
+    match address & 0xF000 {
+        0x0000 if address < 0x0100 && memory.in_bios => memory.bios[address as usize] = value,
+        // You can't actually write to ROM. The next couple lines will probably change when
+        // MBC support is implemented.
+        0x0000..=0x0FFF => memory.rom[address as usize] = value,
+        0x1000..=0x7FFF => memory.rom[address as usize] = value,
+        0x8000..=0x9FFF => memory.video_ram[(address & 0x1FFF) as usize] = value,
+        0xA000..=0xBFFF => memory.external_ram[(address & 0x1FFF) as usize] = value,
+        0xC000..=0xEFFF => memory.working_ram[(address & 0x1FFF) as usize] = value,
+        0xF000 => match address & 0x0F00 {
+            0x000..=0xD00 => memory.working_ram[(address & 0x1FFF) as usize] = value,
+            0xE00 if address < 0xFEA0 => memory.object_attribute_memory[(address & 0xFF) as usize]= value,
+            0xF00 if address == 0xFFFF => memory.interrupt_registers.enabled = value,
+            0xF00 if address >= 0xFF80 => memory.zero_page_ram[(address & 0x7F) as usize] = value,
+            _ => match address & 0xFF {
+                0x0F => memory.interrupt_registers.flags = value,
+                0x04 => memory.timer_registers.divider = value,
+                0x05 => memory.timer_registers.counter = value,
+                0x06 => memory.timer_registers.modulo = value,
+                0x07 => memory.timer_registers.control = value,
+                _ => ()
+            }
+        },
+        _ => (),
     }
 }
 
