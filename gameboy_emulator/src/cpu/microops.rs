@@ -3,24 +3,24 @@ use crate::cpu::{Register, RegisterPair, CpuState};
 
 pub fn read_byte_from_memory(cpu_state: &mut CpuState, address: u16) -> u8 {
     let byte = mmu::read_byte(&cpu_state.memory, address);
-    cpu_state.clock.total_clock_cycles += 4;
+    cpu_state.clock.total_clock_cycles = cpu_state.clock.total_clock_cycles.wrapping_add(4);
     byte
 }
 
 pub fn read_word_from_memory(cpu_state: &mut CpuState, address: u16) -> u16 {
     let word = mmu::read_word(&cpu_state.memory, address);
-    cpu_state.clock.total_clock_cycles += 8;
+    cpu_state.clock.total_clock_cycles = cpu_state.clock.total_clock_cycles.wrapping_add(8);
     word
 }
 
 pub fn store_byte_in_memory(cpu_state: &mut CpuState, address: u16, byte: u8) {
     mmu::write_byte(&mut cpu_state.memory, address, byte);
-    cpu_state.clock.total_clock_cycles += 4;
+    cpu_state.clock.total_clock_cycles = cpu_state.clock.total_clock_cycles.wrapping_add(4);
 }
 
 pub fn store_word_in_memory(cpu_state: &mut CpuState, address: u16, word: u16) {
     mmu::write_word(&mut cpu_state.memory, address, word);
-    cpu_state.clock.total_clock_cycles += 8;
+    cpu_state.clock.total_clock_cycles = cpu_state.clock.total_clock_cycles.wrapping_add(8);
 }
 
 pub fn read_from_register(cpu_state: &CpuState, register: &Register) -> u8 {
@@ -113,5 +113,5 @@ pub fn is_c_flag_set(cpu_state: &CpuState) -> bool {
 }
 
 pub fn run_extra_machine_cycle(cpu_state: &mut CpuState) {
-    cpu_state.clock.total_clock_cycles += 4;
+    cpu_state.clock.total_clock_cycles = cpu_state.clock.total_clock_cycles.wrapping_add(4);
 }

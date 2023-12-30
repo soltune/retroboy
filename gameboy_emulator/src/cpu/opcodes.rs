@@ -5,8 +5,11 @@ use crate::cpu::bitops;
 use crate::cpu::interrupts;
 use crate::cpu::jumps;
 use crate::cpu::loads;
+use crate::cpu::timers;
 
 pub fn execute_opcode(cpu_state: &mut CpuState) {
+    let before_opcode_execution_cycles = cpu_state.clock.total_clock_cycles;
+
     let opcode = read_next_instruction_byte(cpu_state);
 
     if cpu_state.interrupts.enable_delay > 0 {
@@ -818,7 +821,15 @@ pub fn execute_opcode(cpu_state: &mut CpuState) {
             (),
     }
 
+    let after_opcode_execution_cycles = cpu_state.clock.total_clock_cycles;
+    let instruction_cycles = after_opcode_execution_cycles.wrapping_sub(before_opcode_execution_cycles);
+    timers::increment_timer(&mut cpu_state.memory, instruction_cycles as u8);
+
     interrupts::handle_fired_interrupt(cpu_state);
+
+    let after_interrupt_execution_cycles = cpu_state.clock.total_clock_cycles;
+    let interrupt_cycles = after_interrupt_execution_cycles.wrapping_sub(after_opcode_execution_cycles);
+    timers::increment_timer(&mut cpu_state.memory, interrupt_cycles as u8);
 }
 
 fn execute_cb_opcode(cpu_state: &mut CpuState) {

@@ -111,4 +111,5 @@ mod bitops;
 mod loads;
 mod jumps;
 mod interrupts;
+mod timers;
 pub mod opcodes;

@@ -5,6 +5,9 @@ use std::fs::File;
 
 #[derive(Debug)]
 pub struct TimerRegisters {
+    pub m_cycles_clock: u8,
+    pub divider_clock: u8,
+    pub base_clock: u8,
     pub divider: u8,
     pub counter: u8,
     pub modulo: u8,
@@ -46,6 +49,9 @@ pub fn initialize_memory() -> Memory {
             flags: 0
         },
         timer_registers: TimerRegisters {
+            m_cycles_clock: 0,
+            base_clock: 0,
+            divider_clock: 0,
             divider: 0,
             counter: 0,
             modulo: 0,
