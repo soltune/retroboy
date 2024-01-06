@@ -1,7 +1,7 @@
 use crate::mmu::{Memory, TimerRegisters, InterruptRegisters};
 
-static BASE_SPEED_RATE: u8 = 4;
-static DIVIDER_RATE: u8 = 16;
+const BASE_SPEED_RATE: u8 = 4;
+const DIVIDER_RATE: u8 = 16;
 
 fn get_counter_rate(timer_registers: &TimerRegisters) -> Option<u8> {
     let control = timer_registers.control;
