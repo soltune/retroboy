@@ -52,7 +52,7 @@ fn should_move_to_vblank_mode_from_hblank_if_at_last_line() {
 #[test]
 fn should_move_back_to_oam_mode_from_vblank_at_correct_time() {
     let mut memory = initialize_memory();
-    let mut gpu_state = GpuState { mode: 1, line: 142, mode_clock: 4556 };
+    let mut gpu_state = GpuState { mode: 1, line: 152, mode_clock: 452 };
     step(&mut gpu_state, &mut memory, 4);
     assert_eq!(gpu_state.mode, 2);
     assert_eq!(gpu_state.mode_clock, 0);

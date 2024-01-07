@@ -16,9 +16,11 @@ const HBLANK_MODE: u8 = 0;
 const HBLANK_TIME: u16 = 204;
 
 const VBLANK_MODE: u8 = 1;
-const VBLANK_TIME: u16 = 4560;
 
-const SCREEN_ROW_COUNT: u8 = 144;
+const SCANLINE_RENDER_TIME: u16 = 456;
+
+const FRAME_SCANLINE_COUNT: u8 = 154;
+const VBLANK_SCANLINE_COUNT: u8 = 10;
 
 pub fn step(gpu_state: &mut GpuState, memory: &mut Memory, opcode_clock_cycles: u8) {
     gpu_state.mode_clock += opcode_clock_cycles as u16;
@@ -41,7 +43,7 @@ pub fn step(gpu_state: &mut GpuState, memory: &mut Memory, opcode_clock_cycles: 
                 gpu_state.line += 1;
                 gpu_state.mode_clock = 0;
 
-                if gpu_state.line == SCREEN_ROW_COUNT - 1 {
+                if gpu_state.line == FRAME_SCANLINE_COUNT - VBLANK_SCANLINE_COUNT - 1 {
                     gpu_state.mode = VBLANK_MODE;
                 }
                 else {
@@ -50,10 +52,14 @@ pub fn step(gpu_state: &mut GpuState, memory: &mut Memory, opcode_clock_cycles: 
             }
         }
         VBLANK_MODE => {
-            if gpu_state.mode_clock >= VBLANK_TIME {
-                gpu_state.mode = OAM_MODE;
+            if gpu_state.mode_clock >= SCANLINE_RENDER_TIME {
                 gpu_state.mode_clock = 0;
-                gpu_state.line = 0;
+                gpu_state.line += 1;
+
+                if gpu_state.line == FRAME_SCANLINE_COUNT - 1 {
+                    gpu_state.mode = OAM_MODE;
+                    gpu_state.line = 0;
+                }
             }
         }
         _ => ()
