@@ -1,5 +1,6 @@
 use crate::cpu::{Register, CpuState, REGISTER_HL};
 use crate::cpu::microops;
+use crate::emulator::Emulator;
 
 fn rotate_left(cpu_state: &mut CpuState, byte: u8) -> u8 {
     let most_significant_bit = byte >> 7;
@@ -67,32 +68,32 @@ pub fn rotate_register_right_through_carry(cpu_state: &mut CpuState, register: R
     microops::store_in_register(cpu_state, register, rotated_value);
 }
 
-pub fn rotate_memory_byte_left(cpu_state: &mut CpuState) {
-    let address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
-    let byte = microops::read_byte_from_memory(cpu_state, address);
-    let rotated_value = rotate_left(cpu_state, byte);
-    microops::store_byte_in_memory(cpu_state, address, rotated_value);
+pub fn rotate_memory_byte_left(emulator: &mut Emulator) {
+    let address = microops::read_from_register_pair(&mut emulator.cpu, &REGISTER_HL);
+    let byte = microops::read_byte_from_memory(emulator, address);
+    let rotated_value = rotate_left(&mut emulator.cpu, byte);
+    microops::store_byte_in_memory(emulator, address, rotated_value);
 }
 
-pub fn rotate_memory_byte_left_through_carry(cpu_state: &mut CpuState) {
-    let address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
-    let byte = microops::read_byte_from_memory(cpu_state, address);
-    let rotated_value = rotate_left_through_carry(cpu_state, byte);
-    microops::store_byte_in_memory(cpu_state, address, rotated_value);
+pub fn rotate_memory_byte_left_through_carry(emulator: &mut Emulator) {
+    let address = microops::read_from_register_pair(&mut emulator.cpu, &REGISTER_HL);
+    let byte = microops::read_byte_from_memory(emulator, address);
+    let rotated_value = rotate_left_through_carry(&mut emulator.cpu, byte);
+    microops::store_byte_in_memory(emulator, address, rotated_value);
 }
 
-pub fn rotate_memory_byte_right(cpu_state: &mut CpuState) {
-    let address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
-    let byte = microops::read_byte_from_memory(cpu_state, address);
-    let rotated_value = rotate_right(cpu_state, byte);
-    microops::store_byte_in_memory(cpu_state, address, rotated_value);
+pub fn rotate_memory_byte_right(emulator: &mut Emulator) {
+    let address = microops::read_from_register_pair(&mut emulator.cpu, &REGISTER_HL);
+    let byte = microops::read_byte_from_memory(emulator, address);
+    let rotated_value = rotate_right(&mut emulator.cpu, byte);
+    microops::store_byte_in_memory(emulator, address, rotated_value);
 }
 
-pub fn rotate_memory_byte_right_through_carry(cpu_state: &mut CpuState) {
-    let address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
-    let byte = microops::read_byte_from_memory(cpu_state, address);
-    let rotated_value = rotate_right_through_carry(cpu_state, byte);
-    microops::store_byte_in_memory(cpu_state, address, rotated_value);
+pub fn rotate_memory_byte_right_through_carry(emulator: &mut Emulator) {
+    let address = microops::read_from_register_pair(&mut emulator.cpu, &REGISTER_HL);
+    let byte = microops::read_byte_from_memory(emulator, address);
+    let rotated_value = rotate_right_through_carry(&mut emulator.cpu, byte);
+    microops::store_byte_in_memory(emulator, address, rotated_value);
 }
 
 fn swap_nibbles(byte: u8) -> u8 {
@@ -106,9 +107,9 @@ pub fn swap_nibbles_in_register(cpu_state: &mut CpuState, register: Register) {
     microops::store_in_register(cpu_state, register, swap_nibbles(byte));
 }
 
-pub fn swap_nibbles_in_memory_byte(cpu_state: &mut CpuState, address: u16) {
-    let byte = microops::read_byte_from_memory(cpu_state, address);
-    microops::store_byte_in_memory(cpu_state, address, swap_nibbles(byte));
+pub fn swap_nibbles_in_memory_byte(emulator: &mut Emulator, address: u16) {
+    let byte = microops::read_byte_from_memory(emulator, address);
+    microops::store_byte_in_memory(emulator, address, swap_nibbles(byte));
 }
 
 fn shift_left(cpu_state: &mut CpuState, byte: u8) -> u8 {
@@ -127,11 +128,11 @@ pub fn shift_register_left(cpu_state: &mut CpuState, register: Register) {
     microops::store_in_register(cpu_state, register, shifted_value);
 }
 
-pub fn shift_memory_byte_left(cpu_state: &mut CpuState) {
-    let address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
-    let byte = microops::read_byte_from_memory(cpu_state, address);
-    let shifted_value = shift_left(cpu_state, byte);
-    microops::store_byte_in_memory(cpu_state, address, shifted_value);
+pub fn shift_memory_byte_left(emulator: &mut Emulator) {
+    let address = microops::read_from_register_pair(&mut emulator.cpu, &REGISTER_HL);
+    let byte = microops::read_byte_from_memory(emulator, address);
+    let shifted_value = shift_left(&mut emulator.cpu, byte);
+    microops::store_byte_in_memory(emulator, address, shifted_value);
 }
 
 fn shift_right(cpu_state: &mut CpuState, byte: u8, maintain_msb: bool) -> u8 {
@@ -151,11 +152,11 @@ pub fn shift_register_right_maintaining_msb(cpu_state: &mut CpuState, register: 
     microops::store_in_register(cpu_state, register, shifted_value);
 }
 
-pub fn shift_memory_byte_right_maintaining_msb(cpu_state: &mut CpuState) {
-    let address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
-    let byte = microops::read_byte_from_memory(cpu_state, address);
-    let shifted_value = shift_right(cpu_state, byte, true);
-    microops::store_byte_in_memory(cpu_state, address, shifted_value);
+pub fn shift_memory_byte_right_maintaining_msb(emulator: &mut Emulator) {
+    let address = microops::read_from_register_pair(&mut emulator.cpu, &REGISTER_HL);
+    let byte = microops::read_byte_from_memory(emulator, address);
+    let shifted_value = shift_right(&mut emulator.cpu, byte, true);
+    microops::store_byte_in_memory(emulator, address, shifted_value);
 }
 
 pub fn shift_register_right(cpu_state: &mut CpuState, register: Register) {
@@ -164,11 +165,11 @@ pub fn shift_register_right(cpu_state: &mut CpuState, register: Register) {
     microops::store_in_register(cpu_state, register, shifted_value);
 }
 
-pub fn shift_memory_byte_right(cpu_state: &mut CpuState) {
-    let address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
-    let byte = microops::read_byte_from_memory(cpu_state, address);
-    let shifted_value = shift_right(cpu_state, byte, false);
-    microops::store_byte_in_memory(cpu_state, address, shifted_value);
+pub fn shift_memory_byte_right(emulator: &mut Emulator) {
+    let address = microops::read_from_register_pair(&mut emulator.cpu, &REGISTER_HL);
+    let byte = microops::read_byte_from_memory(emulator, address);
+    let shifted_value = shift_right(&mut emulator.cpu, byte, false);
+    microops::store_byte_in_memory(emulator, address, shifted_value);
 }
 
 fn test_bit(cpu_state: &mut CpuState, byte: u8, bit_index: u8) {
@@ -184,10 +185,10 @@ pub fn test_register_bit(cpu_state: &mut CpuState, register: Register, bit_index
     test_bit(cpu_state, byte, bit_index);
 }
 
-pub fn test_memory_bit(cpu_state: &mut CpuState, bit_index: u8) {
-    let address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
-    let byte = microops::read_byte_from_memory(cpu_state, address);
-    test_bit(cpu_state, byte, bit_index);
+pub fn test_memory_bit(emulator: &mut Emulator, bit_index: u8) {
+    let address = microops::read_from_register_pair(&mut emulator.cpu, &REGISTER_HL);
+    let byte = microops::read_byte_from_memory(emulator, address);
+    test_bit(&mut emulator.cpu, byte, bit_index);
 }
 
 fn reset_bit(byte: u8, bit_index: u8) -> u8 {
@@ -201,11 +202,11 @@ pub fn reset_register_bit(cpu_state: &mut CpuState, register: Register, bit_inde
     microops::store_in_register(cpu_state, register, updated_byte);
 }
 
-pub fn reset_memory_bit(cpu_state: &mut CpuState, bit_index: u8) {
-    let address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
-    let byte = microops::read_byte_from_memory(cpu_state, address);
+pub fn reset_memory_bit(emulator: &mut Emulator, bit_index: u8) {
+    let address = microops::read_from_register_pair(&mut emulator.cpu, &REGISTER_HL);
+    let byte = microops::read_byte_from_memory(emulator, address);
     let updated_byte = reset_bit(byte, bit_index);
-    microops::store_byte_in_memory(cpu_state, address, updated_byte);
+    microops::store_byte_in_memory(emulator, address, updated_byte);
 }
 
 fn set_bit(byte: u8, bit_index: u8) -> u8 {
@@ -219,9 +220,10 @@ pub fn set_register_bit(cpu_state: &mut CpuState, register: Register, bit_index:
     microops::store_in_register(cpu_state, register, updated_byte);
 }
 
-pub fn set_memory_bit(cpu_state: &mut CpuState, bit_index: u8) {
+pub fn set_memory_bit(emulator: &mut Emulator, bit_index: u8) {
+    let cpu_state = &mut emulator.cpu;
     let address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
-    let byte = microops::read_byte_from_memory(cpu_state, address);
+    let byte = microops::read_byte_from_memory(emulator, address);
     let updated_byte = set_bit(byte, bit_index);
-    microops::store_byte_in_memory(cpu_state, address, updated_byte);
+    microops::store_byte_in_memory(emulator, address, updated_byte);
 }

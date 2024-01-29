@@ -1,7 +1,19 @@
-use crate::mmu::{Memory, TimerRegisters, InterruptRegisters};
+use crate::cpu::interrupts::InterruptRegisters;
+use crate::emulator::Emulator;
 
 const BASE_SPEED_RATE: u8 = 4;
 const DIVIDER_RATE: u8 = 16;
+
+#[derive(Debug)]
+pub struct TimerRegisters {
+    pub m_cycles_clock: u8,
+    pub divider_clock: u8,
+    pub base_clock: u8,
+    pub divider: u8,
+    pub counter: u8,
+    pub modulo: u8,
+    pub control: u8
+}
 
 fn get_counter_rate(timer_registers: &TimerRegisters) -> Option<u8> {
     let control = timer_registers.control;
@@ -41,10 +53,12 @@ fn increment_counter_register(timer_registers: &mut TimerRegisters,
     }
 }
 
-pub fn increment_timer(memory: &mut Memory, opcode_machine_cycles: u8) {
-    let timer_registers = &mut memory.timer_registers;
-
-    timer_registers.m_cycles_clock += opcode_machine_cycles;
+pub fn step(emulator: &mut Emulator) {
+    let timer_registers = &mut emulator.timers;
+    let instruction_cycles = emulator.cpu.clock.instruction_clock_cycles;
+    let machine_cycles = instruction_cycles / 4;
+    
+    timer_registers.m_cycles_clock += machine_cycles;
     if timer_registers.m_cycles_clock >= BASE_SPEED_RATE {
         timer_registers.m_cycles_clock -= BASE_SPEED_RATE;
 
@@ -52,7 +66,7 @@ pub fn increment_timer(memory: &mut Memory, opcode_machine_cycles: u8) {
 
         match get_counter_rate(timer_registers) {
             Some(counter_rate) => {
-                let interrupt_registers = &mut memory.interrupt_registers;
+                let interrupt_registers = &mut emulator.interrupts;
                 increment_counter_register(timer_registers, interrupt_registers, counter_rate);
             }
             _ => ()

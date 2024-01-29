@@ -1,5 +1,4 @@
-use std::io;
-use crate::mmu;
+use crate::emulator::Emulator;
 
 #[derive(Debug)]
 pub struct Registers {
@@ -17,6 +16,7 @@ pub struct Registers {
 
 #[derive(Debug)]
 pub struct Clock {
+    pub instruction_clock_cycles: u8,
     total_clock_cycles: u32
 }
 
@@ -31,7 +31,6 @@ pub struct Interrupts {
 pub struct CpuState {
     pub registers: Registers,
     pub clock: Clock,
-    pub memory: mmu::Memory,
     pub halted: bool,
     pub interrupts: Interrupts
 }
@@ -72,9 +71,9 @@ pub fn initialize_cpu_state() -> CpuState {
             stack_pointer: 0
         },
         clock: Clock {
+            instruction_clock_cycles: 0,
             total_clock_cycles: 0,
         },
-        memory: mmu::initialize_memory(),
         halted: false,
         interrupts: Interrupts {
             enable_delay: 0,
@@ -84,20 +83,15 @@ pub fn initialize_cpu_state() -> CpuState {
     }
 }
 
-pub fn load_rom_by_filepath(cpu_state: CpuState, filepath: &str) -> io::Result<CpuState> {
-    let loaded_memory = mmu::load_rom_by_filepath(cpu_state.memory, filepath)?;
-    Ok(CpuState { memory: loaded_memory, ..cpu_state })
-}
-
-pub fn read_next_instruction_byte(cpu_state: &mut CpuState) -> u8 {
-    let byte = microops::read_byte_from_memory(cpu_state, cpu_state.registers.program_counter);
-    cpu_state.registers.program_counter += 1;
+pub fn read_next_instruction_byte(emulator: &mut Emulator) -> u8 {
+    let byte = microops::read_byte_from_memory(emulator, emulator.cpu.registers.program_counter);
+    emulator.cpu.registers.program_counter += 1;
     byte
 }
 
-pub fn read_next_instruction_word(cpu_state: &mut CpuState) -> u16 {
-    let word = microops::read_word_from_memory(cpu_state, cpu_state.registers.program_counter);
-    cpu_state.registers.program_counter += 2;
+pub fn read_next_instruction_word(emulator: &mut Emulator) -> u16 {
+    let word = microops::read_word_from_memory(emulator, emulator.cpu.registers.program_counter);
+    emulator.cpu.registers.program_counter += 2;
     word
 }
 
@@ -110,6 +104,6 @@ mod alu;
 mod bitops;
 mod loads;
 mod jumps;
-mod interrupts;
-mod timers;
+pub mod interrupts;
+pub mod timers;
 pub mod opcodes;

@@ -1,4 +1,4 @@
-use crate::mmu::Memory;
+use crate::emulator::Emulator;
 
 pub struct GpuState {
     mode: u8,
@@ -22,43 +22,51 @@ const SCANLINE_RENDER_TIME: u16 = 456;
 const FRAME_SCANLINE_COUNT: u8 = 154;
 const VBLANK_SCANLINE_COUNT: u8 = 10;
 
-pub fn step(gpu_state: &mut GpuState, memory: &mut Memory, opcode_clock_cycles: u8) {
-    gpu_state.mode_clock += opcode_clock_cycles as u16;
+pub fn initialize_gpu() -> GpuState {
+    GpuState {
+        mode: 2,
+        line: 0,
+        mode_clock: 0
+    }
+}
 
-    match gpu_state.mode {
+pub fn step(emulator: &mut Emulator) {
+    emulator.gpu.mode_clock += emulator.cpu.clock.instruction_clock_cycles as u16;
+
+    match emulator.gpu.mode {
         OAM_MODE => {
-            if gpu_state.mode_clock >= OAM_TIME {
-                gpu_state.mode = VRAM_MODE;
-                gpu_state.mode_clock = 0;
+            if emulator.gpu.mode_clock >= OAM_TIME {
+                emulator.gpu.mode = VRAM_MODE;
+                emulator.gpu.mode_clock = 0;
             }
         }
         VRAM_MODE => {
-            if gpu_state.mode_clock >= VRAM_TIME {
-                gpu_state.mode = HBLANK_MODE;
-                gpu_state.mode_clock = 0;
+            if emulator.gpu.mode_clock >= VRAM_TIME {
+                emulator.gpu.mode = HBLANK_MODE;
+                emulator.gpu.mode_clock = 0;
             }
         }
         HBLANK_MODE => {
-            if gpu_state.mode_clock >= HBLANK_TIME {
-                gpu_state.line += 1;
-                gpu_state.mode_clock = 0;
+            if emulator.gpu.mode_clock >= HBLANK_TIME {
+                emulator.gpu.line += 1;
+                emulator.gpu.mode_clock = 0;
 
-                if gpu_state.line == FRAME_SCANLINE_COUNT - VBLANK_SCANLINE_COUNT - 1 {
-                    gpu_state.mode = VBLANK_MODE;
+                if emulator.gpu.line == FRAME_SCANLINE_COUNT - VBLANK_SCANLINE_COUNT - 1 {
+                    emulator.gpu.mode = VBLANK_MODE;
                 }
                 else {
-                    gpu_state.mode = OAM_MODE;
+                    emulator.gpu.mode = OAM_MODE;
                 }
             }
         }
         VBLANK_MODE => {
-            if gpu_state.mode_clock >= SCANLINE_RENDER_TIME {
-                gpu_state.mode_clock = 0;
-                gpu_state.line += 1;
+            if emulator.gpu.mode_clock >= SCANLINE_RENDER_TIME {
+                emulator.gpu.mode_clock = 0;
+                emulator.gpu.line += 1;
 
-                if gpu_state.line == FRAME_SCANLINE_COUNT - 1 {
-                    gpu_state.mode = OAM_MODE;
-                    gpu_state.line = 0;
+                if emulator.gpu.line == FRAME_SCANLINE_COUNT - 1 {
+                    emulator.gpu.mode = OAM_MODE;
+                    emulator.gpu.line = 0;
                 }
             }
         }

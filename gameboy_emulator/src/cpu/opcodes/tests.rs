@@ -1,1381 +1,1381 @@
 use super::*;
-use crate::cpu;
+use crate::emulator::initialize_emulator;
 use crate::mmu;
 
-fn init_cpu_with_test_instructions(test_instructions: Vec<u8>) -> cpu::CpuState {
-    let mut cpu_state = cpu::initialize_cpu_state();
-    cpu_state.memory.in_bios = false;
-    let updated_memory = mmu::load_rom_buffer(cpu_state.memory, test_instructions);
-    cpu::CpuState { memory: updated_memory, ..cpu_state }
+fn init_emulator_with_test_instructions(test_instructions: Vec<u8>) -> Emulator {
+    let emulator = initialize_emulator();
+    let mut updated_memory = mmu::load_rom_buffer(emulator.memory, test_instructions);
+    updated_memory.in_bios = false;
+    Emulator { memory: updated_memory, ..emulator }
 }
 
 #[test]
 fn loads_immediate_byte_into_register_b() {
-    let mut cpu_state = init_cpu_with_test_instructions(vec![0x06, 0xA1]);
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.b, 0xA1);
-    assert_eq!(cpu_state.registers.program_counter, 2);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator = init_emulator_with_test_instructions(vec![0x06, 0xA1]);
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.b, 0xA1);
+    assert_eq!(emulator.cpu.registers.program_counter, 2);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn loads_register_b_into_register_a() {
-    let mut cpu_state = init_cpu_with_test_instructions(vec![0x78]);
-    cpu_state.registers.b = 0x2F;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0x2F);
-    assert_eq!(cpu_state.registers.program_counter, 1);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    let mut emulator = init_emulator_with_test_instructions(vec![0x78]);
+    emulator.cpu.registers.b = 0x2F;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0x2F);
+    assert_eq!(emulator.cpu.registers.program_counter, 1);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
 }
 
 #[test]
 fn loads_byte_at_address_hl_into_register_a() {
-    let mut cpu_state = init_cpu_with_test_instructions(vec![0x7e]);
-    cpu_state.registers.h = 0x55;
-    cpu_state.registers.l = 0x50;
-    cpu_state.memory.rom[0x5550] = 0xB1;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0xB1);
-    assert_eq!(cpu_state.registers.program_counter, 1);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator = init_emulator_with_test_instructions(vec![0x7e]);
+    emulator.cpu.registers.h = 0x55;
+    emulator.cpu.registers.l = 0x50;
+    emulator.memory.rom[0x5550] = 0xB1;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0xB1);
+    assert_eq!(emulator.cpu.registers.program_counter, 1);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn loads_register_b_into_address_hl() {
-    let mut cpu_state = init_cpu_with_test_instructions(vec![0x70]);
-    cpu_state.registers.b = 0x5A;
-    cpu_state.registers.h = 0x41;
-    cpu_state.registers.l = 0x9B;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.memory.rom[0x419B], 0x5A);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator = init_emulator_with_test_instructions(vec![0x70]);
+    emulator.cpu.registers.b = 0x5A;
+    emulator.cpu.registers.h = 0x41;
+    emulator.cpu.registers.l = 0x9B;
+    step(&mut emulator);
+    assert_eq!(emulator.memory.rom[0x419B], 0x5A);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn loads_immediate_byte_into_memory() {
-    let mut cpu_state = init_cpu_with_test_instructions(vec![0x36, 0xE6]);
-    cpu_state.registers.h = 0x52;
-    cpu_state.registers.l = 0x44;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.memory.rom[0x5244], 0xE6);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+    let mut emulator = init_emulator_with_test_instructions(vec![0x36, 0xE6]);
+    emulator.cpu.registers.h = 0x52;
+    emulator.cpu.registers.l = 0x44;
+    step(&mut emulator);
+    assert_eq!(emulator.memory.rom[0x5244], 0xE6);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 }
 
 #[test]
 fn loads_byte_at_address_nn_into_register_a() {
-    let mut cpu_state = init_cpu_with_test_instructions(vec![0xFA, 0x1C, 0x4B]);
-    cpu_state.memory.rom[0x4B1C] = 0x22;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0x22);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 16);
+    let mut emulator = init_emulator_with_test_instructions(vec![0xFA, 0x1C, 0x4B]);
+    emulator.memory.rom[0x4B1C] = 0x22;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0x22);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 16);
 }
 
 #[test]
 fn loads_byte_at_ff00_plus_register_c_into_register_a() {
-    let mut cpu_state = init_cpu_with_test_instructions(vec![0xF2]);
-    cpu_state.memory.zero_page_ram[0x1B] = 0x9A;
-    cpu_state.registers.c = 0x9B;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0x9A);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator = init_emulator_with_test_instructions(vec![0xF2]);
+    emulator.memory.zero_page_ram[0x1B] = 0x9A;
+    emulator.cpu.registers.c = 0x9B;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0x9A);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn loads_register_a_into_ff00_plus_register_c() {
-    let mut cpu_state = init_cpu_with_test_instructions(vec![0xE2]);
-    cpu_state.registers.a = 0x9A;
-    cpu_state.registers.c = 0x9B;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.memory.zero_page_ram[0x1B], 0x9A);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator = init_emulator_with_test_instructions(vec![0xE2]);
+    emulator.cpu.registers.a = 0x9A;
+    emulator.cpu.registers.c = 0x9B;
+    step(&mut emulator);
+    assert_eq!(emulator.memory.zero_page_ram[0x1B], 0x9A);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn loads_byte_at_address_hl_into_register_a_then_decrements_hl() {
-    let mut cpu_state = init_cpu_with_test_instructions(vec![0x3a]);
-    cpu_state.registers.h = 0x2A;
-    cpu_state.registers.l = 0xB1;
-    cpu_state.memory.rom[0x2AB1] = 0xAA;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0xAA);
-    assert_eq!(cpu_state.registers.program_counter, 1);
-    assert_eq!(cpu_state.registers.h, 0x2A);
-    assert_eq!(cpu_state.registers.l, 0xB0);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator = init_emulator_with_test_instructions(vec![0x3a]);
+    emulator.cpu.registers.h = 0x2A;
+    emulator.cpu.registers.l = 0xB1;
+    emulator.memory.rom[0x2AB1] = 0xAA;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0xAA);
+    assert_eq!(emulator.cpu.registers.program_counter, 1);
+    assert_eq!(emulator.cpu.registers.h, 0x2A);
+    assert_eq!(emulator.cpu.registers.l, 0xB0);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn loads_register_a_into_address_hl_then_decrements_hl() {
-    let mut cpu_state = init_cpu_with_test_instructions(vec![0x32]);
-    cpu_state.registers.a = 0xBB;
-    cpu_state.registers.h = 0x2A;
-    cpu_state.registers.l = 0xB1;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.program_counter, 1);
-    assert_eq!(cpu_state.memory.rom[0x2AB1], 0xBB);
-    assert_eq!(cpu_state.registers.h, 0x2A);
-    assert_eq!(cpu_state.registers.l, 0xB0);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator = init_emulator_with_test_instructions(vec![0x32]);
+    emulator.cpu.registers.a = 0xBB;
+    emulator.cpu.registers.h = 0x2A;
+    emulator.cpu.registers.l = 0xB1;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.program_counter, 1);
+    assert_eq!(emulator.memory.rom[0x2AB1], 0xBB);
+    assert_eq!(emulator.cpu.registers.h, 0x2A);
+    assert_eq!(emulator.cpu.registers.l, 0xB0);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 
 #[test]
 fn loads_byte_at_address_hl_into_register_a_then_increments_hl() {
-    let mut cpu_state = init_cpu_with_test_instructions(vec![0x2A]);
-    cpu_state.registers.h = 0x2A;
-    cpu_state.registers.l = 0xB1;
-    cpu_state.memory.rom[0x2AB1] = 0xAA;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0xAA);
-    assert_eq!(cpu_state.registers.program_counter, 1);
-    assert_eq!(cpu_state.registers.h, 0x2A);
-    assert_eq!(cpu_state.registers.l, 0xB2);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator = init_emulator_with_test_instructions(vec![0x2A]);
+    emulator.cpu.registers.h = 0x2A;
+    emulator.cpu.registers.l = 0xB1;
+    emulator.memory.rom[0x2AB1] = 0xAA;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0xAA);
+    assert_eq!(emulator.cpu.registers.program_counter, 1);
+    assert_eq!(emulator.cpu.registers.h, 0x2A);
+    assert_eq!(emulator.cpu.registers.l, 0xB2);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn loads_register_a_into_address_hl_then_increments_hl() {
-    let mut cpu_state = init_cpu_with_test_instructions(vec![0x22]);
-    cpu_state.registers.a = 0xBB;
-    cpu_state.registers.h = 0x2A;
-    cpu_state.registers.l = 0xB1;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.program_counter, 1);
-    assert_eq!(cpu_state.memory.rom[0x2AB1], 0xBB);
-    assert_eq!(cpu_state.registers.h, 0x2A);
-    assert_eq!(cpu_state.registers.l, 0xB2);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator = init_emulator_with_test_instructions(vec![0x22]);
+    emulator.cpu.registers.a = 0xBB;
+    emulator.cpu.registers.h = 0x2A;
+    emulator.cpu.registers.l = 0xB1;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.program_counter, 1);
+    assert_eq!(emulator.memory.rom[0x2AB1], 0xBB);
+    assert_eq!(emulator.cpu.registers.h, 0x2A);
+    assert_eq!(emulator.cpu.registers.l, 0xB2);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn loads_register_a_into_ff00_plus_immediate_byte() {
-    let mut cpu_state = init_cpu_with_test_instructions(vec![0xE0, 0xB1]);
-    cpu_state.registers.a = 0x9A;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.memory.zero_page_ram[0x31], 0x9A);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+    let mut emulator = init_emulator_with_test_instructions(vec![0xE0, 0xB1]);
+    emulator.cpu.registers.a = 0x9A;
+    step(&mut emulator);
+    assert_eq!(emulator.memory.zero_page_ram[0x31], 0x9A);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 }
 
 #[test]
 fn loads_byte_at_address_ff00_plus_immediate_byte_into_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xF0, 0xB1]);
-    cpu_state.memory.zero_page_ram[0x31] = 0x9A;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0x9A);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xF0, 0xB1]);
+    emulator.memory.zero_page_ram[0x31] = 0x9A;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0x9A);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 }
 
 #[test]
 fn loads_immediate_word_into_register_pair_bc() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x01, 0xA2, 0xA3]);
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.b, 0xA3);
-    assert_eq!(cpu_state.registers.c, 0xA2);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x01, 0xA2, 0xA3]);
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.b, 0xA3);
+    assert_eq!(emulator.cpu.registers.c, 0xA2);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 }
 
 #[test]
 fn loads_immediate_word_into_stack_pointer() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x31, 0xA2, 0xA3]);
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.stack_pointer, 0xA3A2);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x31, 0xA2, 0xA3]);
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0xA3A2);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 }
 
 #[test]
 fn loads_word_at_register_pair_hl_into_stack_pointer() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xF9]);
-    cpu_state.registers.h = 0xAB;
-    cpu_state.registers.l = 0x13;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.stack_pointer, 0xAB13);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xF9]);
+    emulator.cpu.registers.h = 0xAB;
+    emulator.cpu.registers.l = 0x13;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0xAB13);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn loads_stack_pointer_plus_immediate_byte_into_register_pair_hl_with_half_carry() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xF8, 0x19]);
-    cpu_state.registers.stack_pointer = 0xB207;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.h, 0xB2);
-    assert_eq!(cpu_state.registers.l, 0x20);
-    assert_eq!(cpu_state.registers.stack_pointer, 0xB207);
-    assert_eq!(cpu_state.registers.f, 0x20);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xF8, 0x19]);
+    emulator.cpu.registers.stack_pointer = 0xB207;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.h, 0xB2);
+    assert_eq!(emulator.cpu.registers.l, 0x20);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0xB207);
+    assert_eq!(emulator.cpu.registers.f, 0x20);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 }
 
 #[test]
 fn loads_stack_pointer_plus_immediate_byte_into_register_pair_hl_with_carry() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xF8, 0x19]);
-    cpu_state.registers.stack_pointer = 0xB2F7;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.h, 0xB3);
-    assert_eq!(cpu_state.registers.l, 0x10);
-    assert_eq!(cpu_state.registers.stack_pointer, 0xB2F7);
-    assert_eq!(cpu_state.registers.f, 0x30);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xF8, 0x19]);
+    emulator.cpu.registers.stack_pointer = 0xB2F7;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.h, 0xB3);
+    assert_eq!(emulator.cpu.registers.l, 0x10);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0xB2F7);
+    assert_eq!(emulator.cpu.registers.f, 0x30);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 }
 
 #[test]
 fn loads_stack_pointer_into_address_nn() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x08, 0x13, 0x32]);
-    cpu_state.registers.stack_pointer = 0x9BB2;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.memory.rom[0x3213], 0xB2);
-    assert_eq!(cpu_state.memory.rom[0x3214], 0x9B);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 20);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x08, 0x13, 0x32]);
+    emulator.cpu.registers.stack_pointer = 0x9BB2;
+    step(&mut emulator);
+    assert_eq!(emulator.memory.rom[0x3213], 0xB2);
+    assert_eq!(emulator.memory.rom[0x3214], 0x9B);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 20);
 }
 
 #[test]
 fn pushes_register_pair_onto_stack() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xC5]);
-    cpu_state.registers.b = 0xB1;
-    cpu_state.registers.c = 0xDD;
-    cpu_state.registers.stack_pointer = 0x2112;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.memory.rom[0x2111], 0xB1);
-    assert_eq!(cpu_state.memory.rom[0x2110], 0xDD);
-    assert_eq!(cpu_state.registers.stack_pointer, 0x2110);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 16);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xC5]);
+    emulator.cpu.registers.b = 0xB1;
+    emulator.cpu.registers.c = 0xDD;
+    emulator.cpu.registers.stack_pointer = 0x2112;
+    step(&mut emulator);
+    assert_eq!(emulator.memory.rom[0x2111], 0xB1);
+    assert_eq!(emulator.memory.rom[0x2110], 0xDD);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0x2110);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 16);
 }
 
 #[test]
 fn pops_word_into_register_pair_from_stack() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xC1]);
-    cpu_state.registers.stack_pointer = 0x2110;
-    cpu_state.memory.rom[0x2111] = 0xB1;
-    cpu_state.memory.rom[0x2110] = 0xDD;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.b, 0xB1);
-    assert_eq!(cpu_state.registers.c, 0xDD);
-    assert_eq!(cpu_state.registers.stack_pointer, 0x2112);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xC1]);
+    emulator.cpu.registers.stack_pointer = 0x2110;
+    emulator.memory.rom[0x2111] = 0xB1;
+    emulator.memory.rom[0x2110] = 0xDD;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.b, 0xB1);
+    assert_eq!(emulator.cpu.registers.c, 0xDD);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0x2112);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 }
 
 #[test]
 fn adds_register_and_register_a_with_half_carry() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x80]);
-    cpu_state.registers.a = 0x2B;
-    cpu_state.registers.b = 0xAF;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0xDA);
-    assert_eq!(cpu_state.registers.b, 0xAF);
-    assert_eq!(cpu_state.registers.f, 0x20);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x80]);
+    emulator.cpu.registers.a = 0x2B;
+    emulator.cpu.registers.b = 0xAF;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0xDA);
+    assert_eq!(emulator.cpu.registers.b, 0xAF);
+    assert_eq!(emulator.cpu.registers.f, 0x20);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
 }
 
 #[test]
 fn adds_register_and_register_a_with_carry() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x80]);
-    cpu_state.registers.a = 0xC1;
-    cpu_state.registers.b = 0x5A;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0x1B);
-    assert_eq!(cpu_state.registers.b, 0x5A);
-    assert_eq!(cpu_state.registers.f, 0x10);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x80]);
+    emulator.cpu.registers.a = 0xC1;
+    emulator.cpu.registers.b = 0x5A;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0x1B);
+    assert_eq!(emulator.cpu.registers.b, 0x5A);
+    assert_eq!(emulator.cpu.registers.f, 0x10);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
 }
 
 #[test]
 fn adds_register_and_register_a_and_carry_flag() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x88]);
-    cpu_state.registers.a = 0x2B;
-    cpu_state.registers.b = 0xBE;
-    cpu_state.registers.f = 0x10;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0xEA);
-    assert_eq!(cpu_state.registers.b, 0xBE);
-    assert_eq!(cpu_state.registers.f, 0x20);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x88]);
+    emulator.cpu.registers.a = 0x2B;
+    emulator.cpu.registers.b = 0xBE;
+    emulator.cpu.registers.f = 0x10;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0xEA);
+    assert_eq!(emulator.cpu.registers.b, 0xBE);
+    assert_eq!(emulator.cpu.registers.f, 0x20);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
 }
 
 #[test]
 fn subtracts_register_value_from_register_a_with_half_carry() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x90]);
-    cpu_state.registers.a = 0xB1;
-    cpu_state.registers.b = 0x7F;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0x32);
-    assert_eq!(cpu_state.registers.b, 0x7F);
-    assert_eq!(cpu_state.registers.f, 0x60);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x90]);
+    emulator.cpu.registers.a = 0xB1;
+    emulator.cpu.registers.b = 0x7F;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0x32);
+    assert_eq!(emulator.cpu.registers.b, 0x7F);
+    assert_eq!(emulator.cpu.registers.f, 0x60);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
 }
 
 #[test]
 fn subtracts_register_value_from_register_a_with_carry() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x90]);
-    cpu_state.registers.a = 0x02;
-    cpu_state.registers.b = 0x04;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0xFE);
-    assert_eq!(cpu_state.registers.b, 0x04);
-    assert_eq!(cpu_state.registers.f, 0x70);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x90]);
+    emulator.cpu.registers.a = 0x02;
+    emulator.cpu.registers.b = 0x04;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0xFE);
+    assert_eq!(emulator.cpu.registers.b, 0x04);
+    assert_eq!(emulator.cpu.registers.f, 0x70);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
 }
 
 #[test]
 fn subtracts_register_value_plus_carry_from_register_a_with_half_carry() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x98]);
-    cpu_state.registers.a = 0xB1;
-    cpu_state.registers.b = 0x74;
-    cpu_state.registers.f = 0x10;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0x3C);
-    assert_eq!(cpu_state.registers.b, 0x74);
-    assert_eq!(cpu_state.registers.f, 0x60);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x98]);
+    emulator.cpu.registers.a = 0xB1;
+    emulator.cpu.registers.b = 0x74;
+    emulator.cpu.registers.f = 0x10;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0x3C);
+    assert_eq!(emulator.cpu.registers.b, 0x74);
+    assert_eq!(emulator.cpu.registers.f, 0x60);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
 }
 
 #[test]
 fn subtracts_register_value_plus_carry_from_register_a_with_carry() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x98]);
-    cpu_state.registers.a = 0x02;
-    cpu_state.registers.b = 0x04;
-    cpu_state.registers.f = 0x10;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0xFD);
-    assert_eq!(cpu_state.registers.b, 0x04);
-    assert_eq!(cpu_state.registers.f, 0x70);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x98]);
+    emulator.cpu.registers.a = 0x02;
+    emulator.cpu.registers.b = 0x04;
+    emulator.cpu.registers.f = 0x10;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0xFD);
+    assert_eq!(emulator.cpu.registers.b, 0x04);
+    assert_eq!(emulator.cpu.registers.f, 0x70);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
 }
 
 #[test]
 fn logical_ands_register_and_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xA0]);
-    cpu_state.registers.a = 0x15;
-    cpu_state.registers.b = 0x7E;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0x14);
-    assert_eq!(cpu_state.registers.b, 0x7E);
-    assert_eq!(cpu_state.registers.f, 0x20);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xA0]);
+    emulator.cpu.registers.a = 0x15;
+    emulator.cpu.registers.b = 0x7E;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0x14);
+    assert_eq!(emulator.cpu.registers.b, 0x7E);
+    assert_eq!(emulator.cpu.registers.f, 0x20);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
 }
 
 #[test]
 fn logical_ors_register_and_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xB0]);
-    cpu_state.registers.a = 0x15;
-    cpu_state.registers.b = 0x7E;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0x7F);
-    assert_eq!(cpu_state.registers.b, 0x7E);
-    assert_eq!(cpu_state.registers.f, 0x0);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xB0]);
+    emulator.cpu.registers.a = 0x15;
+    emulator.cpu.registers.b = 0x7E;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0x7F);
+    assert_eq!(emulator.cpu.registers.b, 0x7E);
+    assert_eq!(emulator.cpu.registers.f, 0x0);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
 }
 
 #[test]
 fn logical_xors_register_and_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xA8]);
-    cpu_state.registers.a = 0x15;
-    cpu_state.registers.b = 0x7E;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0x6B);
-    assert_eq!(cpu_state.registers.b, 0x7E);
-    assert_eq!(cpu_state.registers.f, 0x0);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xA8]);
+    emulator.cpu.registers.a = 0x15;
+    emulator.cpu.registers.b = 0x7E;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0x6B);
+    assert_eq!(emulator.cpu.registers.b, 0x7E);
+    assert_eq!(emulator.cpu.registers.f, 0x0);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
 }
 
 #[test]
 #[should_panic(expected = "Encountered illegal opcode 0xFC")]
 fn panics_on_illegal_opcode() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xFC]);
-    execute_opcode(&mut cpu_state);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xFC]);
+    step(&mut emulator);
 }
 
 #[test]
 fn compares_register_value_with_register_a_resulting_in_half_carry() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xB8]);
-    cpu_state.registers.a = 0xB1;
-    cpu_state.registers.b = 0x7F;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0xB1);
-    assert_eq!(cpu_state.registers.b, 0x7F);
-    assert_eq!(cpu_state.registers.f, 0x60);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xB8]);
+    emulator.cpu.registers.a = 0xB1;
+    emulator.cpu.registers.b = 0x7F;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0xB1);
+    assert_eq!(emulator.cpu.registers.b, 0x7F);
+    assert_eq!(emulator.cpu.registers.f, 0x60);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
 }
 
 #[test]
 fn compares_register_value_with_register_a_resulting_in_carry() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xB8]);
-    cpu_state.registers.a = 0x02;
-    cpu_state.registers.b = 0x04;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0x02);
-    assert_eq!(cpu_state.registers.b, 0x04);
-    assert_eq!(cpu_state.registers.f, 0x70);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xB8]);
+    emulator.cpu.registers.a = 0x02;
+    emulator.cpu.registers.b = 0x04;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0x02);
+    assert_eq!(emulator.cpu.registers.b, 0x04);
+    assert_eq!(emulator.cpu.registers.f, 0x70);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
 }
 
 #[test]
 fn increments_register_with_half_carry() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x04]);
-    cpu_state.registers.b = 0x0F;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.b, 0x10);
-    assert_eq!(cpu_state.registers.f, 0x20);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x04]);
+    emulator.cpu.registers.b = 0x0F;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.b, 0x10);
+    assert_eq!(emulator.cpu.registers.f, 0x20);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
 }
 
 #[test]
 fn increments_register_without_carry() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x04]);
-    cpu_state.registers.b = 0xA3;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.b, 0xA4);
-    assert_eq!(cpu_state.registers.f, 0x00);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x04]);
+    emulator.cpu.registers.b = 0xA3;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.b, 0xA4);
+    assert_eq!(emulator.cpu.registers.f, 0x00);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
 }
 
 #[test]
 fn decrements_register_with_half_carry() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x05]);
-    cpu_state.registers.b = 0x10;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.b, 0x0F);
-    assert_eq!(cpu_state.registers.f, 0x60);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x05]);
+    emulator.cpu.registers.b = 0x10;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.b, 0x0F);
+    assert_eq!(emulator.cpu.registers.f, 0x60);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
 }
 
 #[test]
 fn decrements_register_without_carry() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x05]);
-    cpu_state.registers.b = 0xA3;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.b, 0xA2);
-    assert_eq!(cpu_state.registers.f, 0x40);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x05]);
+    emulator.cpu.registers.b = 0xA3;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.b, 0xA2);
+    assert_eq!(emulator.cpu.registers.f, 0x40);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
 }
 
 #[test]
 fn increments_memory_byte_with_half_carry() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x34]);
-    cpu_state.memory.rom[0x2C11] = 0x0F;
-    cpu_state.registers.h = 0x2C;
-    cpu_state.registers.l = 0x11;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.memory.rom[0x2C11], 0x10);
-    assert_eq!(cpu_state.registers.f, 0x20);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x34]);
+    emulator.memory.rom[0x2C11] = 0x0F;
+    emulator.cpu.registers.h = 0x2C;
+    emulator.cpu.registers.l = 0x11;
+    step(&mut emulator);
+    assert_eq!(emulator.memory.rom[0x2C11], 0x10);
+    assert_eq!(emulator.cpu.registers.f, 0x20);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 }
 
 #[test]
 fn decrements_memory_byte_with_half_carry() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x35]);
-    cpu_state.memory.rom[0x2C11] = 0x10;
-    cpu_state.registers.h = 0x2C;
-    cpu_state.registers.l = 0x11;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.memory.rom[0x2C11], 0x0F);
-    assert_eq!(cpu_state.registers.f, 0x60);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x35]);
+    emulator.memory.rom[0x2C11] = 0x10;
+    emulator.cpu.registers.h = 0x2C;
+    emulator.cpu.registers.l = 0x11;
+    step(&mut emulator);
+    assert_eq!(emulator.memory.rom[0x2C11], 0x0F);
+    assert_eq!(emulator.cpu.registers.f, 0x60);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 }
 
 #[test]
 fn increments_register_pair() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x03]);
-    cpu_state.registers.b = 0x3C;
-    cpu_state.registers.c = 0x4D;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.b, 0x3C);
-    assert_eq!(cpu_state.registers.c, 0x4E);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x03]);
+    emulator.cpu.registers.b = 0x3C;
+    emulator.cpu.registers.c = 0x4D;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.b, 0x3C);
+    assert_eq!(emulator.cpu.registers.c, 0x4E);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn decrements_register_pair() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x0B]);
-    cpu_state.registers.b = 0x3C;
-    cpu_state.registers.c = 0x4D;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.b, 0x3C);
-    assert_eq!(cpu_state.registers.c, 0x4C);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x0B]);
+    emulator.cpu.registers.b = 0x3C;
+    emulator.cpu.registers.c = 0x4D;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.b, 0x3C);
+    assert_eq!(emulator.cpu.registers.c, 0x4C);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn increments_stack_pointer() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x33]);
-    cpu_state.registers.stack_pointer = 0x1A33;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.stack_pointer, 0x1A34);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x33]);
+    emulator.cpu.registers.stack_pointer = 0x1A33;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0x1A34);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn decrements_stack_pointer() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x3B]);
-    cpu_state.registers.stack_pointer = 0x1A33;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.stack_pointer, 0x1A32);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x3B]);
+    emulator.cpu.registers.stack_pointer = 0x1A33;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0x1A32);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn adds_register_pair_and_register_pair_hl_with_carry() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x09]);
-    cpu_state.registers.h = 0xFF;
-    cpu_state.registers.l = 0xFE;
-    cpu_state.registers.b = 0x00;
-    cpu_state.registers.c = 0x04;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.h, 0x00);
-    assert_eq!(cpu_state.registers.l, 0x02);
-    assert_eq!(cpu_state.registers.b, 0x00);
-    assert_eq!(cpu_state.registers.c, 0x04);
-    assert_eq!(cpu_state.registers.f, 0x30);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x09]);
+    emulator.cpu.registers.h = 0xFF;
+    emulator.cpu.registers.l = 0xFE;
+    emulator.cpu.registers.b = 0x00;
+    emulator.cpu.registers.c = 0x04;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.h, 0x00);
+    assert_eq!(emulator.cpu.registers.l, 0x02);
+    assert_eq!(emulator.cpu.registers.b, 0x00);
+    assert_eq!(emulator.cpu.registers.c, 0x04);
+    assert_eq!(emulator.cpu.registers.f, 0x30);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn adds_register_pair_and_register_pair_hl_with_half_carry() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x09]);
-    cpu_state.registers.h = 0xDF;
-    cpu_state.registers.l = 0xFF;
-    cpu_state.registers.b = 0x00;
-    cpu_state.registers.c = 0x01;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.h, 0xE0);
-    assert_eq!(cpu_state.registers.l, 0x00);
-    assert_eq!(cpu_state.registers.b, 0x00);
-    assert_eq!(cpu_state.registers.c, 0x01);
-    assert_eq!(cpu_state.registers.f, 0x20);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x09]);
+    emulator.cpu.registers.h = 0xDF;
+    emulator.cpu.registers.l = 0xFF;
+    emulator.cpu.registers.b = 0x00;
+    emulator.cpu.registers.c = 0x01;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.h, 0xE0);
+    assert_eq!(emulator.cpu.registers.l, 0x00);
+    assert_eq!(emulator.cpu.registers.b, 0x00);
+    assert_eq!(emulator.cpu.registers.c, 0x01);
+    assert_eq!(emulator.cpu.registers.f, 0x20);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn loads_stack_pointer_plus_immediate_byte_into_stack_pointer_with_half_carry() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xE8, 0x19]);
-    cpu_state.registers.stack_pointer = 0xB207;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.stack_pointer, 0xB220);
-    assert_eq!(cpu_state.registers.f, 0x20);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xE8, 0x19]);
+    emulator.cpu.registers.stack_pointer = 0xB207;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0xB220);
+    assert_eq!(emulator.cpu.registers.f, 0x20);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 }
 
 #[test]
 fn loads_stack_pointer_plus_immediate_byte_into_stack_pointer_with_carry() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xE8, 0x19]);
-    cpu_state.registers.stack_pointer = 0xB2F7;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.stack_pointer, 0xB310);
-    assert_eq!(cpu_state.registers.f, 0x30);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xE8, 0x19]);
+    emulator.cpu.registers.stack_pointer = 0xB2F7;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0xB310);
+    assert_eq!(emulator.cpu.registers.f, 0x30);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 }
 
 #[test]
 fn swaps_nibbles_in_register() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x37]);
-    cpu_state.registers.a = 0xA2;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0x2A);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x37]);
+    emulator.cpu.registers.a = 0xA2;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0x2A);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn swaps_nibbles_in_memory_byte() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x36]);
-    cpu_state.memory.rom[0x4AB1] = 0xBC;
-    cpu_state.registers.h = 0x4A;
-    cpu_state.registers.l = 0xB1;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.memory.rom[0x4AB1], 0xCB);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 16);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x36]);
+    emulator.memory.rom[0x4AB1] = 0xBC;
+    emulator.cpu.registers.h = 0x4A;
+    emulator.cpu.registers.l = 0xB1;
+    step(&mut emulator);
+    assert_eq!(emulator.memory.rom[0x4AB1], 0xCB);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 16);
 }
 
 #[test]
 fn sets_carry_flag() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x37]);
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.f, 0x10);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x37]);
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.f, 0x10);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
 }
 
 #[test]
 fn complement_a_register() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x2F]);
-    cpu_state.registers.a = 0x4C;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0xB3);
-    assert_eq!(cpu_state.registers.f, 0x60);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x2F]);
+    emulator.cpu.registers.a = 0x4C;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0xB3);
+    assert_eq!(emulator.cpu.registers.f, 0x60);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
 }
 
 #[test]
 fn complement_c_flag() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x3F]);
-    cpu_state.registers.f = 0x30;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.f, 0x00);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x3F]);
+    emulator.cpu.registers.f = 0x30;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.f, 0x00);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
 }
 
 #[test]
 fn decimal_adjusts_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x27]);
-    cpu_state.registers.a = 0xC0;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0x20);
-    assert_eq!(cpu_state.registers.f, 0x10);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x27]);
+    emulator.cpu.registers.a = 0xC0;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0x20);
+    assert_eq!(emulator.cpu.registers.f, 0x10);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
 }
 
 #[test]
 fn rotates_register_a_left() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x07]);
-    cpu_state.registers.a = 0xA7;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0x4F);
-    assert_eq!(cpu_state.registers.f, 0x10);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x07]);
+    emulator.cpu.registers.a = 0xA7;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0x4F);
+    assert_eq!(emulator.cpu.registers.f, 0x10);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
 }
 
 #[test]
 fn rotates_register_a_left_through_carry() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x17]);
-    cpu_state.registers.a = 0xA7;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0x4E);
-    assert_eq!(cpu_state.registers.f, 0x10);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x17]);
+    emulator.cpu.registers.a = 0xA7;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0x4E);
+    assert_eq!(emulator.cpu.registers.f, 0x10);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
 }
 
 #[test]
 fn rotates_register_a_right() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x0F]);
-    cpu_state.registers.a = 0xA7;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0xD3);
-    assert_eq!(cpu_state.registers.f, 0x10);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x0F]);
+    emulator.cpu.registers.a = 0xA7;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0xD3);
+    assert_eq!(emulator.cpu.registers.f, 0x10);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
 }
 
 #[test]
 fn rotates_register_a_right_through_carry() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x1F]);
-    cpu_state.registers.a = 0xA7;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0x53);
-    assert_eq!(cpu_state.registers.f, 0x10);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x1F]);
+    emulator.cpu.registers.a = 0xA7;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0x53);
+    assert_eq!(emulator.cpu.registers.f, 0x10);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
 }
 
 #[test]
 fn rotates_memory_location_hl_left() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x06]);
-    cpu_state.registers.h = 0x1A;
-    cpu_state.registers.l = 0x51;
-    cpu_state.memory.rom[0x1A51] = 0xA7;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.memory.rom[0x1A51], 0x4F);
-    assert_eq!(cpu_state.registers.f, 0x10);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 16);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x06]);
+    emulator.cpu.registers.h = 0x1A;
+    emulator.cpu.registers.l = 0x51;
+    emulator.memory.rom[0x1A51] = 0xA7;
+    step(&mut emulator);
+    assert_eq!(emulator.memory.rom[0x1A51], 0x4F);
+    assert_eq!(emulator.cpu.registers.f, 0x10);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 16);
 }
 
 #[test]
 fn rotates_memory_location_hl_left_through_carry() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x16]);
-    cpu_state.registers.h = 0x1A;
-    cpu_state.registers.l = 0x51;
-    cpu_state.memory.rom[0x1A51] = 0xA7;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.memory.rom[0x1A51], 0x4E);
-    assert_eq!(cpu_state.registers.f, 0x10);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 16);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x16]);
+    emulator.cpu.registers.h = 0x1A;
+    emulator.cpu.registers.l = 0x51;
+    emulator.memory.rom[0x1A51] = 0xA7;
+    step(&mut emulator);
+    assert_eq!(emulator.memory.rom[0x1A51], 0x4E);
+    assert_eq!(emulator.cpu.registers.f, 0x10);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 16);
 }
 
 #[test]
 fn rotates_memory_location_hl_right() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x0E]);
-    cpu_state.registers.h = 0x1A;
-    cpu_state.registers.l = 0x51;
-    cpu_state.memory.rom[0x1A51] = 0xA7;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.memory.rom[0x1A51], 0xD3);
-    assert_eq!(cpu_state.registers.f, 0x10);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 16);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x0E]);
+    emulator.cpu.registers.h = 0x1A;
+    emulator.cpu.registers.l = 0x51;
+    emulator.memory.rom[0x1A51] = 0xA7;
+    step(&mut emulator);
+    assert_eq!(emulator.memory.rom[0x1A51], 0xD3);
+    assert_eq!(emulator.cpu.registers.f, 0x10);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 16);
 }
 
 #[test]
 fn rotates_memory_location_hl_right_through_carry() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x1E]);
-    cpu_state.registers.h = 0x1A;
-    cpu_state.registers.l = 0x51;
-    cpu_state.memory.rom[0x1A51] = 0xA7;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.memory.rom[0x1A51], 0x53);
-    assert_eq!(cpu_state.registers.f, 0x10);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 16);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x1E]);
+    emulator.cpu.registers.h = 0x1A;
+    emulator.cpu.registers.l = 0x51;
+    emulator.memory.rom[0x1A51] = 0xA7;
+    step(&mut emulator);
+    assert_eq!(emulator.memory.rom[0x1A51], 0x53);
+    assert_eq!(emulator.cpu.registers.f, 0x10);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 16);
 }
 
 #[test]
 fn shifts_register_a_left() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x27]);
-    cpu_state.registers.a = 0xA7;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0x4E);
-    assert_eq!(cpu_state.registers.f, 0x10);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x27]);
+    emulator.cpu.registers.a = 0xA7;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0x4E);
+    assert_eq!(emulator.cpu.registers.f, 0x10);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn shifts_memory_location_hl_left() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x26]);
-    cpu_state.registers.h = 0x1A;
-    cpu_state.registers.l = 0x51;
-    cpu_state.memory.rom[0x1A51] = 0xA7;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.memory.rom[0x1A51], 0x4E);
-    assert_eq!(cpu_state.registers.f, 0x10);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 16);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x26]);
+    emulator.cpu.registers.h = 0x1A;
+    emulator.cpu.registers.l = 0x51;
+    emulator.memory.rom[0x1A51] = 0xA7;
+    step(&mut emulator);
+    assert_eq!(emulator.memory.rom[0x1A51], 0x4E);
+    assert_eq!(emulator.cpu.registers.f, 0x10);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 16);
 }
 
 #[test]
 fn shifts_register_a_right_maintaining_msb() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x2F]);
-    cpu_state.registers.a = 0xA7;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0xD3);
-    assert_eq!(cpu_state.registers.f, 0x10);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x2F]);
+    emulator.cpu.registers.a = 0xA7;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0xD3);
+    assert_eq!(emulator.cpu.registers.f, 0x10);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn shifts_memory_location_hl_right_maintaining_msb() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x2E]);
-    cpu_state.registers.h = 0x1A;
-    cpu_state.registers.l = 0x51;
-    cpu_state.memory.rom[0x1A51] = 0xA7;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.memory.rom[0x1A51], 0xD3);
-    assert_eq!(cpu_state.registers.f, 0x10);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 16);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x2E]);
+    emulator.cpu.registers.h = 0x1A;
+    emulator.cpu.registers.l = 0x51;
+    emulator.memory.rom[0x1A51] = 0xA7;
+    step(&mut emulator);
+    assert_eq!(emulator.memory.rom[0x1A51], 0xD3);
+    assert_eq!(emulator.cpu.registers.f, 0x10);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 16);
 }
 
 #[test]
 fn shifts_register_a_right() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x3F]);
-    cpu_state.registers.a = 0xA7;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0x53);
-    assert_eq!(cpu_state.registers.f, 0x10);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x3F]);
+    emulator.cpu.registers.a = 0xA7;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0x53);
+    assert_eq!(emulator.cpu.registers.f, 0x10);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn shifts_memory_location_hl_right() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x3E]);
-    cpu_state.registers.h = 0x1A;
-    cpu_state.registers.l = 0x51;
-    cpu_state.memory.rom[0x1A51] = 0xA7;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.memory.rom[0x1A51], 0x53);
-    assert_eq!(cpu_state.registers.f, 0x10);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 16);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x3E]);
+    emulator.cpu.registers.h = 0x1A;
+    emulator.cpu.registers.l = 0x51;
+    emulator.memory.rom[0x1A51] = 0xA7;
+    step(&mut emulator);
+    assert_eq!(emulator.memory.rom[0x1A51], 0x53);
+    assert_eq!(emulator.cpu.registers.f, 0x10);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 16);
 }
 
 #[test]
 fn test_bit_0_of_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x47]);
-    cpu_state.registers.a = 0xB5;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.f, 0x20);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x47]);
+    emulator.cpu.registers.a = 0xB5;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.f, 0x20);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn test_bit_1_of_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x4F]);
-    cpu_state.registers.a = 0xB5;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.f, 0xA0);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x4F]);
+    emulator.cpu.registers.a = 0xB5;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.f, 0xA0);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn test_bit_2_of_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x57]);
-    cpu_state.registers.a = 0xB5;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.f, 0x20);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x57]);
+    emulator.cpu.registers.a = 0xB5;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.f, 0x20);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn test_bit_3_of_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x5F]);
-    cpu_state.registers.a = 0xB5;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.f, 0xA0);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x5F]);
+    emulator.cpu.registers.a = 0xB5;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.f, 0xA0);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn test_bit_4_of_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x67]);
-    cpu_state.registers.a = 0xB5;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.f, 0x20);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x67]);
+    emulator.cpu.registers.a = 0xB5;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.f, 0x20);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn test_bit_5_of_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x6F]);
-    cpu_state.registers.a = 0xB5;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.f, 0x20);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x6F]);
+    emulator.cpu.registers.a = 0xB5;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.f, 0x20);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn test_bit_6_of_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x77]);
-    cpu_state.registers.a = 0xB5;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.f, 0xA0);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x77]);
+    emulator.cpu.registers.a = 0xB5;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.f, 0xA0);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn test_bit_7_of_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x7F]);
-    cpu_state.registers.a = 0xB5;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.f, 0x20);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x7F]);
+    emulator.cpu.registers.a = 0xB5;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.f, 0x20);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn reset_bit_0_of_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x87]);
-    cpu_state.registers.a = 0xB5;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0xB4);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x87]);
+    emulator.cpu.registers.a = 0xB5;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0xB4);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn set_bit_0_of_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0xC7]);
-    cpu_state.registers.a = 0xB5;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0xB5);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0xC7]);
+    emulator.cpu.registers.a = 0xB5;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0xB5);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn reset_bit_1_of_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x8F]);
-    cpu_state.registers.a = 0xB5;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0xB5);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x8F]);
+    emulator.cpu.registers.a = 0xB5;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0xB5);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn set_bit_1_of_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0xCF]);
-    cpu_state.registers.a = 0xB5;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0xB7);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0xCF]);
+    emulator.cpu.registers.a = 0xB5;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0xB7);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn reset_bit_2_of_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x97]);
-    cpu_state.registers.a = 0xB5;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0xB1);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x97]);
+    emulator.cpu.registers.a = 0xB5;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0xB1);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn set_bit_2_of_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0xD7]);
-    cpu_state.registers.a = 0xB5;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0xB5);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0xD7]);
+    emulator.cpu.registers.a = 0xB5;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0xB5);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn reset_bit_3_of_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0x9F]);
-    cpu_state.registers.a = 0xB5;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0xB5);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x9F]);
+    emulator.cpu.registers.a = 0xB5;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0xB5);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn set_bit_3_of_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0xDF]);
-    cpu_state.registers.a = 0xB5;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0xBD);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0xDF]);
+    emulator.cpu.registers.a = 0xB5;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0xBD);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn reset_bit_4_of_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0xA7]);
-    cpu_state.registers.a = 0xB5;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0xA5);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0xA7]);
+    emulator.cpu.registers.a = 0xB5;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0xA5);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn set_bit_4_of_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0xE7]);
-    cpu_state.registers.a = 0xB5;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0xB5);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0xE7]);
+    emulator.cpu.registers.a = 0xB5;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0xB5);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn reset_bit_5_of_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0xAF]);
-    cpu_state.registers.a = 0xB5;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0x95);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0xAF]);
+    emulator.cpu.registers.a = 0xB5;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0x95);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn set_bit_5_of_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0xEF]);
-    cpu_state.registers.a = 0xB5;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0xB5);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0xEF]);
+    emulator.cpu.registers.a = 0xB5;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0xB5);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn reset_bit_6_of_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0xB7]);
-    cpu_state.registers.a = 0xB5;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0xB5);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0xB7]);
+    emulator.cpu.registers.a = 0xB5;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0xB5);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn set_bit_6_of_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0xF7]);
-    cpu_state.registers.a = 0xB5;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0xF5);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0xF7]);
+    emulator.cpu.registers.a = 0xB5;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0xF5);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn reset_bit_7_of_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0xBF]);
-    cpu_state.registers.a = 0xB5;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0x35);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0xBF]);
+    emulator.cpu.registers.a = 0xB5;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0x35);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn set_bit_7_of_register_a() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCB, 0xFF]);
-    cpu_state.registers.a = 0xB5;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.a, 0xB5);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0xFF]);
+    emulator.cpu.registers.a = 0xB5;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.a, 0xB5);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn jumps_to_address_nn() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xC3, 0xAA, 0x54]);
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.program_counter, 0x54AA);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xC3, 0xAA, 0x54]);
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x54AA);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 }
 
 #[test]
 fn jumps_to_address_nn_if_z_flag_is_reset() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xC2, 0xAA, 0x54]);
-    cpu_state.registers.f = 0x80;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.program_counter, 0x03);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xC2, 0xAA, 0x54]);
+    emulator.cpu.registers.f = 0x80;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x03);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 }
 
 #[test]
 fn jumps_to_address_nn_if_z_flag_is_set() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCA, 0xAA, 0x54]);
-    cpu_state.registers.f = 0x80;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.program_counter, 0x54AA);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCA, 0xAA, 0x54]);
+    emulator.cpu.registers.f = 0x80;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x54AA);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 }
 
 #[test]
 fn jumps_to_address_nn_if_c_flag_is_reset() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xD2, 0xAA, 0x54]);
-    cpu_state.registers.f = 0x80;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.program_counter, 0x54AA);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xD2, 0xAA, 0x54]);
+    emulator.cpu.registers.f = 0x80;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x54AA);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 }
 
 #[test]
 fn jumps_to_address_nn_if_c_flag_is_set() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xDA, 0xAA, 0x54]);
-    cpu_state.registers.f = 0x80;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.program_counter, 0x03);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xDA, 0xAA, 0x54]);
+    emulator.cpu.registers.f = 0x80;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x03);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 }
 
 #[test]
 fn jumps_to_address_hl() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xE9]);
-    cpu_state.registers.h = 0x4B;
-    cpu_state.registers.l = 0x51;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.program_counter, 0x4B51);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xE9]);
+    emulator.cpu.registers.h = 0x4B;
+    emulator.cpu.registers.l = 0x51;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x4B51);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
 }
 
 #[test]
 fn jumps_to_current_address_plus_n() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x18, 0x05]);
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.program_counter, 0x07);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x18, 0x05]);
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x07);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn jumps_to_curent_address_plus_n_if_z_flag_is_reset() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x20, 0x05]);
-    cpu_state.registers.f = 0x80;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.program_counter, 0x02);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x20, 0x05]);
+    emulator.cpu.registers.f = 0x80;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x02);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn jumps_to_curent_address_plus_n_if_z_flag_is_set() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x28, 0x05]);
-    cpu_state.registers.f = 0x80;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.program_counter, 0x07);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x28, 0x05]);
+    emulator.cpu.registers.f = 0x80;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x07);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn jumps_to_curent_address_plus_n_if_c_flag_is_reset() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x30, 0x05]);
-    cpu_state.registers.f = 0x80;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.program_counter, 0x07);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x30, 0x05]);
+    emulator.cpu.registers.f = 0x80;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x07);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn jumps_to_curent_address_plus_n_if_c_flag_is_set() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x38, 0x05]);
-    cpu_state.registers.f = 0x80;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.program_counter, 0x02);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x38, 0x05]);
+    emulator.cpu.registers.f = 0x80;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x02);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn calls_address_nn() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCD, 0x4A, 0x51]);
-    cpu_state.registers.stack_pointer = 0x2112;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.memory.rom[0x2111], 0x00);
-    assert_eq!(cpu_state.memory.rom[0x2110], 0x03);
-    assert_eq!(cpu_state.registers.stack_pointer, 0x2110);
-    assert_eq!(cpu_state.registers.program_counter, 0x514A);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 24);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCD, 0x4A, 0x51]);
+    emulator.cpu.registers.stack_pointer = 0x2112;
+    step(&mut emulator);
+    assert_eq!(emulator.memory.rom[0x2111], 0x00);
+    assert_eq!(emulator.memory.rom[0x2110], 0x03);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0x2110);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x514A);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 24);
 }
 
 #[test]
 fn calls_address_nn_if_z_flag_is_reset() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xC4, 0x4A, 0x51]);
-    cpu_state.registers.stack_pointer = 0x2112;
-    cpu_state.registers.f = 0x80;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.memory.rom[0x2111], 0x00);
-    assert_eq!(cpu_state.memory.rom[0x2110], 0x00);
-    assert_eq!(cpu_state.registers.stack_pointer, 0x2112);
-    assert_eq!(cpu_state.registers.program_counter, 0x03);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xC4, 0x4A, 0x51]);
+    emulator.cpu.registers.stack_pointer = 0x2112;
+    emulator.cpu.registers.f = 0x80;
+    step(&mut emulator);
+    assert_eq!(emulator.memory.rom[0x2111], 0x00);
+    assert_eq!(emulator.memory.rom[0x2110], 0x00);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0x2112);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x03);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 }
 
 #[test]
 fn calls_address_nn_if_z_flag_is_set() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xCC, 0x4A, 0x51]);
-    cpu_state.registers.stack_pointer = 0x2112;
-    cpu_state.registers.f = 0x80;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.memory.rom[0x2111], 0x00);
-    assert_eq!(cpu_state.memory.rom[0x2110], 0x03);
-    assert_eq!(cpu_state.registers.stack_pointer, 0x2110);
-    assert_eq!(cpu_state.registers.program_counter, 0x514A);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 24);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCC, 0x4A, 0x51]);
+    emulator.cpu.registers.stack_pointer = 0x2112;
+    emulator.cpu.registers.f = 0x80;
+    step(&mut emulator);
+    assert_eq!(emulator.memory.rom[0x2111], 0x00);
+    assert_eq!(emulator.memory.rom[0x2110], 0x03);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0x2110);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x514A);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 24);
 }
 
 #[test]
 fn calls_address_nn_if_c_flag_is_reset() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xD4, 0x4A, 0x51]);
-    cpu_state.registers.stack_pointer = 0x2112;
-    cpu_state.registers.f = 0x80;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.memory.rom[0x2111], 0x00);
-    assert_eq!(cpu_state.memory.rom[0x2110], 0x03);
-    assert_eq!(cpu_state.registers.stack_pointer, 0x2110);
-    assert_eq!(cpu_state.registers.program_counter, 0x514A);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 24);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xD4, 0x4A, 0x51]);
+    emulator.cpu.registers.stack_pointer = 0x2112;
+    emulator.cpu.registers.f = 0x80;
+    step(&mut emulator);
+    assert_eq!(emulator.memory.rom[0x2111], 0x00);
+    assert_eq!(emulator.memory.rom[0x2110], 0x03);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0x2110);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x514A);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 24);
 }
 
 #[test]
 fn calls_address_nn_if_c_flag_is_set() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xDC, 0x4A, 0x51]);
-    cpu_state.registers.stack_pointer = 0x2112;
-    cpu_state.registers.f = 0x80;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.memory.rom[0x2111], 0x00);
-    assert_eq!(cpu_state.memory.rom[0x2110], 0x00);
-    assert_eq!(cpu_state.registers.stack_pointer, 0x2112);
-    assert_eq!(cpu_state.registers.program_counter, 0x03);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xDC, 0x4A, 0x51]);
+    emulator.cpu.registers.stack_pointer = 0x2112;
+    emulator.cpu.registers.f = 0x80;
+    step(&mut emulator);
+    assert_eq!(emulator.memory.rom[0x2111], 0x00);
+    assert_eq!(emulator.memory.rom[0x2110], 0x00);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0x2112);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x03);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 }
 
 #[test]
 fn restarts_address_0() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x00, 0x00, 0xC7]);
-    cpu_state.registers.stack_pointer = 0x2112;
-    execute_opcode(&mut cpu_state);
-    execute_opcode(&mut cpu_state);
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.memory.rom[0x2111], 0x00);
-    assert_eq!(cpu_state.memory.rom[0x2110], 0x03);
-    assert_eq!(cpu_state.registers.stack_pointer, 0x2110);
-    assert_eq!(cpu_state.registers.program_counter, 0x00);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 24);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x00, 0x00, 0xC7]);
+    emulator.cpu.registers.stack_pointer = 0x2112;
+    step(&mut emulator);
+    step(&mut emulator);
+    step(&mut emulator);
+    assert_eq!(emulator.memory.rom[0x2111], 0x00);
+    assert_eq!(emulator.memory.rom[0x2110], 0x03);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0x2110);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x00);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 24);
 }
 
 #[test]
 fn returns_from_call() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xC9]);
-    cpu_state.registers.stack_pointer = 0x2110;
-    cpu_state.memory.rom[0x2111] = 0xB1;
-    cpu_state.memory.rom[0x2110] = 0xDD;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.program_counter, 0xB1DD);
-    assert_eq!(cpu_state.registers.stack_pointer, 0x2112);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 16);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xC9]);
+    emulator.cpu.registers.stack_pointer = 0x2110;
+    emulator.memory.rom[0x2111] = 0xB1;
+    emulator.memory.rom[0x2110] = 0xDD;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.program_counter, 0xB1DD);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0x2112);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 16);
 }
 
 #[test]
 fn returns_from_call_if_z_flag_is_reset() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xC0]);
-    cpu_state.registers.stack_pointer = 0x2110;
-    cpu_state.registers.f = 0x80;
-    cpu_state.memory.rom[0x2111] = 0xB1;
-    cpu_state.memory.rom[0x2110] = 0xDD;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.program_counter, 0x01);
-    assert_eq!(cpu_state.registers.stack_pointer, 0x2110);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xC0]);
+    emulator.cpu.registers.stack_pointer = 0x2110;
+    emulator.cpu.registers.f = 0x80;
+    emulator.memory.rom[0x2111] = 0xB1;
+    emulator.memory.rom[0x2110] = 0xDD;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x01);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0x2110);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn returns_from_call_if_z_flag_is_set() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xC8]);
-    cpu_state.registers.stack_pointer = 0x2110;
-    cpu_state.registers.f = 0x80;
-    cpu_state.memory.rom[0x2111] = 0xB1;
-    cpu_state.memory.rom[0x2110] = 0xDD;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.program_counter, 0xB1DD);
-    assert_eq!(cpu_state.registers.stack_pointer, 0x2112);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 20);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xC8]);
+    emulator.cpu.registers.stack_pointer = 0x2110;
+    emulator.cpu.registers.f = 0x80;
+    emulator.memory.rom[0x2111] = 0xB1;
+    emulator.memory.rom[0x2110] = 0xDD;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.program_counter, 0xB1DD);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0x2112);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 20);
 }
 
 #[test]
 fn returns_from_call_if_c_flag_is_reset() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xD0]);
-    cpu_state.registers.stack_pointer = 0x2110;
-    cpu_state.registers.f = 0x80;
-    cpu_state.memory.rom[0x2111] = 0xB1;
-    cpu_state.memory.rom[0x2110] = 0xDD;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.program_counter, 0xB1DD);
-    assert_eq!(cpu_state.registers.stack_pointer, 0x2112);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 20);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xD0]);
+    emulator.cpu.registers.stack_pointer = 0x2110;
+    emulator.cpu.registers.f = 0x80;
+    emulator.memory.rom[0x2111] = 0xB1;
+    emulator.memory.rom[0x2110] = 0xDD;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.program_counter, 0xB1DD);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0x2112);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 20);
 }
 
 
 #[test]
 fn returns_from_call_if_c_flag_is_set() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xD8]);
-    cpu_state.registers.stack_pointer = 0x2110;
-    cpu_state.registers.f = 0x80;
-    cpu_state.memory.rom[0x2111] = 0xB1;
-    cpu_state.memory.rom[0x2110] = 0xDD;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.program_counter, 0x01);
-    assert_eq!(cpu_state.registers.stack_pointer, 0x2110);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xD8]);
+    emulator.cpu.registers.stack_pointer = 0x2110;
+    emulator.cpu.registers.f = 0x80;
+    emulator.memory.rom[0x2111] = 0xB1;
+    emulator.memory.rom[0x2110] = 0xDD;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x01);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0x2110);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
 }
 
 #[test]
 fn halts_the_cpu_until_interrupt() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x76, 0x15]);
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.halted, true);
-    assert_eq!(cpu_state.registers.program_counter, 0x0);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.halted, true);
-    assert_eq!(cpu_state.registers.program_counter, 0x0);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.halted, true);
-    assert_eq!(cpu_state.registers.program_counter, 0x0);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x76, 0x15]);
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.halted, true);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x0);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.halted, true);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x0);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.halted, true);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x0);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 
-    cpu_state.interrupts.enabled = true;
-    cpu_state.registers.stack_pointer = 0x2112;
-    cpu_state.memory.interrupt_registers.enabled = 0x1F;
-    cpu_state.memory.interrupt_registers.flags = 0x01;
+    emulator.cpu.interrupts.enabled = true;
+    emulator.cpu.registers.stack_pointer = 0x2112;
+    emulator.interrupts.enabled = 0x1F;
+    emulator.interrupts.flags = 0x01;
 
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.halted, false);
-    assert_eq!(cpu_state.registers.program_counter, 0x40);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 28);
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.halted, false);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x40);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 28);
 }
 
 #[test]
 fn enables_interrupts() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xFB, 0x00, 0x00, 0x00]);
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.interrupts.enable_delay, 2);
-    assert_eq!(cpu_state.interrupts.enabled, false);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.interrupts.enable_delay, 1);
-    assert_eq!(cpu_state.interrupts.enabled, false);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.interrupts.enable_delay, 0);
-    assert_eq!(cpu_state.interrupts.enabled, true);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xFB, 0x00, 0x00, 0x00]);
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.interrupts.enable_delay, 2);
+    assert_eq!(emulator.cpu.interrupts.enabled, false);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.interrupts.enable_delay, 1);
+    assert_eq!(emulator.cpu.interrupts.enabled, false);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.interrupts.enable_delay, 0);
+    assert_eq!(emulator.cpu.interrupts.enabled, true);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 }
 
 #[test]
 fn disables_interrupts() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xF3, 0x00, 0x00, 0x00]);
-    cpu_state.interrupts.enabled = true;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.interrupts.disable_delay, 2);
-    assert_eq!(cpu_state.interrupts.enabled, true);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 4);
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.interrupts.disable_delay, 1);
-    assert_eq!(cpu_state.interrupts.enabled, true);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 8);
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.interrupts.disable_delay, 0);
-    assert_eq!(cpu_state.interrupts.enabled, false);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 12);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xF3, 0x00, 0x00, 0x00]);
+    emulator.cpu.interrupts.enabled = true;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.interrupts.disable_delay, 2);
+    assert_eq!(emulator.cpu.interrupts.enabled, true);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 4);
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.interrupts.disable_delay, 1);
+    assert_eq!(emulator.cpu.interrupts.enabled, true);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.interrupts.disable_delay, 0);
+    assert_eq!(emulator.cpu.interrupts.enabled, false);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 }
 
 #[test]
 fn returns_from_call_then_enables_interrupts() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0xD9]);
-    cpu_state.registers.stack_pointer = 0x2110;
-    cpu_state.memory.rom[0x2111] = 0xB1;
-    cpu_state.memory.rom[0x2110] = 0xDD;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.program_counter, 0xB1DD);
-    assert_eq!(cpu_state.registers.stack_pointer, 0x2112);
-    assert_eq!(cpu_state.interrupts.enabled, true);
-    assert_eq!(cpu_state.clock.total_clock_cycles, 16);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xD9]);
+    emulator.cpu.registers.stack_pointer = 0x2110;
+    emulator.memory.rom[0x2111] = 0xB1;
+    emulator.memory.rom[0x2110] = 0xDD;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.program_counter, 0xB1DD);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0x2112);
+    assert_eq!(emulator.cpu.interrupts.enabled, true);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 16);
 }
 
 #[test]
 fn runs_vertical_blank_isr() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x00]);
-    cpu_state.registers.stack_pointer = 0x2112;
-    cpu_state.interrupts.enabled = true;
-    cpu_state.memory.interrupt_registers.enabled = 0x1F;
-    cpu_state.memory.interrupt_registers.flags = 0x01;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.stack_pointer, 0x2110);
-    assert_eq!(cpu_state.interrupts.enabled, false);
-    assert_eq!(cpu_state.registers.program_counter, 0x40);
-    assert_eq!(cpu_state.memory.interrupt_registers.enabled, 0x1F);
-    assert_eq!(cpu_state.memory.interrupt_registers.flags, 0x00);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x00]);
+    emulator.cpu.registers.stack_pointer = 0x2112;
+    emulator.cpu.interrupts.enabled = true;
+    emulator.interrupts.enabled = 0x1F;
+    emulator.interrupts.flags = 0x01;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0x2110);
+    assert_eq!(emulator.cpu.interrupts.enabled, false);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x40);
+    assert_eq!(emulator.interrupts.enabled, 0x1F);
+    assert_eq!(emulator.interrupts.flags, 0x00);
 }
 
 #[test]
 fn runs_lcd_status_isr() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x00]);
-    cpu_state.registers.stack_pointer = 0x2112;
-    cpu_state.interrupts.enabled = true;
-    cpu_state.memory.interrupt_registers.enabled = 0x1F;
-    cpu_state.memory.interrupt_registers.flags = 0x02;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.stack_pointer, 0x2110);
-    assert_eq!(cpu_state.interrupts.enabled, false);
-    assert_eq!(cpu_state.registers.program_counter, 0x48);
-    assert_eq!(cpu_state.memory.interrupt_registers.enabled, 0x1F);
-    assert_eq!(cpu_state.memory.interrupt_registers.flags, 0x00);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x00]);
+    emulator.cpu.registers.stack_pointer = 0x2112;
+    emulator.cpu.interrupts.enabled = true;
+    emulator.interrupts.enabled = 0x1F;
+    emulator.interrupts.flags = 0x02;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0x2110);
+    assert_eq!(emulator.cpu.interrupts.enabled, false);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x48);
+    assert_eq!(emulator.interrupts.enabled, 0x1F);
+    assert_eq!(emulator.interrupts.flags, 0x00);
 }
 
 #[test]
 fn runs_timer_overflow_isr() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x00]);
-    cpu_state.registers.stack_pointer = 0x2112;
-    cpu_state.interrupts.enabled = true;
-    cpu_state.memory.interrupt_registers.enabled = 0x1F;
-    cpu_state.memory.interrupt_registers.flags = 0x04;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.stack_pointer, 0x2110);
-    assert_eq!(cpu_state.interrupts.enabled, false);
-    assert_eq!(cpu_state.registers.program_counter, 0x50);
-    assert_eq!(cpu_state.memory.interrupt_registers.enabled, 0x1F);
-    assert_eq!(cpu_state.memory.interrupt_registers.flags, 0x00);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x00]);
+    emulator.cpu.registers.stack_pointer = 0x2112;
+    emulator.cpu.interrupts.enabled = true;
+    emulator.interrupts.enabled = 0x1F;
+    emulator.interrupts.flags = 0x04;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0x2110);
+    assert_eq!(emulator.cpu.interrupts.enabled, false);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x50);
+    assert_eq!(emulator.interrupts.enabled, 0x1F);
+    assert_eq!(emulator.interrupts.flags, 0x00);
 }
 
 #[test]
 fn runs_serial_link_isr() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x00]);
-    cpu_state.registers.stack_pointer = 0x2112;
-    cpu_state.interrupts.enabled = true;
-    cpu_state.memory.interrupt_registers.enabled = 0x1F;
-    cpu_state.memory.interrupt_registers.flags = 0x08;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.stack_pointer, 0x2110);
-    assert_eq!(cpu_state.interrupts.enabled, false);
-    assert_eq!(cpu_state.registers.program_counter, 0x58);
-    assert_eq!(cpu_state.memory.interrupt_registers.enabled, 0x1F);
-    assert_eq!(cpu_state.memory.interrupt_registers.flags, 0x00);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x00]);
+    emulator.cpu.registers.stack_pointer = 0x2112;
+    emulator.cpu.interrupts.enabled = true;
+    emulator.interrupts.enabled = 0x1F;
+    emulator.interrupts.flags = 0x08;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0x2110);
+    assert_eq!(emulator.cpu.interrupts.enabled, false);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x58);
+    assert_eq!(emulator.interrupts.enabled, 0x1F);
+    assert_eq!(emulator.interrupts.flags, 0x00);
 }
 
 #[test]
 fn runs_joypad_press_isr() {
-    let mut cpu_state: CpuState = init_cpu_with_test_instructions(vec![0x00]);
-    cpu_state.registers.stack_pointer = 0x2112;
-    cpu_state.interrupts.enabled = true;
-    cpu_state.memory.interrupt_registers.enabled = 0x1F;
-    cpu_state.memory.interrupt_registers.flags = 0x10;
-    execute_opcode(&mut cpu_state);
-    assert_eq!(cpu_state.registers.stack_pointer, 0x2110);
-    assert_eq!(cpu_state.interrupts.enabled, false);
-    assert_eq!(cpu_state.registers.program_counter, 0x60);
-    assert_eq!(cpu_state.memory.interrupt_registers.enabled, 0x1F);
-    assert_eq!(cpu_state.memory.interrupt_registers.flags, 0x00);
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x00]);
+    emulator.cpu.registers.stack_pointer = 0x2112;
+    emulator.cpu.interrupts.enabled = true;
+    emulator.interrupts.enabled = 0x1F;
+    emulator.interrupts.flags = 0x10;
+    step(&mut emulator);
+    assert_eq!(emulator.cpu.registers.stack_pointer, 0x2110);
+    assert_eq!(emulator.cpu.interrupts.enabled, false);
+    assert_eq!(emulator.cpu.registers.program_counter, 0x60);
+    assert_eq!(emulator.interrupts.enabled, 0x1F);
+    assert_eq!(emulator.interrupts.flags, 0x00);
 }

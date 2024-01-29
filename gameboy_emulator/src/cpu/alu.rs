@@ -1,5 +1,6 @@
 use crate::cpu::{Register, CpuState};
 use crate::cpu::microops;
+use crate::emulator::Emulator;
 
 use super::{REGISTER_HL, RegisterPair};
 
@@ -119,28 +120,28 @@ pub fn decrement_register(cpu_state: &mut CpuState, register: Register) {
     microops::set_flag_h(cpu_state, (byte & 0xF) < 1);
 }
 
-pub fn increment_memory_byte(cpu_state: &mut CpuState) {
-    let address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
-    let byte = microops::read_byte_from_memory(cpu_state, address);
+pub fn increment_memory_byte(emulator: &mut Emulator) {
+    let address = microops::read_from_register_pair(&mut emulator.cpu, &REGISTER_HL);
+    let byte = microops::read_byte_from_memory(emulator, address);
     let sum = byte.wrapping_add(1);
 
-    microops::store_byte_in_memory(cpu_state, address, sum);
+    microops::store_byte_in_memory(emulator, address, sum);
 
-    microops::set_flag_z(cpu_state, sum == 0);
-    microops::set_flag_n(cpu_state, false);
-    microops::set_flag_h(cpu_state, (1 + (byte & 0xF)) > 0xF);
+    microops::set_flag_z(&mut emulator.cpu, sum == 0);
+    microops::set_flag_n(&mut emulator.cpu, false);
+    microops::set_flag_h(&mut emulator.cpu, (1 + (byte & 0xF)) > 0xF);
 }
 
-pub fn decrement_memory_byte(cpu_state: &mut CpuState) {
-    let address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
-    let byte = microops::read_byte_from_memory(cpu_state, address);
+pub fn decrement_memory_byte(emulator: &mut Emulator) {
+    let address = microops::read_from_register_pair(&mut emulator.cpu, &REGISTER_HL);
+    let byte = microops::read_byte_from_memory(emulator, address);
     let difference = byte.wrapping_sub(1);
 
-    microops::store_byte_in_memory(cpu_state, address, difference);
+    microops::store_byte_in_memory(emulator, address, difference);
 
-    microops::set_flag_z(cpu_state, difference == 0);
-    microops::set_flag_n(cpu_state, true);
-    microops::set_flag_h(cpu_state, (byte & 0xF) < 1);
+    microops::set_flag_z(&mut emulator.cpu, difference == 0);
+    microops::set_flag_n(&mut emulator.cpu, true);
+    microops::set_flag_h(&mut emulator.cpu, (byte & 0xF) < 1);
 }
 
 pub fn increment_register_pair(cpu_state: &mut CpuState, register_pair: RegisterPair) {
