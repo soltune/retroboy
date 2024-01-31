@@ -99,6 +99,10 @@ pub fn handle_illegal_opcode(opcode: u8) {
     panic!("Encountered illegal opcode {:#04X}", opcode);
 }
 
+pub fn at_end_of_boot_rom(cpu_state: &mut CpuState) -> bool {
+    cpu_state.registers.program_counter == 0x100
+}
+
 mod microops;
 mod alu;
 mod bitops;

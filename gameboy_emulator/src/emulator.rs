@@ -1,7 +1,7 @@
-use crate::cpu::{CpuState, initialize_cpu_state};
+use crate::cpu::{at_end_of_boot_rom, initialize_cpu_state, opcodes, CpuState};
 use crate::cpu::interrupts::InterruptRegisters;
 use crate::cpu::timers::TimerRegisters;
-use crate::gpu::{initialize_gpu, GpuState};
+use crate::gpu::{self, initialize_gpu, GpuState};
 use crate::mmu;
 use crate::mmu::{Memory, initialize_memory};
 use std::io;
@@ -43,4 +43,17 @@ pub fn initialize_emulator() -> Emulator {
 pub fn initialize_emulator_by_filepath(filepath: &str) -> io::Result<Emulator> {
     let emulator = initialize_emulator();
     load_rom_by_filepath(emulator, filepath)
+}
+
+pub fn transfer_to_game_rom(memory: &mut Memory) {
+    memory.in_bios = true;
+}
+
+pub fn step(emulator: &mut Emulator) {
+    if at_end_of_boot_rom(&mut emulator.cpu) {
+        transfer_to_game_rom(&mut emulator.memory);
+    }
+
+    opcodes::step(emulator);
+    gpu::step(emulator);
 }
