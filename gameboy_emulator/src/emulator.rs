@@ -1,4 +1,4 @@
-use crate::cpu::{at_end_of_boot_rom, initialize_cpu, opcodes, CpuState};
+use crate::cpu::{self, at_end_of_boot_rom, initialize_cpu, CpuState};
 use crate::cpu::interrupts::InterruptRegisters;
 use crate::cpu::timers::TimerRegisters;
 use crate::gpu::{self, initialize_gpu, GpuState};
@@ -54,6 +54,6 @@ pub fn step(emulator: &mut Emulator) {
         transfer_to_game_rom(&mut emulator.memory);
     }
 
-    opcodes::step(emulator);
+    cpu::opcodes::step(emulator);
     gpu::step(emulator);
 }
