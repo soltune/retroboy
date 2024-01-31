@@ -56,7 +56,7 @@ pub const REGISTER_HL: RegisterPair = RegisterPair { first: Register::H, second:
 pub const REGISTER_BC: RegisterPair = RegisterPair { first: Register::B, second: Register::C };
 pub const REGISTER_DE: RegisterPair = RegisterPair { first: Register::D, second: Register::E }; 
 
-pub fn initialize_cpu_state() -> CpuState {
+pub fn initialize_cpu() -> CpuState {
     CpuState {
         registers: Registers {
             a: 0,

@@ -1,4 +1,4 @@
-use crate::cpu::{at_end_of_boot_rom, initialize_cpu_state, opcodes, CpuState};
+use crate::cpu::{at_end_of_boot_rom, initialize_cpu, opcodes, CpuState};
 use crate::cpu::interrupts::InterruptRegisters;
 use crate::cpu::timers::TimerRegisters;
 use crate::gpu::{self, initialize_gpu, GpuState};
@@ -21,7 +21,7 @@ fn load_rom_by_filepath(emulator: Emulator, filepath: &str) -> io::Result<Emulat
 
 pub fn initialize_emulator() -> Emulator {
     Emulator {
-        cpu: initialize_cpu_state(),
+        cpu: initialize_cpu(),
         interrupts: InterruptRegisters {
             enabled: 0,
             flags: 0
