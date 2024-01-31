@@ -45,7 +45,7 @@ pub fn initialize_emulator_by_filepath(filepath: &str) -> io::Result<Emulator> {
     load_rom_by_filepath(emulator, filepath)
 }
 
-pub fn transfer_to_game_rom(memory: &mut Memory) {
+fn transfer_to_game_rom(memory: &mut Memory) {
     memory.in_bios = true;
 }
 
