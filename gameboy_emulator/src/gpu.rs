@@ -50,7 +50,7 @@ pub fn get_bg_and_window_enabled_mode(lcdc: u8) -> bool {
 }
 
 pub fn get_obj_enabled_mode(lcdc: u8) -> bool {
-   is_bit_set(lcdc, LCDC_OBJ_ENABLED_INDEX) 
+    is_bit_set(lcdc, LCDC_OBJ_ENABLED_INDEX) 
 }
 
 pub fn get_obj_size_mode(lcdc: u8) -> bool {
