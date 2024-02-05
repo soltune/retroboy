@@ -54,6 +54,8 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.timers.modulo = 0x02;
     emulator.timers.control = 0x07;
 
+    emulator.gpu.registers.lcdc = 0x80;
+
     emulator.memory.in_bios = false;
 
     emulator
@@ -166,6 +168,12 @@ fn reads_from_timer_modulo_register() {
 fn reads_from_timer_control_register() {
     let emulator= setup_emulator_with_test_memory();
     assert_eq!(read_byte(&emulator, 0xFF07), 0x07);
+}
+
+#[test]
+fn reads_lcdc_register_from_gpu() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xFF40), 0x80);
 }
 
 #[test]

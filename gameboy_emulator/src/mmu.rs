@@ -44,6 +44,7 @@ pub fn read_byte(emulator: &Emulator, address: u16) -> u8 {
             0xF00 if address == 0xFFFF => emulator.interrupts.enabled,
             0xF00 if address >= 0xFF80 => memory.zero_page_ram[(address & 0x7F) as usize],
             _ => match address & 0xFF {
+                0x40 => emulator.gpu.registers.lcdc,
                 0x0F => emulator.interrupts.flags,
                 0x04 => emulator.timers.divider,
                 0x05 => emulator.timers.counter,
@@ -73,6 +74,7 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
             0xF00 if address == 0xFFFF => emulator.interrupts.enabled = value,
             0xF00 if address >= 0xFF80 => memory.zero_page_ram[(address & 0x7F) as usize] = value,
             _ => match address & 0xFF {
+                0x40 => emulator.gpu.registers.lcdc = value,
                 0x0F => emulator.interrupts.flags = value,
                 0x04 => emulator.timers.divider = value,
                 0x05 => emulator.timers.counter = value,

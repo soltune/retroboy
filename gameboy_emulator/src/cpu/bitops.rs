@@ -1,6 +1,7 @@
 use crate::cpu::{Register, CpuState, REGISTER_HL};
 use crate::cpu::microops;
 use crate::emulator::Emulator;
+use crate::utils::is_bit_set;
 
 fn rotate_left(cpu_state: &mut CpuState, byte: u8) -> u8 {
     let most_significant_bit = byte >> 7;
@@ -173,9 +174,7 @@ pub fn shift_memory_byte_right(emulator: &mut Emulator) {
 }
 
 fn test_bit(cpu_state: &mut CpuState, byte: u8, bit_index: u8) {
-    let mask = 1 << bit_index;
-    let bit_is_set = (mask & byte) > 0;
-    microops::set_flag_z(cpu_state, !bit_is_set);
+    microops::set_flag_z(cpu_state, !is_bit_set(byte, bit_index));
     microops::set_flag_n(cpu_state, false);
     microops::set_flag_h(cpu_state, true);
 }

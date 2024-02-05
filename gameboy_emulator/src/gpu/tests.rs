@@ -1,16 +1,12 @@
 use crate::emulator::initialize_emulator;
 use super::*;
 
-fn init_emulator_with_gpu_state(gpu_state: GpuState) -> Emulator {
-    let emulator = initialize_emulator();
-    Emulator { gpu: gpu_state, ..emulator }
-}
-
-
 #[test]
 fn should_move_from_oam_to_vram_mode() {
-    let gpu_state = GpuState { mode: 2, line: 0, mode_clock: 76 };
-    let mut emulator = init_emulator_with_gpu_state(gpu_state);
+    let mut emulator = initialize_emulator();
+    emulator.gpu.mode = 2;
+    emulator.gpu.line = 0;
+    emulator.gpu.mode_clock = 76;
     emulator.cpu.clock.instruction_clock_cycles = 4;
     step(&mut emulator);
     assert_eq!(emulator.gpu.mode, 3);
@@ -19,8 +15,10 @@ fn should_move_from_oam_to_vram_mode() {
 
 #[test]
 fn should_move_from_vram_to_hblank_mode() {
-    let gpu_state = GpuState { mode: 3, line: 0, mode_clock: 168 };
-    let mut emulator = init_emulator_with_gpu_state(gpu_state);
+    let mut emulator = initialize_emulator();
+    emulator.gpu.mode = 3;
+    emulator.gpu.line = 0;
+    emulator.gpu.mode_clock = 168;
     emulator.cpu.clock.instruction_clock_cycles = 4;
     step(&mut emulator);
     assert_eq!(emulator.gpu.mode, 0);
@@ -29,8 +27,10 @@ fn should_move_from_vram_to_hblank_mode() {
 
 #[test]
 fn should_not_move_from_oam_to_vram_mode_too_early() {
-    let gpu_state = GpuState { mode: 2, line: 0, mode_clock: 40 };
-    let mut emulator = init_emulator_with_gpu_state(gpu_state);
+    let mut emulator = initialize_emulator();
+    emulator.gpu.mode = 2;
+    emulator.gpu.line = 0;
+    emulator.gpu.mode_clock = 40;
     emulator.cpu.clock.instruction_clock_cycles = 4; 
     step(&mut emulator);
     assert_eq!(emulator.gpu.mode, 2);
@@ -39,8 +39,10 @@ fn should_not_move_from_oam_to_vram_mode_too_early() {
 
 #[test]
 fn should_move_back_to_oam_mode_from_hblank_if_not_at_last_line() {
-    let gpu_state = GpuState { mode: 0, line: 100, mode_clock: 200 };
-    let mut emulator = init_emulator_with_gpu_state(gpu_state);
+    let mut emulator = initialize_emulator();
+    emulator.gpu.mode = 0;
+    emulator.gpu.line = 100;
+    emulator.gpu.mode_clock = 200;
     emulator.cpu.clock.instruction_clock_cycles = 4;
     step(&mut emulator);
     assert_eq!(emulator.gpu.mode, 2);
@@ -50,8 +52,10 @@ fn should_move_back_to_oam_mode_from_hblank_if_not_at_last_line() {
 
 #[test]
 fn should_move_to_vblank_mode_from_hblank_if_at_last_line() {
-    let gpu_state = GpuState { mode: 0, line: 142, mode_clock: 200 };
-    let mut emulator = init_emulator_with_gpu_state(gpu_state);
+    let mut emulator = initialize_emulator();
+    emulator.gpu.mode = 0;
+    emulator.gpu.line = 142;
+    emulator.gpu.mode_clock = 200;
     emulator.cpu.clock.instruction_clock_cycles = 4;
     step(&mut emulator);
     assert_eq!(emulator.gpu.mode, 1);
@@ -61,11 +65,77 @@ fn should_move_to_vblank_mode_from_hblank_if_at_last_line() {
 
 #[test]
 fn should_move_back_to_oam_mode_from_vblank_at_correct_time() {
-    let gpu_state = GpuState { mode: 1, line: 152, mode_clock: 452 };
-    let mut emulator = init_emulator_with_gpu_state(gpu_state);
+    let mut emulator = initialize_emulator();
+    emulator.gpu.mode = 1;
+    emulator.gpu.line = 152;
+    emulator.gpu.mode_clock = 452;
     emulator.cpu.clock.instruction_clock_cycles = 4;
     step(&mut emulator);
     assert_eq!(emulator.gpu.mode, 2);
     assert_eq!(emulator.gpu.mode_clock, 0);
     assert_eq!(emulator.gpu.line, 0);
+}
+
+#[test]
+fn should_return_bg_and_window_enabled_mode() {
+    let mut emulator = initialize_emulator();
+    emulator.gpu.registers.lcdc = 0x01;
+    let result = get_bg_and_window_enabled_mode(emulator.gpu.registers.lcdc);
+    assert_eq!(result, true);
+}
+
+#[test]
+fn should_return_obj_enabled_mode() {
+    let mut emulator = initialize_emulator();
+    emulator.gpu.registers.lcdc = 0x02;
+    let result = get_obj_enabled_mode(emulator.gpu.registers.lcdc);
+    assert_eq!(result, true);
+}
+
+#[test]
+fn should_return_obj_size_mode() {
+   let mut emulator = initialize_emulator();
+   emulator.gpu.registers.lcdc = 0x04;
+   let result = get_obj_size_mode(emulator.gpu.registers.lcdc);
+   assert_eq!(result, true); 
+}
+
+#[test]
+fn should_return_bg_tile_map_mode() {
+    let mut emulator = initialize_emulator();
+    emulator.gpu.registers.lcdc = 0x08;
+    let result = get_bg_tile_map_mode(emulator.gpu.registers.lcdc);
+    assert_eq!(result, true);
+}
+
+#[test]
+fn should_return_tile_data_mode() {
+    let mut emulator = initialize_emulator();
+    emulator.gpu.registers.lcdc = 0x10;
+    let result = get_tile_data_addressing_mode(emulator.gpu.registers.lcdc);
+    assert_eq!(result, true);
+}
+
+#[test]
+fn should_return_window_enabled_mode() {
+    let mut emulator = initialize_emulator();
+    emulator.gpu.registers.lcdc = 0x20;
+    let result = get_window_enabled_mode(emulator.gpu.registers.lcdc);
+    assert_eq!(result, true);
+}
+
+#[test]
+fn should_return_window_tile_map_mode() {
+    let mut emulator = initialize_emulator();
+    emulator.gpu.registers.lcdc = 0x40;
+    let result = get_window_tile_map_mode(emulator.gpu.registers.lcdc);
+    assert_eq!(result, true);
+}
+
+#[test]
+fn should_return_lcdc_enabled_mode() {
+    let mut emulator = initialize_emulator();
+    emulator.gpu.registers.lcdc = 0x80;
+    let result = get_lcd_enabled_mode(emulator.gpu.registers.lcdc);
+    assert_eq!(result, true);
 }
