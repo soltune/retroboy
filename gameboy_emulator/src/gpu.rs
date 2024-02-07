@@ -1,7 +1,15 @@
 use crate::{emulator::Emulator, utils::is_bit_set};
 
 pub struct GpuRegisters {
-    pub lcdc: u8
+    pub lcdc: u8,
+    pub scy: u8,
+    pub scx: u8,
+    pub wx: u8,
+    pub wy: u8,
+    pub palette: u8,
+    pub ly: u8,
+    pub lyc: u8,
+    pub stat: u8
 }
 
 pub struct GpuState {
@@ -41,7 +49,17 @@ pub fn initialize_gpu() -> GpuState {
         mode: 2,
         line: 0,
         mode_clock: 0,
-        registers: GpuRegisters { lcdc: 0 }
+        registers: GpuRegisters {
+            lcdc: 0,
+            scy: 0,
+            scx: 0,
+            wx: 0,
+            wy: 0,
+            palette: 0,
+            ly: 0,
+            lyc: 0,
+            stat: 0
+        }
     }
 }
 

@@ -55,6 +55,14 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.timers.control = 0x07;
 
     emulator.gpu.registers.lcdc = 0x80;
+    emulator.gpu.registers.scy = 0x55;
+    emulator.gpu.registers.scx = 0xA1;
+    emulator.gpu.registers.wy = 0xBB;
+    emulator.gpu.registers.wx = 0xDD;
+    emulator.gpu.registers.palette = 0xC1;
+    emulator.gpu.registers.ly = 0x2B;
+    emulator.gpu.registers.lyc = 0xAB;
+    emulator.gpu.registers.stat = 0xD2;
 
     emulator.memory.in_bios = false;
 
@@ -174,6 +182,44 @@ fn reads_from_timer_control_register() {
 fn reads_lcdc_register_from_gpu() {
     let emulator = setup_emulator_with_test_memory();
     assert_eq!(read_byte(&emulator, 0xFF40), 0x80);
+}
+
+#[test]
+fn reads_scroll_registers_from_gpu() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xFF42), 0x55);
+    assert_eq!(read_byte(&emulator, 0xFF43), 0xA1);
+}
+
+#[test]
+fn reads_window_position_registers_from_gpu() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xFF4A), 0xBB);
+    assert_eq!(read_byte(&emulator, 0xFF4B), 0xDD);
+}
+
+#[test]
+fn reads_palette_from_gpu() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xFF47), 0xC1);
+}
+
+#[test]
+fn reads_ly_from_gpu() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xFF44), 0x2B);
+}
+
+#[test]
+fn reads_lyc_from_gpu() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xFF45), 0xAB);
+}
+
+#[test]
+fn reads_stat_from_gpu() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xFF41), 0xD2);
 }
 
 #[test]
