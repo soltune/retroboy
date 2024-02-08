@@ -14,7 +14,6 @@ pub struct GpuRegisters {
 
 pub struct GpuState {
     pub mode: u8,
-    pub line: u8,
     pub mode_clock: u16,
     pub registers: GpuRegisters
 }
@@ -47,7 +46,6 @@ const LCDC_ENABLED_INDEX: u8 = 7;
 pub fn initialize_gpu() -> GpuState {
     GpuState {
         mode: 2,
-        line: 0,
         mode_clock: 0,
         registers: GpuRegisters {
             lcdc: 0,
@@ -113,10 +111,10 @@ pub fn step(emulator: &mut Emulator) {
         }
         HBLANK_MODE => {
             if emulator.gpu.mode_clock >= HBLANK_TIME {
-                emulator.gpu.line += 1;
+                emulator.gpu.registers.ly += 1;
                 emulator.gpu.mode_clock = 0;
 
-                if emulator.gpu.line == FRAME_SCANLINE_COUNT - VBLANK_SCANLINE_COUNT - 1 {
+                if emulator.gpu.registers.ly == FRAME_SCANLINE_COUNT - VBLANK_SCANLINE_COUNT - 1 {
                     emulator.gpu.mode = VBLANK_MODE;
                 }
                 else {
@@ -127,11 +125,11 @@ pub fn step(emulator: &mut Emulator) {
         VBLANK_MODE => {
             if emulator.gpu.mode_clock >= SCANLINE_RENDER_TIME {
                 emulator.gpu.mode_clock = 0;
-                emulator.gpu.line += 1;
+                emulator.gpu.registers.ly += 1;
 
-                if emulator.gpu.line == FRAME_SCANLINE_COUNT - 1 {
+                if emulator.gpu.registers.ly == FRAME_SCANLINE_COUNT - 1 {
                     emulator.gpu.mode = OAM_MODE;
-                    emulator.gpu.line = 0;
+                    emulator.gpu.registers.ly = 0;
                 }
             }
         }
