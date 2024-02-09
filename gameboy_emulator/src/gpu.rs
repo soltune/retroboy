@@ -15,7 +15,8 @@ pub struct GpuRegisters {
 pub struct GpuState {
     pub mode: u8,
     pub mode_clock: u16,
-    pub registers: GpuRegisters
+    pub registers: GpuRegisters,
+    pub frame_buffer: Vec<u32>
 }
 
 const OAM_MODE: u8 = 2;
@@ -43,6 +44,9 @@ const LCDC_WINDOW_ENABLED_INDEX: u8 = 5;
 const LCDC_WINDOW_TILE_MAP_INDEX: u8 = 6;
 const LCDC_ENABLED_INDEX: u8 = 7;
 
+const GB_SCREEN_WIDTH: usize = 160;
+const GB_SCREEN_HEIGHT: usize = 144;
+
 pub fn initialize_gpu() -> GpuState {
     GpuState {
         mode: 2,
@@ -57,7 +61,8 @@ pub fn initialize_gpu() -> GpuState {
             ly: 0,
             lyc: 0,
             stat: 0
-        }
+        },
+        frame_buffer: vec![0; GB_SCREEN_WIDTH * GB_SCREEN_HEIGHT]
     }
 }
 
