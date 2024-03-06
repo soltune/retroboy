@@ -184,7 +184,7 @@ fn within_scanline(sprite_y_pos: u8, ly: u8) -> bool {
     (sprite_y_pos > 16 && sprite_y_pos >= ly && sprite_y_pos - 16 <= ly)
 }
 
-fn pull_sprite(emulator: &mut Emulator, sprite_number: u16) -> Sprite {
+fn pull_sprite(emulator: &Emulator, sprite_number: u16) -> Sprite {
     let sprite_address = BASE_OAM_ADDRESS + (sprite_number * 4);
     let y_pos = mmu::read_byte(emulator, sprite_address);
     let x_pos = mmu::read_byte(emulator, sprite_address + 1);
@@ -199,7 +199,7 @@ fn pull_sprite(emulator: &mut Emulator, sprite_number: u16) -> Sprite {
     }
 }
 
-pub fn collect_scanline_sprites(emulator: &mut Emulator) -> Vec<Sprite> {
+pub fn collect_scanline_sprites(emulator: &Emulator) -> Vec<Sprite> {
     let mut sprites = Vec::new();
     let ly = emulator.gpu.registers.ly;
 

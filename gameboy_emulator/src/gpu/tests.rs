@@ -290,7 +290,7 @@ fn should_get_ten_sprites_from_oam_memory() {
     write_sprite(&mut emulator, 14, 14, 0x22);
     write_sprite(&mut emulator, 15, 15, 0x23);
 
-    let sprites = collect_scanline_sprites(&mut emulator);
+    let sprites = collect_scanline_sprites(&emulator);
 
     assert_eq!(sprites.len(), 10);
     assert_eq!(sprites[0].y_pos, 16);
