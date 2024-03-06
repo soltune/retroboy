@@ -226,20 +226,17 @@ pub fn write_scanline(emulator: &mut Emulator) {
     for row_tile_offset in 0..TILES_PER_ROW {
         let line_address = resolve_line_address(emulator, row_tile_offset);
         let tile_map_x = row_tile_offset * 8;
+        let lsb_byte = mmu::read_byte(emulator, line_address);
+        let msb_byte = mmu::read_byte(emulator, line_address + 1);
 
-        if within_viewport(scx, tile_map_x) {
-            let lsb_byte = mmu::read_byte(emulator, line_address);
-            let msb_byte = mmu::read_byte(emulator, line_address + 1);
-
-            for bit_index in 0..TILE_WIDTH {
-                let pixel_x = tile_map_x + bit_index;
-                if within_viewport(pixel_x, tile_map_x) {
-                    let x = pixel_x.wrapping_sub(scx);
-                    let color_rgb = as_color_rgb(bit_index, palette, msb_byte, lsb_byte);
-                    let pixel_index = (ly as u16 * GB_SCREEN_WIDTH + x as u16) as usize;
-                    emulator.gpu.frame_buffer[pixel_index] = color_rgb;
-                } 
-            }
+        for bit_index in 0..TILE_WIDTH {
+            let pixel_x = tile_map_x + bit_index;
+            if within_viewport(pixel_x, tile_map_x) {
+                let x = pixel_x.wrapping_sub(scx);
+                let color_rgb = as_color_rgb(bit_index, palette, msb_byte, lsb_byte);
+                let pixel_index = (ly as u16 * GB_SCREEN_WIDTH + x as u16) as usize;
+                emulator.gpu.frame_buffer[pixel_index] = color_rgb;
+            } 
         }
     }
 }
