@@ -260,12 +260,12 @@ fn should_wrap_around_when_rendering_past_max_tile_map_y_value() {
     assert_eq!(emulator.gpu.frame_buffer[0x147], 0x000000);
 }
 
-fn write_sprite(emulator: &mut Emulator, sprit_number: u8, y_pos: u8, x_pos: u8) {
+fn write_sprite(emulator: &mut Emulator, sprit_number: u8, y_pos: u8, x_pos: u8, attributes: u8) {
     let index = (sprit_number * 4) as usize;
     emulator.memory.object_attribute_memory[index] = y_pos;
     emulator.memory.object_attribute_memory[index + 1] = x_pos;
     emulator.memory.object_attribute_memory[index + 2] = 0x0;
-    emulator.memory.object_attribute_memory[index + 3] = 0x0;
+    emulator.memory.object_attribute_memory[index + 3] = attributes;
 }
 
 #[test]
@@ -273,22 +273,22 @@ fn should_get_ten_sprites_from_oam_memory() {
     let mut emulator = initialize_emulator();
     emulator.gpu.registers.ly = 0;
 
-    write_sprite(&mut emulator, 0, 0, 0);
-    write_sprite(&mut emulator, 1, 16, 0);
-    write_sprite(&mut emulator, 2, 44, 0);
-    write_sprite(&mut emulator, 3, 9, 0x1F);
-    write_sprite(&mut emulator, 4, 14, 0x2A);
-    write_sprite(&mut emulator, 5, 16, 0x60);
-    write_sprite(&mut emulator, 6, 0, 0xFF);
-    write_sprite(&mut emulator, 7, 10, 0x3F);
-    write_sprite(&mut emulator, 8, 16, 0x4A);
-    write_sprite(&mut emulator, 9, 14, 0x51);
-    write_sprite(&mut emulator, 10, 8, 0x22);
-    write_sprite(&mut emulator, 11, 11, 0x1B);
-    write_sprite(&mut emulator, 12, 13, 0x14);
-    write_sprite(&mut emulator, 13, 16, 0x55);
-    write_sprite(&mut emulator, 14, 14, 0x22);
-    write_sprite(&mut emulator, 15, 15, 0x23);
+    write_sprite(&mut emulator, 0, 0, 0, 0);
+    write_sprite(&mut emulator, 1, 16, 0, 0);
+    write_sprite(&mut emulator, 2, 44, 0, 0);
+    write_sprite(&mut emulator, 3, 9, 0x1F, 0);
+    write_sprite(&mut emulator, 4, 14, 0x2A, 0);
+    write_sprite(&mut emulator, 5, 16, 0x60, 0);
+    write_sprite(&mut emulator, 6, 0, 0xFF, 0);
+    write_sprite(&mut emulator, 7, 10, 0x3F, 0);
+    write_sprite(&mut emulator, 8, 16, 0x4A, 0);
+    write_sprite(&mut emulator, 9, 14, 0x51, 0);
+    write_sprite(&mut emulator, 10, 8, 0x22, 0);
+    write_sprite(&mut emulator, 11, 11, 0x1B, 0);
+    write_sprite(&mut emulator, 12, 13, 0x14, 0);
+    write_sprite(&mut emulator, 13, 16, 0x55, 0);
+    write_sprite(&mut emulator, 14, 14, 0x22, 0);
+    write_sprite(&mut emulator, 15, 15, 0x23, 0);
 
     let sprites = collect_scanline_sprites(&emulator);
 
@@ -303,4 +303,18 @@ fn should_get_ten_sprites_from_oam_memory() {
     assert_eq!(sprites[7].y_pos, 8);
     assert_eq!(sprites[8].y_pos, 11);
     assert_eq!(sprites[9].y_pos, 13);
+}
+
+#[test]
+fn should_parse_sprite_attributes_correctly() {
+    let mut emulator = initialize_emulator();
+    
+    write_sprite(&mut emulator, 0, 16, 0, 0b11000000);
+    
+    let sprites = collect_scanline_sprites(&emulator);
+
+    assert_eq!(sprites[0].priority, true);
+    assert_eq!(sprites[0].y_flip, true);
+    assert_eq!(sprites[0].x_flip, false);
+    assert_eq!(sprites[0].dmg_palette, false);
 }

@@ -19,6 +19,7 @@ pub struct Sprite {
     pub priority: bool,
     pub y_flip: bool,
     pub x_flip: bool,
+    pub dmg_palette: bool
 }
 
 pub struct GpuState {
@@ -189,13 +190,15 @@ fn pull_sprite(emulator: &Emulator, sprite_number: u16) -> Sprite {
     let y_pos = mmu::read_byte(emulator, sprite_address);
     let x_pos = mmu::read_byte(emulator, sprite_address + 1);
     let tile_index = mmu::read_byte(emulator, sprite_address + 2);
+    let attributes = mmu::read_byte(emulator, sprite_address + 3);
     Sprite {
         y_pos,
         x_pos,
         tile_index,
-        priority: false,
-        y_flip: false,
-        x_flip: false
+        priority: is_bit_set(attributes, 7),
+        y_flip: is_bit_set(attributes, 6),
+        x_flip: is_bit_set(attributes, 5),
+        dmg_palette: is_bit_set(attributes, 4)
     }
 }
 
