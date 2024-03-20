@@ -125,13 +125,13 @@ fn reads_from_working_ram_shadow_scenario_two() {
 }
 
 #[test]
-fn reads_from_object_attribute_emulator() {
+fn reads_from_object_attribute_memory() {
     let emulator = setup_emulator_with_test_memory();
     assert_eq!(read_byte(&emulator, 0xFE7B), 0x45);
 }
 
 #[test]
-fn reads_zero_values_outside_of_object_attribute_emulator() {
+fn reads_zero_values_outside_of_object_attribute_memory() {
     let emulator = setup_emulator_with_test_memory();
     assert_eq!(read_byte(&emulator, 0xFEEE), 0x00);
 }
