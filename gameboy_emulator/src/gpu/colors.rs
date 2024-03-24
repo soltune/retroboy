@@ -5,9 +5,10 @@ const DARK_GRAY: u32 = 0xA9A9A9;
 const LIGHT_GRAY: u32 = 0xD3D3D3;
 const WHITE: u32 = 0xFFFFFF;
 
-fn calculate_color_id(bit_index: u8, msb_byte: u8, lsb_byte: u8) -> u8 {
-    let msb = get_bit(msb_byte, bit_index);
-    let lsb = get_bit(lsb_byte, bit_index);
+fn calculate_color_id(bit_index: u8, msb_byte: u8, lsb_byte: u8, x_flip: bool) -> u8 {
+    let calculated_index = if x_flip { bit_index } else { 7 - bit_index };
+    let msb = get_bit(msb_byte, calculated_index);
+    let lsb = get_bit(lsb_byte, calculated_index);
     (msb * 2) + lsb
 }
 
@@ -39,13 +40,13 @@ fn as_obj_color_key(color_id: u8, palette: u8) -> Option<u8> {
 }
 
 pub fn as_bg_color_rgb(bit_index: u8, palette: u8, msb_byte: u8, lsb_byte: u8) -> u32 {
-    let color_id = calculate_color_id(bit_index, msb_byte, lsb_byte);
+    let color_id = calculate_color_id(bit_index, msb_byte, lsb_byte, false);
     let key = as_bg_color_key(color_id, palette); 
     decode_color_key(key)
 }
 
-pub fn as_obj_color_rgb(bit_index: u8, palette: u8, msb_byte: u8, lsb_byte: u8) -> Option<u32> {
-    let color_id = calculate_color_id(bit_index, msb_byte, lsb_byte);
+pub fn as_obj_color_rgb(bit_index: u8, palette: u8, msb_byte: u8, lsb_byte: u8, x_flip: bool) -> Option<u32> {
+    let color_id = calculate_color_id(bit_index, msb_byte, lsb_byte, x_flip);
     let maybe_key = as_obj_color_key(color_id, palette); 
     maybe_key.map(decode_color_key)
 }

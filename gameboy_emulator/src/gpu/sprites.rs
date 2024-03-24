@@ -131,7 +131,7 @@ pub fn read_sprite_pixel_rgb(emulator: &Emulator, x: u8, y: u8) -> Option<u32> {
                 let lsb_byte = mmu::read_byte(&emulator, line_address);
                 let msb_byte = mmu::read_byte(&emulator, line_address + 1);
                 let palette = get_sprite_palette(sprite.dmg_palette, emulator.gpu.registers.obp0, emulator.gpu.registers.obp1);
-                as_obj_color_rgb(column_offset as u8, palette, msb_byte, lsb_byte) 
+                as_obj_color_rgb(column_offset as u8, palette, msb_byte, lsb_byte, sprite.x_flip) 
             }
             else {
                 None
