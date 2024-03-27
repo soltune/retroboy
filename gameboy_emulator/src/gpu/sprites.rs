@@ -124,7 +124,8 @@ pub fn read_sprite_pixel_rgb(emulator: &Emulator, x: u8, y: u8) -> Option<u32> {
             let x_int  = x as i16;
 
             let row_offset = y_int - sprite.y_pos;
-            let line_address = tile_data_address + (row_offset * 2) as u16;
+            let tile_data_byte_offset = (if sprite.y_flip { 0xF - ((row_offset * 2) + 1) } else { row_offset * 2 }) as u16;
+            let line_address = tile_data_address + tile_data_byte_offset;
             let column_offset = x_int - sprite.x_pos;
 
             if column_offset >= 0 {
