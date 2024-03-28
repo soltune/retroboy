@@ -3,6 +3,8 @@ use crate::gpu::colors::as_obj_color_rgb;
 use crate::mmu;
 use crate::utils::is_bit_set;
 
+use super::utils::get_obj_enabled_mode;
+
 const BASE_OAM_ADDRESS: u16 = 0xFE00;
 const BASE_TILE_DATA_ADDRESS: u16 = 0x8000;
 
@@ -115,9 +117,10 @@ fn lookup_sprite(emulator: &Emulator, x: u8, y: u8) -> Option<&Sprite> {
 
 pub fn read_sprite_pixel_rgb(emulator: &Emulator, x: u8, y: u8) -> Option<u32> {
     let maybe_found_sprite = lookup_sprite(emulator, x, y);
+    let sprites_enabled = get_obj_enabled_mode(emulator.gpu.registers.lcdc);
 
     match maybe_found_sprite {
-        Some(sprite) if !sprite.priority => {
+        Some(sprite) if sprites_enabled && !sprite.priority => {
             let tile_data_address = calculate_tile_data_address(sprite.tile_index as u16);
 
             let y_int = y as i16;
