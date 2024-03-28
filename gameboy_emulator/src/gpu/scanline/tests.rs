@@ -185,6 +185,43 @@ fn should_flip_sprite_on_y_axis() {
 }
 
 #[test]
+fn should_prioritize_background_colors_when_sprite_priority_flag_set_to_true() {
+    let mut emulator = initialize_emulator();
+
+    write_sample_tile_to_memory(&mut emulator, 0, SAMPLE_TILE_A);
+    write_sample_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
+    
+    let sprite = Sprite {
+        y_pos: 0,
+        x_pos: 2,
+        tile_index: 1,
+        priority: true,
+        y_flip: false,
+        x_flip: false,
+        dmg_palette: false
+    };
+
+    let mut sprites = Vec::new();
+    sprites.push(sprite);
+
+    emulator.gpu.sprite_buffer = sprites;
+    emulator.gpu.registers.ly = 0;
+    emulator.gpu.registers.palette = 0x1B;
+    emulator.gpu.registers.obp0 = 0x1B;
+
+    write_scanline(&mut emulator);
+
+    assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[1], 0xD3D3D3);
+    assert_eq!(emulator.gpu.frame_buffer[2], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[3], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[4], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[5], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[6], 0xD3D3D3);
+    assert_eq!(emulator.gpu.frame_buffer[7], 0x000000); 
+}
+
+#[test]
 fn should_render_tile_line_in_middle_of_frame() {
     let mut emulator = initialize_emulator();
     write_sample_tile_to_memory(&mut emulator, 1, SAMPLE_TILE_A);

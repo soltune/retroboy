@@ -117,7 +117,7 @@ pub fn read_sprite_pixel_rgb(emulator: &Emulator, x: u8, y: u8) -> Option<u32> {
     let maybe_found_sprite = lookup_sprite(emulator, x, y);
 
     match maybe_found_sprite {
-        Some(sprite) => {
+        Some(sprite) if !sprite.priority => {
             let tile_data_address = calculate_tile_data_address(sprite.tile_index as u16);
 
             let y_int = y as i16;
@@ -138,6 +138,6 @@ pub fn read_sprite_pixel_rgb(emulator: &Emulator, x: u8, y: u8) -> Option<u32> {
                 None
             }
         }
-        None => None
+        _ => None
     }
 }
