@@ -2,8 +2,7 @@ use crate::emulator::Emulator;
 use crate::gpu::colors::as_obj_color_rgb;
 use crate::mmu;
 use crate::utils::is_bit_set;
-
-use super::utils::get_obj_enabled_mode;
+use crate::gpu::utils::get_obj_enabled_mode;
 
 const BASE_OAM_ADDRESS: u16 = 0xFE00;
 const BASE_TILE_DATA_ADDRESS: u16 = 0x8000;
