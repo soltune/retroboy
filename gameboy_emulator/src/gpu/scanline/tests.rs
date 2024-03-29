@@ -38,6 +38,50 @@ fn should_render_tile_line() {
 }
 
 #[test]
+fn should_render_multiple_tile_lines() {
+    let mut emulator = initialize_emulator();
+    write_sample_tile_to_memory(&mut emulator, 0, SAMPLE_TILE_A);
+
+    emulator.gpu.registers.ly = 0;
+    emulator.gpu.registers.palette = 0x1B;
+    emulator.gpu.registers.lcdc = 0b00000011;
+    write_scanline(&mut emulator);
+
+    emulator.gpu.registers.ly = 1;
+    write_scanline(&mut emulator);
+
+    emulator.gpu.registers.ly = 2;
+    write_scanline(&mut emulator);
+
+    assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[1], 0xD3D3D3);
+    assert_eq!(emulator.gpu.frame_buffer[2], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[3], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[4], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[5], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[6], 0xD3D3D3);
+    assert_eq!(emulator.gpu.frame_buffer[7], 0x000000);
+
+    assert_eq!(emulator.gpu.frame_buffer[0xA0], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[0xA1], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[0xA2], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[0xA3], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[0xA4], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[0xA5], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[0xA6], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[0xA7], 0x000000); 
+
+    assert_eq!(emulator.gpu.frame_buffer[0x140], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[0x141], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[0x142], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[0x143], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[0x144], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[0x145], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[0x146], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[0x147], 0x000000);
+}
+
+#[test]
 fn should_render_tile_line_with_sprite() {
     let mut emulator = initialize_emulator();
 
