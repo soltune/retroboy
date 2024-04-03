@@ -2,31 +2,54 @@ use crate::emulator::initialize_emulator;
 use crate::gpu::sprites::{Sprite, collect_scanline_sprites};
 use super::*;
 
+const BLACK_TILE: [u8; 16] = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
 const SAMPLE_TILE_A: [u8; 16] = [0x3C, 0x7E, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x7E, 0x5E, 0x7E, 0x0A, 0x7C, 0x56, 0x38, 0x7C];
 const SAMPLE_TILE_B: [u8; 16] = [0xFF, 0x0, 0x7E, 0xFF, 0x85, 0x81, 0x89, 0x83, 0x93, 0x85, 0xA5, 0x8B, 0xC9, 0x97, 0x7E, 0xFF];
+const WINDOW_TILE: [u8; 16] = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
 
-fn write_sample_tile_to_memory(emulator: &mut Emulator, index: u16, tile_bytes: [u8; 16]) {
+fn write_tile_to_memory(emulator: &mut Emulator, base_address: u16, index: u16, tile_bytes: [u8; 16]) {
     let offset = index * 16;
     for (tile_byte_index, tile_byte) in tile_bytes.iter().enumerate() {
-        emulator.memory.video_ram[(0x1000 + offset + tile_byte_index as u16) as usize] = *tile_byte;
+        emulator.memory.video_ram[(base_address + offset + tile_byte_index as u16) as usize] = *tile_byte;
     }
 }
 
-fn write_sample_tile_to_obj_memory(emulator: &mut Emulator, index: u16, tile_bytes: [u8; 16]) {
-    let offset = index * 16;
-    for (tile_byte_index, tile_byte) in tile_bytes.iter().enumerate() {
-        emulator.memory.video_ram[(0x0000 + offset + tile_byte_index as u16) as usize] = *tile_byte;
-    } 
+fn write_tile_to_bg_memory(emulator: &mut Emulator, index: u16, tile_bytes: [u8; 16]) {
+    write_tile_to_memory(emulator, 0x1000, index, tile_bytes)
+}
+
+fn write_tile_to_obj_memory(emulator: &mut Emulator, index: u16, tile_bytes: [u8; 16]) {
+    write_tile_to_memory(emulator, 0x0000, index, tile_bytes)
+}
+
+fn write_window_tile_index_to_memory(emulator: &mut Emulator, position_index: u16, tile_index: u8) {
+    emulator.memory.video_ram[(0x1C00 + position_index) as usize] = tile_index;
+}
+
+fn write_sprite(emulator: &mut Emulator, sprit_number: u8, y_pos: u8, x_pos: u8, attributes: u8) {
+    let index = (sprit_number * 4) as usize;
+    emulator.memory.object_attribute_memory[index] = y_pos;
+    emulator.memory.object_attribute_memory[index + 1] = x_pos;
+    emulator.memory.object_attribute_memory[index + 2] = 0x0;
+    emulator.memory.object_attribute_memory[index + 3] = attributes;
+}
+
+fn line(index: u8) -> usize {
+    (index as u16 * GB_SCREEN_WIDTH) as usize
 }
 
 #[test]
 fn should_render_tile_line() {
     let mut emulator = initialize_emulator();
-    write_sample_tile_to_memory(&mut emulator, 0, SAMPLE_TILE_A);
+
+    write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
+    
     emulator.gpu.registers.ly = 0;
-    emulator.gpu.registers.palette = 0x1B;
+    emulator.gpu.registers.palette = 0b00011011;
     emulator.gpu.registers.lcdc = 0b00000011;
+    
     write_scanline(&mut emulator);
+    
     assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
     assert_eq!(emulator.gpu.frame_buffer[1], 0xD3D3D3);
     assert_eq!(emulator.gpu.frame_buffer[2], 0xFFFFFF);
@@ -40,18 +63,16 @@ fn should_render_tile_line() {
 #[test]
 fn should_render_multiple_tile_lines() {
     let mut emulator = initialize_emulator();
-    write_sample_tile_to_memory(&mut emulator, 0, SAMPLE_TILE_A);
+    
+    write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
 
-    emulator.gpu.registers.ly = 0;
-    emulator.gpu.registers.palette = 0x1B;
+    emulator.gpu.registers.palette = 0b00011011;
     emulator.gpu.registers.lcdc = 0b00000011;
-    write_scanline(&mut emulator);
 
-    emulator.gpu.registers.ly = 1;
-    write_scanline(&mut emulator);
-
-    emulator.gpu.registers.ly = 2;
-    write_scanline(&mut emulator);
+    for _ in 0..3 {
+        write_scanline(&mut emulator);
+        emulator.gpu.registers.ly += 1;
+    }
 
     assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
     assert_eq!(emulator.gpu.frame_buffer[1], 0xD3D3D3);
@@ -62,90 +83,42 @@ fn should_render_multiple_tile_lines() {
     assert_eq!(emulator.gpu.frame_buffer[6], 0xD3D3D3);
     assert_eq!(emulator.gpu.frame_buffer[7], 0x000000);
 
-    assert_eq!(emulator.gpu.frame_buffer[0xA0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[0xA1], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[0xA2], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[0xA3], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[0xA4], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[0xA5], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[0xA6], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[0xA7], 0x000000); 
+    assert_eq!(emulator.gpu.frame_buffer[line(1) + 0], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(1) + 1], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[line(1) + 2], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(1) + 3], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(1) + 4], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(1) + 5], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(1) + 6], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[line(1) + 7], 0x000000); 
 
-    assert_eq!(emulator.gpu.frame_buffer[0x140], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[0x141], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[0x142], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[0x143], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[0x144], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[0x145], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[0x146], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[0x147], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(2) + 0], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(2) + 1], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[line(2) + 2], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(2) + 3], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(2) + 4], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(2) + 5], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(2) + 6], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[line(2) + 7], 0x000000);
 }
 
 #[test]
-fn should_render_tile_line_with_sprite() {
+fn should_overlay_window_over_multiple_tile_lines() {
     let mut emulator = initialize_emulator();
 
-    write_sample_tile_to_memory(&mut emulator, 0, SAMPLE_TILE_A);
-    write_sample_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
-    
-    let sprite = Sprite {
-        y_pos: 0,
-        x_pos: 2,
-        tile_index: 1,
-        priority: false,
-        y_flip: false,
-        x_flip: false,
-        dmg_palette: false
-    };
+    write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
+    write_tile_to_bg_memory(&mut emulator, 1, WINDOW_TILE);
+    write_window_tile_index_to_memory(&mut emulator, 0, 1);
 
-    let mut sprites = Vec::new();
-    sprites.push(sprite);
+    emulator.gpu.registers.wy = 1;
+    emulator.gpu.registers.wx = 8;
+    emulator.gpu.registers.palette = 0b00011011;
+    emulator.gpu.registers.lcdc = 0b01100011;
 
-    emulator.gpu.sprite_buffer = sprites;
-    emulator.gpu.registers.ly = 0;
-    emulator.gpu.registers.palette = 0x1B;
-    emulator.gpu.registers.obp0 = 0x1B;
-    emulator.gpu.registers.lcdc = 0b00000011;
-
-    write_scanline(&mut emulator);
-
-    assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[1], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[2], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[3], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[4], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[5], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[6], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[7], 0xA9A9A9);
-}
-
-#[test]
-fn should_render_tile_line_with_sprite_having_negative_y_pos() {
-    let mut emulator = initialize_emulator();
-
-    write_sample_tile_to_memory(&mut emulator, 0, SAMPLE_TILE_A);
-    write_sample_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
-    
-    let sprite = Sprite {
-        y_pos: -2,
-        x_pos: 2,
-        tile_index: 1,
-        priority: false,
-        y_flip: false,
-        x_flip: false,
-        dmg_palette: false
-    };
-
-    let mut sprites = Vec::new();
-    sprites.push(sprite);
-
-    emulator.gpu.sprite_buffer = sprites;
-    emulator.gpu.registers.ly = 0;
-    emulator.gpu.registers.palette = 0x1B;
-    emulator.gpu.registers.obp0 = 0x1B;
-    emulator.gpu.registers.lcdc = 0b00000011;
-
-    write_scanline(&mut emulator);
+    for _ in 0..3 {
+        write_scanline(&mut emulator);
+        emulator.gpu.registers.ly += 1;
+    }
 
     assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
     assert_eq!(emulator.gpu.frame_buffer[1], 0xD3D3D3);
@@ -154,210 +127,88 @@ fn should_render_tile_line_with_sprite_having_negative_y_pos() {
     assert_eq!(emulator.gpu.frame_buffer[4], 0xFFFFFF);
     assert_eq!(emulator.gpu.frame_buffer[5], 0xFFFFFF);
     assert_eq!(emulator.gpu.frame_buffer[6], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[7], 0xA9A9A9); 
-}
+    assert_eq!(emulator.gpu.frame_buffer[7], 0x000000);
 
-#[test]
-fn should_flip_sprite_on_x_axis() {
-    let mut emulator = initialize_emulator();
+    assert_eq!(emulator.gpu.frame_buffer[line(1) + 0], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(1) + 1], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[line(1) + 2], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[line(1) + 3], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[line(1) + 4], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[line(1) + 5], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[line(1) + 6], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[line(1) + 7], 0xFFFFFF); 
 
-    write_sample_tile_to_memory(&mut emulator, 0, SAMPLE_TILE_A);
-    write_sample_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
-    
-    let sprite = Sprite {
-        y_pos: -2,
-        x_pos: 2,
-        tile_index: 1,
-        priority: false,
-        y_flip: false,
-        x_flip: true,
-        dmg_palette: false
-    };
-
-    let mut sprites = Vec::new();
-    sprites.push(sprite);
-
-    emulator.gpu.sprite_buffer = sprites;
-    emulator.gpu.registers.ly = 0;
-    emulator.gpu.registers.palette = 0x1B;
-    emulator.gpu.registers.obp0 = 0x1B;
-    emulator.gpu.registers.lcdc = 0b00000011;
-
-    write_scanline(&mut emulator);
-
-    assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[1], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[2], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[3], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[4], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[5], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[6], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[7], 0x000000);  
-}
-
-#[test]
-fn should_flip_sprite_on_y_axis() {
-    let mut emulator = initialize_emulator();
-
-    write_sample_tile_to_memory(&mut emulator, 0, SAMPLE_TILE_A);
-    write_sample_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
-    
-    let sprite = Sprite {
-        y_pos: -2,
-        x_pos: 2,
-        tile_index: 1,
-        priority: false,
-        y_flip: true,
-        x_flip: false,
-        dmg_palette: false
-    };
-
-    let mut sprites = Vec::new();
-    sprites.push(sprite);
-
-    emulator.gpu.sprite_buffer = sprites;
-    emulator.gpu.registers.ly = 0;
-    emulator.gpu.registers.palette = 0x1B;
-    emulator.gpu.registers.obp0 = 0x1B;
-    emulator.gpu.registers.lcdc = 0b00000011;
-
-    write_scanline(&mut emulator);
-
-    assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[1], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[2], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[3], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[4], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[5], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[6], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[7], 0xA9A9A9); 
-}
-
-#[test]
-fn should_prioritize_background_colors_when_sprite_priority_flag_set_to_true() {
-    let mut emulator = initialize_emulator();
-
-    write_sample_tile_to_memory(&mut emulator, 0, SAMPLE_TILE_A);
-    write_sample_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
-    
-    let sprite = Sprite {
-        y_pos: 0,
-        x_pos: 2,
-        tile_index: 1,
-        priority: true,
-        y_flip: false,
-        x_flip: false,
-        dmg_palette: false
-    };
-
-    let mut sprites = Vec::new();
-    sprites.push(sprite);
-
-    emulator.gpu.sprite_buffer = sprites;
-    emulator.gpu.registers.ly = 0;
-    emulator.gpu.registers.palette = 0x1B;
-    emulator.gpu.registers.obp0 = 0x1B;
-    emulator.gpu.registers.lcdc = 0b00000011;
-
-    write_scanline(&mut emulator);
-
-    assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[1], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[2], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[3], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[4], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[5], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[6], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[7], 0x000000); 
-}
-
-#[test]
-fn should_prioritize_background_colors_when_lcdc_bit_1_is_off() {
-    let mut emulator = initialize_emulator();
-
-    write_sample_tile_to_memory(&mut emulator, 0, SAMPLE_TILE_A);
-    write_sample_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
-    
-    let sprite = Sprite {
-        y_pos: 0,
-        x_pos: 2,
-        tile_index: 1,
-        priority: false,
-        y_flip: false,
-        x_flip: false,
-        dmg_palette: false
-    };
-
-    let mut sprites = Vec::new();
-    sprites.push(sprite);
-
-    emulator.gpu.sprite_buffer = sprites;
-    emulator.gpu.registers.ly = 0;
-    emulator.gpu.registers.palette = 0x1B;
-    emulator.gpu.registers.obp0 = 0x1B;
-    emulator.gpu.registers.lcdc = 0b00000001;
-
-    write_scanline(&mut emulator);
-
-    assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[1], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[2], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[3], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[4], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[5], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[6], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[7], 0x000000); 
+    assert_eq!(emulator.gpu.frame_buffer[line(2) + 0], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(2) + 1], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[line(2) + 2], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[line(2) + 3], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[line(2) + 4], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[line(2) + 5], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[line(2) + 6], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[line(2) + 7], 0xFFFFFF);
 }
 
 #[test]
 fn should_render_tile_line_in_middle_of_frame() {
     let mut emulator = initialize_emulator();
-    write_sample_tile_to_memory(&mut emulator, 1, SAMPLE_TILE_A);
+    
+    write_tile_to_bg_memory(&mut emulator, 1, SAMPLE_TILE_A);
+    
     emulator.memory.video_ram[0x1A10] = 0x1;
     emulator.gpu.registers.ly = 3;
     emulator.gpu.registers.scy = 0x80;
     emulator.gpu.registers.scx = 0x80;
-    emulator.gpu.registers.palette = 0x1B;
+    emulator.gpu.registers.palette = 0b00011011;
+    
     write_scanline(&mut emulator);
-    assert_eq!(emulator.gpu.frame_buffer[0x1E0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[0x1E1], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[0x1E2], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[0x1E3], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[0x1E4], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[0x1E5], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[0x1E6], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[0x1E7], 0x000000);
+    
+    assert_eq!(emulator.gpu.frame_buffer[line(3) + 0], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(3) + 1], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[line(3) + 2], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(3) + 3], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(3) + 4], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(3) + 5], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(3) + 6], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[line(3) + 7], 0x000000);
 }
 
 #[test]
 fn should_render_tile_line_properly_with_greater_scroll_x_value() {
     let mut emulator = initialize_emulator();
-    write_sample_tile_to_memory(&mut emulator, 1, SAMPLE_TILE_A);
+    
+    write_tile_to_bg_memory(&mut emulator, 1, SAMPLE_TILE_A);
+    
     emulator.memory.video_ram[0x1A10] = 0x1;
     emulator.gpu.registers.ly = 3;
     emulator.gpu.registers.scy = 0x80;
     emulator.gpu.registers.scx = 0x82;
-    emulator.gpu.registers.palette = 0x1B;
+    emulator.gpu.registers.palette = 0b00011011;
+    
     write_scanline(&mut emulator);
-    assert_eq!(emulator.gpu.frame_buffer[0x1E0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[0x1E1], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[0x1E2], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[0x1E3], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[0x1E4], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[0x1E5], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[0x1E6], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[0x1E7], 0x000000);
+    
+    assert_eq!(emulator.gpu.frame_buffer[line(3) + 0], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(3) + 1], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(3) + 2], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(3) + 3], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(3) + 4], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[line(3) + 5], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(3) + 6], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(3) + 7], 0x000000);
 }
 
 #[test]
 fn should_wrap_around_when_rendering_past_max_tile_map_x_value() {
     let mut emulator = initialize_emulator();
-    write_sample_tile_to_memory(&mut emulator, 1, SAMPLE_TILE_A);
+    
+    write_tile_to_bg_memory(&mut emulator, 1, SAMPLE_TILE_A);
+    
     emulator.memory.video_ram[0x1800] = 0x1;
     emulator.gpu.registers.ly = 0;
     emulator.gpu.registers.scx = 0xFE;
-    emulator.gpu.registers.palette = 0x1B;
+    emulator.gpu.registers.palette = 0b00011011;
+    
     write_scanline(&mut emulator);
+    
     assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
     assert_eq!(emulator.gpu.frame_buffer[1], 0x000000);
     assert_eq!(emulator.gpu.frame_buffer[2], 0x000000);
@@ -371,33 +222,30 @@ fn should_wrap_around_when_rendering_past_max_tile_map_x_value() {
 #[test]
 fn should_wrap_around_when_rendering_past_max_tile_map_y_value() {
     let mut emulator = initialize_emulator();
-    write_sample_tile_to_memory(&mut emulator, 1, SAMPLE_TILE_A);
+    
+    write_tile_to_bg_memory(&mut emulator, 1, SAMPLE_TILE_A);
+    
     emulator.memory.video_ram[0x1800] = 0x1;
     emulator.gpu.registers.ly = 2;
     emulator.gpu.registers.scy = 0xFE;
-    emulator.gpu.registers.palette = 0x1B;
+    emulator.gpu.registers.palette = 0b00011011;
+    
     write_scanline(&mut emulator);
-    assert_eq!(emulator.gpu.frame_buffer[0x140], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[0x141], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[0x142], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[0x143], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[0x144], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[0x145], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[0x146], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[0x147], 0x000000);
-}
-
-fn write_sprite(emulator: &mut Emulator, sprit_number: u8, y_pos: u8, x_pos: u8, attributes: u8) {
-    let index = (sprit_number * 4) as usize;
-    emulator.memory.object_attribute_memory[index] = y_pos;
-    emulator.memory.object_attribute_memory[index + 1] = x_pos;
-    emulator.memory.object_attribute_memory[index + 2] = 0x0;
-    emulator.memory.object_attribute_memory[index + 3] = attributes;
+    
+    assert_eq!(emulator.gpu.frame_buffer[line(2) + 0], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(2) + 1], 0xD3D3D3);
+    assert_eq!(emulator.gpu.frame_buffer[line(2) + 2], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[line(2) + 3], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[line(2) + 4], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[line(2) + 5], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[line(2) + 6], 0xD3D3D3);
+    assert_eq!(emulator.gpu.frame_buffer[line(2) + 7], 0x000000);
 }
 
 #[test]
 fn should_get_ten_sprites_from_oam_memory() {
     let mut emulator = initialize_emulator();
+    
     emulator.gpu.registers.ly = 0;
 
     write_sprite(&mut emulator, 0, 0, 0, 0);
@@ -444,4 +292,283 @@ fn should_parse_sprite_attributes_correctly() {
     assert_eq!(sprites[0].y_flip, true);
     assert_eq!(sprites[0].x_flip, false);
     assert_eq!(sprites[0].dmg_palette, false);
+}
+
+#[test]
+fn should_render_tile_line_with_sprite() {
+    let mut emulator = initialize_emulator();
+
+    write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
+    write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
+    
+    let sprite = Sprite {
+        y_pos: 0,
+        x_pos: 2,
+        tile_index: 1,
+        priority: false,
+        y_flip: false,
+        x_flip: false,
+        dmg_palette: false
+    };
+
+    let mut sprites = Vec::new();
+    sprites.push(sprite);
+
+    emulator.gpu.sprite_buffer = sprites;
+    emulator.gpu.registers.ly = 0;
+    emulator.gpu.registers.palette = 0b00011011;
+    emulator.gpu.registers.obp0 = 0b00011011;
+    emulator.gpu.registers.lcdc = 0b00000011;
+
+    write_scanline(&mut emulator);
+
+    assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[1], 0xD3D3D3);
+    assert_eq!(emulator.gpu.frame_buffer[2], 0xA9A9A9);
+    assert_eq!(emulator.gpu.frame_buffer[3], 0xA9A9A9);
+    assert_eq!(emulator.gpu.frame_buffer[4], 0xA9A9A9);
+    assert_eq!(emulator.gpu.frame_buffer[5], 0xA9A9A9);
+    assert_eq!(emulator.gpu.frame_buffer[6], 0xA9A9A9);
+    assert_eq!(emulator.gpu.frame_buffer[7], 0xA9A9A9);
+}
+
+#[test]
+fn should_render_tile_line_with_sprite_having_negative_y_pos() {
+    let mut emulator = initialize_emulator();
+
+    write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
+    write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
+    
+    let sprite = Sprite {
+        y_pos: -2,
+        x_pos: 2,
+        tile_index: 1,
+        priority: false,
+        y_flip: false,
+        x_flip: false,
+        dmg_palette: false
+    };
+
+    let mut sprites = Vec::new();
+    sprites.push(sprite);
+
+    emulator.gpu.sprite_buffer = sprites;
+    emulator.gpu.registers.ly = 0;
+    emulator.gpu.registers.palette = 0b00011011;
+    emulator.gpu.registers.obp0 = 0b00011011;
+    emulator.gpu.registers.lcdc = 0b00000011;
+
+    write_scanline(&mut emulator);
+
+    assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[1], 0xD3D3D3);
+    assert_eq!(emulator.gpu.frame_buffer[2], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[3], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[4], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[5], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[6], 0xD3D3D3);
+    assert_eq!(emulator.gpu.frame_buffer[7], 0xA9A9A9); 
+}
+
+#[test]
+fn should_flip_sprite_on_x_axis() {
+    let mut emulator = initialize_emulator();
+
+    write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
+    write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
+    
+    let sprite = Sprite {
+        y_pos: -2,
+        x_pos: 2,
+        tile_index: 1,
+        priority: false,
+        y_flip: false,
+        x_flip: true,
+        dmg_palette: false
+    };
+
+    let mut sprites = Vec::new();
+    sprites.push(sprite);
+
+    emulator.gpu.sprite_buffer = sprites;
+    emulator.gpu.registers.ly = 0;
+    emulator.gpu.registers.palette = 0b00011011;
+    emulator.gpu.registers.obp0 = 0b00011011;
+    emulator.gpu.registers.lcdc = 0b00000011;
+
+    write_scanline(&mut emulator);
+
+    assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[1], 0xD3D3D3);
+    assert_eq!(emulator.gpu.frame_buffer[2], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[3], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[4], 0xA9A9A9);
+    assert_eq!(emulator.gpu.frame_buffer[5], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[6], 0xD3D3D3);
+    assert_eq!(emulator.gpu.frame_buffer[7], 0x000000);  
+}
+
+#[test]
+fn should_flip_sprite_on_y_axis() {
+    let mut emulator = initialize_emulator();
+
+    write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
+    write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
+    
+    let sprite = Sprite {
+        y_pos: -2,
+        x_pos: 2,
+        tile_index: 1,
+        priority: false,
+        y_flip: true,
+        x_flip: false,
+        dmg_palette: false
+    };
+
+    let mut sprites = Vec::new();
+    sprites.push(sprite);
+
+    emulator.gpu.sprite_buffer = sprites;
+    emulator.gpu.registers.ly = 0;
+    emulator.gpu.registers.palette = 0b00011011;
+    emulator.gpu.registers.obp0 = 0b00011011;
+    emulator.gpu.registers.lcdc = 0b00000011;
+
+    write_scanline(&mut emulator);
+
+    assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[1], 0xD3D3D3);
+    assert_eq!(emulator.gpu.frame_buffer[2], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[3], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[4], 0xA9A9A9);
+    assert_eq!(emulator.gpu.frame_buffer[5], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[6], 0xD3D3D3);
+    assert_eq!(emulator.gpu.frame_buffer[7], 0xA9A9A9); 
+}
+
+#[test]
+fn should_render_eight_by_sixteen_sprite() {
+    let mut emulator = initialize_emulator();
+
+    write_tile_to_bg_memory(&mut emulator, 0, BLACK_TILE);
+    write_tile_to_obj_memory(&mut emulator, 2, SAMPLE_TILE_A);
+    write_tile_to_obj_memory(&mut emulator, 3, SAMPLE_TILE_B);
+    
+    let sprite = Sprite {
+        y_pos: 0,
+        x_pos: 2,
+        tile_index: 3,
+        priority: false,
+        y_flip: false,
+        x_flip: false,
+        dmg_palette: false
+    };
+
+    let mut sprites = Vec::new();
+    sprites.push(sprite);
+
+    emulator.gpu.sprite_buffer = sprites;
+    emulator.gpu.registers.ly = 0;
+    emulator.gpu.registers.palette = 0b00011011;
+    emulator.gpu.registers.obp0 = 0b00011011;
+    emulator.gpu.registers.lcdc = 0b00000111;
+
+    for _ in 0..9 {
+        write_scanline(&mut emulator);
+        emulator.gpu.registers.ly += 1;
+    }
+
+    assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[1], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[2], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[3], 0xD3D3D3);
+    assert_eq!(emulator.gpu.frame_buffer[4], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[5], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[6], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[7], 0xFFFFFF);
+
+    assert_eq!(emulator.gpu.frame_buffer[line(8) + 0], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(8) + 1], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[line(8) + 2], 0xA9A9A9);
+    assert_eq!(emulator.gpu.frame_buffer[line(8) + 3], 0xA9A9A9);
+    assert_eq!(emulator.gpu.frame_buffer[line(8) + 4], 0xA9A9A9);
+    assert_eq!(emulator.gpu.frame_buffer[line(8) + 5], 0xA9A9A9);
+    assert_eq!(emulator.gpu.frame_buffer[line(8) + 6], 0xA9A9A9);
+    assert_eq!(emulator.gpu.frame_buffer[line(8) + 7], 0xA9A9A9);
+}
+
+#[test]
+fn should_prioritize_background_colors_when_sprite_priority_flag_set_to_true() {
+    let mut emulator = initialize_emulator();
+
+    write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
+    write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
+    
+    let sprite = Sprite {
+        y_pos: 0,
+        x_pos: 2,
+        tile_index: 1,
+        priority: true,
+        y_flip: false,
+        x_flip: false,
+        dmg_palette: false
+    };
+
+    let mut sprites = Vec::new();
+    sprites.push(sprite);
+
+    emulator.gpu.sprite_buffer = sprites;
+    emulator.gpu.registers.ly = 0;
+    emulator.gpu.registers.palette = 0b00011011;
+    emulator.gpu.registers.obp0 = 0b00011011;
+    emulator.gpu.registers.lcdc = 0b00000011;
+
+    write_scanline(&mut emulator);
+
+    assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[1], 0xD3D3D3);
+    assert_eq!(emulator.gpu.frame_buffer[2], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[3], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[4], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[5], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[6], 0xD3D3D3);
+    assert_eq!(emulator.gpu.frame_buffer[7], 0x000000); 
+}
+
+#[test]
+fn should_prioritize_background_colors_when_lcdc_bit_1_is_off() {
+    let mut emulator = initialize_emulator();
+
+    write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
+    write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
+    
+    let sprite = Sprite {
+        y_pos: 0,
+        x_pos: 2,
+        tile_index: 1,
+        priority: false,
+        y_flip: false,
+        x_flip: false,
+        dmg_palette: false
+    };
+
+    let mut sprites = Vec::new();
+    sprites.push(sprite);
+
+    emulator.gpu.sprite_buffer = sprites;
+    emulator.gpu.registers.ly = 0;
+    emulator.gpu.registers.palette = 0b00011011;
+    emulator.gpu.registers.obp0 = 0b00011011;
+    emulator.gpu.registers.lcdc = 0b00000001;
+
+    write_scanline(&mut emulator);
+
+    assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
+    assert_eq!(emulator.gpu.frame_buffer[1], 0xD3D3D3);
+    assert_eq!(emulator.gpu.frame_buffer[2], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[3], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[4], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[5], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[6], 0xD3D3D3);
+    assert_eq!(emulator.gpu.frame_buffer[7], 0x000000); 
 }

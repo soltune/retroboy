@@ -111,6 +111,9 @@ mod tests;
 
 mod colors;
 mod constants;
+mod line_addressing;
+mod background;
+mod window;
 pub mod scanline;
 pub mod sprites;
 pub mod utils;

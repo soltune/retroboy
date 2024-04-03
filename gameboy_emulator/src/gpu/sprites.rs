@@ -2,7 +2,7 @@ use crate::emulator::Emulator;
 use crate::gpu::colors::as_obj_color_rgb;
 use crate::mmu;
 use crate::utils::is_bit_set;
-use crate::gpu::utils::get_obj_enabled_mode;
+use crate::gpu::utils::{get_obj_enabled_mode, get_obj_size_mode};
 
 const BASE_OAM_ADDRESS: u16 = 0xFE00;
 const BASE_TILE_DATA_ADDRESS: u16 = 0x8000;
@@ -13,7 +13,6 @@ const TOTAL_SPRITES: u16 = 40;
 const TILE_DATA_BYTE_SIZE: u16 = 16;
 const SPRITE_BYTE_SIZE: u16 = 4;
 
-const SPRITE_HEIGHT: i16 = 8;
 const SPRITE_WIDTH: i16 = 8;
 
 pub struct Sprite {
@@ -26,13 +25,15 @@ pub struct Sprite {
     pub dmg_palette: bool
 }
 
-fn within_scanline(sprite_y_pos: i16, y: i16) -> bool {
-    let last_row = sprite_y_pos + SPRITE_HEIGHT;
-    y >= sprite_y_pos && y < last_row && last_row >= 0
+fn within_scanline(sprite_y_pos: i16, y_int: i16, eight_by_sixteen_mode: bool) -> bool {
+    let sprite_height = if eight_by_sixteen_mode { 16 } else { 8 };
+    let last_row = sprite_y_pos + sprite_height;
+    y_int >= sprite_y_pos && y_int < last_row && last_row >= 0
 }
 
-fn should_render(sprite_x_pos: i16, sprite_y_pos: i16, x: i16, y: i16) -> bool {
-    within_scanline(sprite_y_pos, y) && x >= sprite_x_pos && x < sprite_x_pos + SPRITE_WIDTH
+fn should_render(sprite_x_pos: i16, sprite_y_pos: i16, x_int: i16, y_int: i16, eight_by_sixteen_mode: bool) -> bool {
+    within_scanline(sprite_y_pos, y_int, eight_by_sixteen_mode)
+        && x_int >= sprite_x_pos && x_int < sprite_x_pos + SPRITE_WIDTH
 }
 
 fn calculate_sprite_address(sprite_number: u16) -> u16 {
@@ -74,13 +75,16 @@ fn pull_sprite(emulator: &Emulator, sprite_number: u16) -> Sprite {
 pub fn collect_scanline_sprites(emulator: &Emulator) -> Vec<Sprite> {
     let mut sprites = Vec::new();
     let ly = emulator.gpu.registers.ly;
+    let lcdc = emulator.gpu.registers.lcdc;
+
+    let eight_by_sixteen_mode = get_obj_size_mode(lcdc);
 
     for sprite_number in 0..TOTAL_SPRITES {
         let sprite = pull_sprite(emulator, sprite_number);
 
         let y_int = ly as i16;
 
-        if within_scanline(sprite.y_pos, y_int) {
+        if within_scanline(sprite.y_pos, y_int, eight_by_sixteen_mode) {
             sprites.push(sprite);
 
             if sprites.len() == SPRITE_LIMIT_PER_SCANLINE {
@@ -92,7 +96,7 @@ pub fn collect_scanline_sprites(emulator: &Emulator) -> Vec<Sprite> {
     sprites 
 }
 
-fn lookup_sprite(emulator: &Emulator, x: u8, y: u8) -> Option<&Sprite> {
+fn lookup_sprite(emulator: &Emulator, x: u8, y: u8, eight_by_sixteen_mode: bool) -> Option<&Sprite> {
     let mut maybe_found_sprite: Option<&Sprite> = None;
 
     for sprite_number in 0..TOTAL_SPRITES {
@@ -104,7 +108,7 @@ fn lookup_sprite(emulator: &Emulator, x: u8, y: u8) -> Option<&Sprite> {
             let x_int  = x as i16;
             let y_int = y as i16;
             
-            if should_render(sprite.x_pos, sprite.y_pos, x_int, y_int) {
+            if should_render(sprite.x_pos, sprite.y_pos, x_int, y_int, eight_by_sixteen_mode) {
                 maybe_found_sprite = Some(sprite);
                 break;
             }   
@@ -114,18 +118,33 @@ fn lookup_sprite(emulator: &Emulator, x: u8, y: u8) -> Option<&Sprite> {
     maybe_found_sprite
 }
 
+fn calculate_tile_index(sprite: &Sprite, y_int: i16, eight_by_sixteen_mode: bool) -> u8 {
+    if eight_by_sixteen_mode && (y_int - sprite.y_pos) >= 8 {
+        sprite.tile_index | 0x01
+    }
+    else if eight_by_sixteen_mode {
+        sprite.tile_index & 0xFE
+    }
+    else {
+        sprite.tile_index
+    }
+}
+
 pub fn read_sprite_pixel_rgb(emulator: &Emulator, x: u8, y: u8) -> Option<u32> {
-    let maybe_found_sprite = lookup_sprite(emulator, x, y);
-    let sprites_enabled = get_obj_enabled_mode(emulator.gpu.registers.lcdc);
+    let lcdc = emulator.gpu.registers.lcdc;
+
+    let eight_by_sixteen_mode = get_obj_size_mode(lcdc);
+    let maybe_found_sprite = lookup_sprite(emulator, x, y, eight_by_sixteen_mode);
+    let sprites_enabled = get_obj_enabled_mode(lcdc);
 
     match maybe_found_sprite {
         Some(sprite) if sprites_enabled && !sprite.priority => {
-            let tile_data_address = calculate_tile_data_address(sprite.tile_index as u16);
-
             let y_int = y as i16;
             let x_int  = x as i16;
 
-            let row_offset = y_int - sprite.y_pos;
+            let calculated_index = calculate_tile_index(sprite, y_int, eight_by_sixteen_mode);
+            let tile_data_address = calculate_tile_data_address(calculated_index as u16);
+            let row_offset = ((y_int - sprite.y_pos) % 8) as u8;
             let tile_data_byte_offset = (if sprite.y_flip { 0xF - ((row_offset * 2) + 1) } else { row_offset * 2 }) as u16;
             let line_address = tile_data_address + tile_data_byte_offset;
             let column_offset = x_int - sprite.x_pos;
