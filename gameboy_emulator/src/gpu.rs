@@ -1,6 +1,7 @@
 use crate::emulator::Emulator;
 use crate::gpu::constants::{GB_SCREEN_HEIGHT, GB_SCREEN_WIDTH};
-use crate::gpu::sprites::Sprite;
+use crate::gpu::scanline::write_scanline;
+use crate::gpu::sprites::{collect_scanline_sprites, Sprite};
 
 pub struct GpuRegisters {
     pub lcdc: u8,
@@ -68,6 +69,7 @@ pub fn step(emulator: &mut Emulator) {
     match emulator.gpu.mode {
         OAM_MODE => {
             if emulator.gpu.mode_clock >= OAM_TIME {
+                emulator.gpu.sprite_buffer = collect_scanline_sprites(emulator);
                 emulator.gpu.mode = VRAM_MODE;
                 emulator.gpu.mode_clock = 0;
             }
@@ -80,6 +82,7 @@ pub fn step(emulator: &mut Emulator) {
         }
         HBLANK_MODE => {
             if emulator.gpu.mode_clock >= HBLANK_TIME {
+                write_scanline(emulator);
                 emulator.gpu.registers.ly += 1;
                 emulator.gpu.mode_clock = 0;
 
