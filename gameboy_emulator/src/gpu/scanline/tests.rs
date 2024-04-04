@@ -359,6 +359,44 @@ fn should_render_tile_line_with_sprite() {
 }
 
 #[test]
+fn should_render_sprite_with_white_background_if_background_and_window_enabled_is_cleared() {
+    let mut emulator = initialize_emulator();
+
+    write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
+    write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
+    
+    let sprite = Sprite {
+        y_pos: 0,
+        x_pos: 2,
+        tile_index: 1,
+        priority: false,
+        y_flip: false,
+        x_flip: false,
+        dmg_palette: false
+    };
+
+    let mut sprites = Vec::new();
+    sprites.push(sprite);
+
+    emulator.gpu.sprite_buffer = sprites;
+    emulator.gpu.registers.ly = 0;
+    emulator.gpu.registers.palette = 0b00011011;
+    emulator.gpu.registers.obp0 = 0b00011011;
+    emulator.gpu.registers.lcdc = 0b10000010;
+
+    write_scanline(&mut emulator);
+
+    assert_eq!(emulator.gpu.frame_buffer[0], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[1], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[2], 0xA9A9A9);
+    assert_eq!(emulator.gpu.frame_buffer[3], 0xA9A9A9);
+    assert_eq!(emulator.gpu.frame_buffer[4], 0xA9A9A9);
+    assert_eq!(emulator.gpu.frame_buffer[5], 0xA9A9A9);
+    assert_eq!(emulator.gpu.frame_buffer[6], 0xA9A9A9);
+    assert_eq!(emulator.gpu.frame_buffer[7], 0xA9A9A9);
+}
+
+#[test]
 fn should_render_tile_line_with_sprite_having_negative_y_pos() {
     let mut emulator = initialize_emulator();
 
