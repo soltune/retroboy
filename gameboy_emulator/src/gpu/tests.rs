@@ -86,3 +86,51 @@ fn should_move_back_to_oam_mode_from_vblank_at_correct_time() {
     assert_eq!(emulator.gpu.mode_clock, 0);
     assert_eq!(emulator.gpu.registers.ly, 0);
 }
+
+#[test]
+fn should_update_stat_register_with_mode_2_status() {
+    let mut emulator = initialize_emulator();
+    emulator.gpu.mode = 1;
+    emulator.gpu.registers.ly = 152;
+    emulator.gpu.mode_clock = 452;
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    emulator.gpu.registers.stat = 0b00000001;
+    step(&mut emulator);
+    assert_eq!(emulator.gpu.registers.stat, 0b00000010);
+}
+
+#[test]
+fn should_update_stat_register_with_mode_3_status() {
+    let mut emulator = initialize_emulator();
+    emulator.gpu.mode = 2;
+    emulator.gpu.registers.ly = 0;
+    emulator.gpu.mode_clock = 76;
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    emulator.gpu.registers.stat = 0b00000010;
+    step(&mut emulator);
+    assert_eq!(emulator.gpu.registers.stat, 0b00000011);
+}
+
+#[test]
+fn should_update_stat_register_with_mode_0_status() {
+    let mut emulator = initialize_emulator();
+    emulator.gpu.mode = 3;
+    emulator.gpu.registers.ly = 0;
+    emulator.gpu.mode_clock = 168;
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    emulator.gpu.registers.stat = 0b00000011;
+    step(&mut emulator);
+    assert_eq!(emulator.gpu.registers.stat, 0b00000000);
+}
+
+#[test]
+fn should_update_stat_register_with_mode_1_status() {
+    let mut emulator = initialize_emulator();
+    emulator.gpu.mode = 0;
+    emulator.gpu.registers.ly = 142;
+    emulator.gpu.mode_clock = 200;
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    emulator.gpu.registers.stat = 0b00000000;
+    step(&mut emulator);
+    assert_eq!(emulator.gpu.registers.stat, 0b00000001);
+}

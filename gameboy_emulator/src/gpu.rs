@@ -67,6 +67,12 @@ fn fire_vblank_interrupt(emulator: &mut Emulator) {
     emulator.interrupts.flags |= 0x1;
 }
 
+fn update_mode(emulator: &mut Emulator, new_mode: u8) {
+    emulator.gpu.mode = new_mode;
+    let new_stat = (emulator.gpu.registers.stat & 0b11111100) | new_mode;
+    emulator.gpu.registers.stat = new_stat;
+}
+
 pub fn step(emulator: &mut Emulator) {
     emulator.gpu.mode_clock += emulator.cpu.clock.instruction_clock_cycles as u16;
 
@@ -74,14 +80,14 @@ pub fn step(emulator: &mut Emulator) {
         OAM_MODE => {
             if emulator.gpu.mode_clock >= OAM_TIME {
                 emulator.gpu.sprite_buffer = collect_scanline_sprites(emulator);
-                emulator.gpu.mode = VRAM_MODE;
                 emulator.gpu.mode_clock = 0;
+                update_mode(emulator, VRAM_MODE);
             }
         }
         VRAM_MODE => {
             if emulator.gpu.mode_clock >= VRAM_TIME {
-                emulator.gpu.mode = HBLANK_MODE;
                 emulator.gpu.mode_clock = 0;
+                update_mode(emulator, HBLANK_MODE);
             }
         }
         HBLANK_MODE => {
@@ -92,10 +98,11 @@ pub fn step(emulator: &mut Emulator) {
 
                 if emulator.gpu.registers.ly == FRAME_SCANLINE_COUNT - VBLANK_SCANLINE_COUNT - 1 {
                     fire_vblank_interrupt(emulator);
-                    emulator.gpu.mode = VBLANK_MODE;
+                    update_mode(emulator, VBLANK_MODE);
                 }
                 else {
-                    emulator.gpu.mode = OAM_MODE;
+                    update_mode(emulator, OAM_MODE);
+                    
                 }
             }
         }
@@ -105,8 +112,8 @@ pub fn step(emulator: &mut Emulator) {
                 emulator.gpu.registers.ly += 1;
 
                 if emulator.gpu.registers.ly == FRAME_SCANLINE_COUNT - 1 {
-                    emulator.gpu.mode = OAM_MODE;
                     emulator.gpu.registers.ly = 0;
+                    update_mode(emulator, OAM_MODE);
                 }
             }
         }
