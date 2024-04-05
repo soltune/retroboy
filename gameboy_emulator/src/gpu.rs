@@ -63,6 +63,10 @@ pub fn initialize_gpu() -> GpuState {
     }
 }
 
+fn fire_vblank_interrupt(emulator: &mut Emulator) {
+    emulator.interrupts.flags |= 0x1;
+}
+
 pub fn step(emulator: &mut Emulator) {
     emulator.gpu.mode_clock += emulator.cpu.clock.instruction_clock_cycles as u16;
 
@@ -87,7 +91,7 @@ pub fn step(emulator: &mut Emulator) {
                 emulator.gpu.mode_clock = 0;
 
                 if emulator.gpu.registers.ly == FRAME_SCANLINE_COUNT - VBLANK_SCANLINE_COUNT - 1 {
-                    emulator.interrupts.flags |= 0x1;
+                    fire_vblank_interrupt(emulator);
                     emulator.gpu.mode = VBLANK_MODE;
                 }
                 else {
