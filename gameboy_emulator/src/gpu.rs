@@ -2,6 +2,7 @@ use crate::emulator::Emulator;
 use crate::gpu::constants::{GB_SCREEN_HEIGHT, GB_SCREEN_WIDTH};
 use crate::gpu::scanline::write_scanline;
 use crate::gpu::sprites::{collect_scanline_sprites, Sprite};
+use crate::utils::is_bit_set;
 
 pub struct GpuRegisters {
     pub lcdc: u8,
@@ -41,6 +42,8 @@ const SCANLINE_RENDER_TIME: u16 = 456;
 const FRAME_SCANLINE_COUNT: u8 = 154;
 const VBLANK_SCANLINE_COUNT: u8 = 10;
 
+const STAT_INTERRUPT_LYC_CHECK_BIT: u8 = 6;
+
 pub fn initialize_gpu() -> GpuState {
     GpuState {
         mode: 2,
@@ -67,6 +70,14 @@ fn fire_vblank_interrupt(emulator: &mut Emulator) {
     emulator.interrupts.flags |= 0x1;
 }
 
+fn lyc_check_enabled(emulator: &Emulator) -> bool {
+    is_bit_set(emulator.gpu.registers.stat, STAT_INTERRUPT_LYC_CHECK_BIT) 
+}
+
+fn fire_stat_interrupt(emulator: &mut Emulator) {
+    emulator.interrupts.flags |= 0x2;
+}
+
 fn update_mode(emulator: &mut Emulator, new_mode: u8) {
     emulator.gpu.mode = new_mode;
     let new_stat = (emulator.gpu.registers.stat & 0b11111100) | new_mode;
@@ -75,6 +86,10 @@ fn update_mode(emulator: &mut Emulator, new_mode: u8) {
 
 pub fn step(emulator: &mut Emulator) {
     emulator.gpu.mode_clock += emulator.cpu.clock.instruction_clock_cycles as u16;
+
+    if lyc_check_enabled(emulator) && emulator.gpu.registers.ly == emulator.gpu.registers.lyc {
+        fire_stat_interrupt(emulator);
+    }
 
     match emulator.gpu.mode {
         OAM_MODE => {
