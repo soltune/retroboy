@@ -102,7 +102,6 @@ pub fn step(emulator: &mut Emulator) {
                 }
                 else {
                     update_mode(emulator, OAM_MODE);
-                    
                 }
             }
         }
