@@ -87,6 +87,7 @@ pub fn step(emulator: &mut Emulator) {
                 emulator.gpu.mode_clock = 0;
 
                 if emulator.gpu.registers.ly == FRAME_SCANLINE_COUNT - VBLANK_SCANLINE_COUNT - 1 {
+                    emulator.interrupts.flags |= 0x1;
                     emulator.gpu.mode = VBLANK_MODE;
                 }
                 else {

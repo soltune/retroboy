@@ -64,6 +64,17 @@ fn should_move_to_vblank_mode_from_hblank_if_at_last_line() {
 }
 
 #[test]
+fn should_fire_vblank_interrupt_when_entering_vblank_mode() {
+    let mut emulator = initialize_emulator();
+    emulator.gpu.mode = 0;
+    emulator.gpu.registers.ly = 142;
+    emulator.gpu.mode_clock = 200;
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    step(&mut emulator);
+    assert_eq!(emulator.interrupts.flags, 0x1);
+}
+
+#[test]
 fn should_move_back_to_oam_mode_from_vblank_at_correct_time() {
     let mut emulator = initialize_emulator();
     emulator.gpu.mode = 1;
