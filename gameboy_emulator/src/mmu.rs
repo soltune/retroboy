@@ -14,7 +14,18 @@ pub struct Memory {
     pub working_ram: [u8; 0x3e00],
     pub external_ram: [u8; 0x2000],
     pub zero_page_ram: [u8; 0x80],
+    pub cartridge_header: CartridgeHeader
 }
+
+#[derive(Debug)]
+pub struct CartridgeHeader {
+    pub sgb_support: bool,
+    pub type_code: u8
+}
+
+const ENTRY_POINT_ADDRESS: usize = 0x100;
+const SGB_SUPPORT_ADDRESS: usize = 0x146;
+const CARTRIDGE_TYPE_ADDRESS: usize = 0x147;
 
 pub fn initialize_memory() -> Memory {
     Memory {
@@ -26,6 +37,10 @@ pub fn initialize_memory() -> Memory {
         working_ram: [0; 0x3e00],
         external_ram: [0; 0x2000],
         zero_page_ram: [0; 0x80],
+        cartridge_header: CartridgeHeader {
+            sgb_support: false,
+            type_code: 0,
+        }
     }
 }
 
@@ -119,6 +134,12 @@ pub fn write_word(emulator: &mut Emulator, address: u16, value: u16) {
 pub fn load_rom_buffer(mut memory: Memory, buffer: Vec<u8>) -> Memory {
     let slice_length = std::cmp::min(buffer.len(), 0x8000);
     memory.rom[..slice_length].copy_from_slice(&buffer[..slice_length]);
+
+    if buffer.len() > ENTRY_POINT_ADDRESS {
+        memory.cartridge_header.sgb_support = buffer[SGB_SUPPORT_ADDRESS] == 0x03;
+        memory.cartridge_header.type_code = buffer[CARTRIDGE_TYPE_ADDRESS];
+    } 
+    
     memory
 }
 

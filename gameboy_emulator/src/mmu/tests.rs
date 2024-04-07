@@ -237,6 +237,8 @@ fn loads_rom_buffer_into_emulator() {
     rom_buffer[1] = 0xCC;
     rom_buffer[2] = 0x3B;
     rom_buffer[3] = 0x4C;
+    rom_buffer[0x146] = 0x00;
+    rom_buffer[0x147] = 0x01;
     rom_buffer[0x7FFF] = 0xD4;
     rom_buffer[0x8000] = 0xBB;
     rom_buffer[0x8001] = 0xD1;
@@ -249,6 +251,9 @@ fn loads_rom_buffer_into_emulator() {
     assert_eq!(read_byte(&emulator, 0x0003), 0x4C);
     assert_eq!(read_byte(&emulator, 0x7FFF), 0xD4);
     assert_eq!(read_byte(&emulator, 0x8000), 0xB1);
+
+    assert_eq!(emulator.memory.cartridge_header.sgb_support, false);
+    assert_eq!(emulator.memory.cartridge_header.type_code, 0x01);
 }
 
 #[test]
