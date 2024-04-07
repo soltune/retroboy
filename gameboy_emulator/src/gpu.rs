@@ -96,13 +96,21 @@ fn update_mode(emulator: &mut Emulator, new_mode: u8) {
     }
 }
 
+fn compare_ly_and_lyc(emulator: &mut Emulator) {
+    if emulator.gpu.registers.ly == emulator.gpu.registers.lyc {
+        emulator.gpu.registers.stat = emulator.gpu.registers.stat | 0b00000100;
+        
+        if lyc_check_enabled(emulator) {
+            fire_stat_interrupt(emulator);
+        }
+    }
+    else {
+        emulator.gpu.registers.stat = emulator.gpu.registers.stat & 0b11111011;
+    }
+}
+
 pub fn step(emulator: &mut Emulator) {
     emulator.gpu.mode_clock += emulator.cpu.clock.instruction_clock_cycles as u16;
-
-    if lyc_check_enabled(emulator) && emulator.gpu.registers.ly == emulator.gpu.registers.lyc {
-        emulator.gpu.registers.stat = emulator.gpu.registers.stat | 0b00000100;
-        fire_stat_interrupt(emulator);
-    }
 
     match emulator.gpu.mode {
         OAM_MODE => {
@@ -124,6 +132,8 @@ pub fn step(emulator: &mut Emulator) {
                 emulator.gpu.registers.ly += 1;
                 emulator.gpu.mode_clock = 0;
 
+                compare_ly_and_lyc(emulator);
+
                 if emulator.gpu.registers.ly == FRAME_SCANLINE_COUNT - VBLANK_SCANLINE_COUNT - 1 {
                     fire_vblank_interrupt(emulator);
                     update_mode(emulator, VBLANK_MODE);
@@ -137,6 +147,8 @@ pub fn step(emulator: &mut Emulator) {
             if emulator.gpu.mode_clock >= SCANLINE_RENDER_TIME {
                 emulator.gpu.mode_clock = 0;
                 emulator.gpu.registers.ly += 1;
+
+                compare_ly_and_lyc(emulator);
 
                 if emulator.gpu.registers.ly == FRAME_SCANLINE_COUNT - 1 {
                     emulator.gpu.registers.ly = 0;
