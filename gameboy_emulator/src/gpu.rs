@@ -43,6 +43,9 @@ const FRAME_SCANLINE_COUNT: u8 = 154;
 const VBLANK_SCANLINE_COUNT: u8 = 10;
 
 const STAT_INTERRUPT_LYC_CHECK_BIT: u8 = 6;
+const OAM_MODE_STAT_SOURCE_BIT: u8 = 5;
+const VBLANK_MODE_STAT_SOURCE_BIT: u8 = 4;
+const HBLANK_MODE_STAT_SOURCE_BIT: u8 = 3;
 
 pub fn initialize_gpu() -> GpuState {
     GpuState {
@@ -80,14 +83,24 @@ fn fire_stat_interrupt(emulator: &mut Emulator) {
 
 fn update_mode(emulator: &mut Emulator, new_mode: u8) {
     emulator.gpu.mode = new_mode;
-    let new_stat = (emulator.gpu.registers.stat & 0b11111100) | new_mode;
-    emulator.gpu.registers.stat = new_stat;
+
+    let stat = (emulator.gpu.registers.stat & 0b11111100) | new_mode;
+    emulator.gpu.registers.stat = stat;
+
+    let fire_interrupt_on_mode_switch = (new_mode == OAM_MODE && is_bit_set(stat, OAM_MODE_STAT_SOURCE_BIT))
+        || (new_mode == VBLANK_MODE && is_bit_set(stat, VBLANK_MODE_STAT_SOURCE_BIT))
+        || (new_mode == HBLANK_MODE && is_bit_set(stat, HBLANK_MODE_STAT_SOURCE_BIT));
+
+    if fire_interrupt_on_mode_switch {
+        fire_stat_interrupt(emulator);
+    }
 }
 
 pub fn step(emulator: &mut Emulator) {
     emulator.gpu.mode_clock += emulator.cpu.clock.instruction_clock_cycles as u16;
 
     if lyc_check_enabled(emulator) && emulator.gpu.registers.ly == emulator.gpu.registers.lyc {
+        emulator.gpu.registers.stat = emulator.gpu.registers.stat | 0b00000100;
         fire_stat_interrupt(emulator);
     }
 

@@ -100,6 +100,18 @@ fn should_update_stat_register_with_mode_2_status() {
 }
 
 #[test]
+fn should_fire_stat_interrupt_on_switch_to_mode_2_when_enabled() {
+    let mut emulator = initialize_emulator();
+    emulator.gpu.mode = 1;
+    emulator.gpu.registers.ly = 152;
+    emulator.gpu.mode_clock = 452;
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    emulator.gpu.registers.stat = 0b00100001;
+    step(&mut emulator);
+    assert_eq!(emulator.interrupts.flags, 0x02);
+}
+
+#[test]
 fn should_update_stat_register_with_mode_3_status() {
     let mut emulator = initialize_emulator();
     emulator.gpu.mode = 2;
@@ -124,6 +136,18 @@ fn should_update_stat_register_with_mode_0_status() {
 }
 
 #[test]
+fn should_fire_stat_interrupt_on_switch_to_mode_0_if_enabled() {
+    let mut emulator = initialize_emulator();
+    emulator.gpu.mode = 3;
+    emulator.gpu.registers.ly = 0;
+    emulator.gpu.mode_clock = 168;
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    emulator.gpu.registers.stat = 0b00001011;
+    step(&mut emulator);
+    assert_eq!(emulator.interrupts.flags, 0x02);
+}
+
+#[test]
 fn should_update_stat_register_with_mode_1_status() {
     let mut emulator = initialize_emulator();
     emulator.gpu.mode = 0;
@@ -133,6 +157,18 @@ fn should_update_stat_register_with_mode_1_status() {
     emulator.gpu.registers.stat = 0b00000000;
     step(&mut emulator);
     assert_eq!(emulator.gpu.registers.stat, 0b00000001);
+}
+
+#[test]
+fn should_fire_stat_interrupt_on_switch_to_mode_1_if_enabled() {
+    let mut emulator = initialize_emulator();
+    emulator.gpu.mode = 0;
+    emulator.gpu.registers.ly = 142;
+    emulator.gpu.mode_clock = 200;
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    emulator.gpu.registers.stat = 0b00010000;
+    step(&mut emulator);
+    assert_eq!(emulator.interrupts.flags, 0x03);
 }
 
 #[test]
@@ -148,6 +184,21 @@ fn should_fire_stat_interrupt_when_lyc_equals_ly_if_enabled() {
     // Step again to trigger interrupt condition
     step(&mut emulator);
     assert_eq!(emulator.interrupts.flags, 0x02);
+}
+
+#[test]
+fn should_update_stat_register_when_lyc_equals_ly() {
+    let mut emulator = initialize_emulator();
+    emulator.gpu.mode = 0;
+    emulator.gpu.registers.ly = 13;
+    emulator.gpu.registers.lyc = 14;
+    emulator.gpu.mode_clock = 200;
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    emulator.gpu.registers.stat = 0b01000000;
+    step(&mut emulator);
+    // Step again to trigger interrupt condition
+    step(&mut emulator);
+    assert_eq!(emulator.gpu.registers.stat, 0b01000110);
 }
 
 #[test]
