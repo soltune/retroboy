@@ -28,8 +28,8 @@ pub fn write_scanline(emulator: &mut Emulator) {
             let leftmost_tile_column = (x / 8) * 8;
             if within_viewport(scx, leftmost_tile_column) {
                 let viewport_x = x.wrapping_sub(scx);
-                let rgb = read_window_rgb(emulator, x, y)
-                    .or(read_sprite_pixel_rgb(emulator, viewport_x, ly))
+                let rgb = read_sprite_pixel_rgb(emulator, viewport_x, ly)
+                    .or(read_window_rgb(emulator, x, y))
                     .unwrap_or(read_bg_rgb(emulator, x, y));
                 let pixel_index = (ly as u16 * GB_SCREEN_WIDTH + viewport_x as u16) as usize;
                 emulator.gpu.frame_buffer[pixel_index] = rgb;
