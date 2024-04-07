@@ -14,10 +14,7 @@ pub struct Emulator {
     pub gpu: GpuState
 }
 
-fn load_rom_by_filepath(emulator: Emulator, filepath: &str) -> io::Result<Emulator> {
-    let loaded_memory = mmu::load_rom_by_filepath(emulator.memory, filepath)?;
-    Ok(Emulator { memory: loaded_memory, ..emulator })
-}
+const SUPPORTED_CARTRIDGE_TYPES: [u8; 1] = [0x00]; 
 
 pub fn initialize_emulator() -> Emulator {
     Emulator {
@@ -37,6 +34,18 @@ pub fn initialize_emulator() -> Emulator {
         },
         memory: initialize_memory(),
         gpu: initialize_gpu()
+    }
+}
+
+fn load_rom_by_filepath(emulator: Emulator, filepath: &str) -> io::Result<Emulator> {
+    let loaded_memory = mmu::load_rom_by_filepath(emulator.memory, filepath)?;
+    let cartridge_type = loaded_memory.cartridge_header.type_code;
+    if SUPPORTED_CARTRIDGE_TYPES.contains(&cartridge_type) {
+        Ok(Emulator { memory: loaded_memory, ..emulator })
+    }
+    else {
+        let error_message  = format!("Unsupported cartridge type {cartridge_type}."); 
+        Err(io::Error::new(io::ErrorKind::Other, error_message)) 
     }
 }
 
