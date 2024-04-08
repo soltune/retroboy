@@ -37,11 +37,16 @@ fn open_window_and_render_pixel() {
 }
 
 fn main() -> io::Result<()> {
-    let filepath = "/Users/samuelparsons/development/gb-test-roms/cpu_instrs/cpu_instrs.gb";
-    let emulator = initialize_emulator_by_filepath(filepath)
+    let rom_filepath = "/Users/samuelparsons/development/gb-test-roms/GBTICTAC.gb";
+    let bios_filepath = "/Users/samuelparsons/development/rusty-gameboy-emulator/bios.bin";
+    let emulator = initialize_emulator_by_filepath(rom_filepath, bios_filepath)
         .expect("An error occurred when trying to load the ROM");
 
     println!("{:?} {:?} {:?}", emulator.cpu.registers, emulator.cpu.clock, emulator.memory.rom);
+
+    for byte in &emulator.memory.bios {
+        println!("{:02X}", byte); // Print each byte as hexadecimal
+    }
     
     open_window_and_render_pixel();
     

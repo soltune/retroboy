@@ -154,5 +154,13 @@ pub fn load_rom_by_filepath(memory: Memory, filepath: &str) -> io::Result<Memory
     Ok(loaded_memory)
 }
 
+pub fn load_bios_by_filepath(memory: Memory, filepath: &str) -> io::Result<Memory> {
+    let mut file = File::open(filepath)?;
+    let mut bios = [0; 0x100];
+    file.read_exact(&mut bios)?;
+    
+    Ok(Memory { bios, ..memory })
+}
+
 #[cfg(test)]
 mod tests;

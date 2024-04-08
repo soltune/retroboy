@@ -38,8 +38,9 @@ pub fn initialize_emulator() -> Emulator {
     }
 }
 
-fn load_rom_by_filepath(emulator: Emulator, filepath: &str) -> io::Result<Emulator> {
-    let loaded_memory = mmu::load_rom_by_filepath(emulator.memory, filepath)?;
+fn load_rom_by_filepath(emulator: Emulator, rom_filepath: &str, bios_filepath: &str) -> io::Result<Emulator> {
+    let with_loaded_rom = mmu::load_rom_by_filepath(emulator.memory, rom_filepath)?;
+    let loaded_memory = mmu::load_bios_by_filepath(with_loaded_rom, bios_filepath)?; 
     let cartridge_type = loaded_memory.cartridge_header.type_code;
     if SUPPORTED_CARTRIDGE_TYPES.contains(&cartridge_type) {
         Ok(Emulator { memory: loaded_memory, ..emulator })
@@ -50,9 +51,9 @@ fn load_rom_by_filepath(emulator: Emulator, filepath: &str) -> io::Result<Emulat
     }
 }
 
-pub fn initialize_emulator_by_filepath(filepath: &str) -> io::Result<Emulator> {
+pub fn initialize_emulator_by_filepath(rom_filepath: &str, bios_filepath: &str) -> io::Result<Emulator> {
     let emulator = initialize_emulator();
-    load_rom_by_filepath(emulator, filepath)
+    load_rom_by_filepath(emulator, rom_filepath, bios_filepath)
 }
 
 fn transfer_to_game_rom(memory: &mut Memory) {
