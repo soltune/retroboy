@@ -23,7 +23,13 @@ fn update_interrupt_flag_after_delay(cpu: &mut CpuState) {
     }
 }
 
+fn reset_instruction_clock_cycles(cpu: &mut CpuState) {
+    cpu.clock.instruction_clock_cycles = 0;
+}
+
 pub fn step(emulator: &mut Emulator) {
+    reset_instruction_clock_cycles(&mut emulator.cpu);
+
     let opcode = read_next_instruction_byte(emulator);
 
     update_interrupt_flag_after_delay(&mut emulator.cpu);

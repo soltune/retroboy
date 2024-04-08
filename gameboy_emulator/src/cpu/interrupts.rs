@@ -73,7 +73,6 @@ pub fn interrupts_fired(emulator: &Emulator) -> bool {
 }
 
 pub fn step(emulator: &mut Emulator) {
-    emulator.cpu.clock.instruction_clock_cycles = 0;
     if emulator.cpu.interrupts.enabled && interrupts_fired(emulator) {
         let maybe_fired_interrupt = get_fired_interrupt(emulator);
         match maybe_fired_interrupt {

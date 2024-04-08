@@ -16,6 +16,7 @@ fn loads_immediate_byte_into_register_b() {
     assert_eq!(emulator.cpu.registers.b, 0xA1);
     assert_eq!(emulator.cpu.registers.program_counter, 2);
     assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
+    assert_eq!(emulator.cpu.clock.instruction_clock_cycles, 8);
 }
 
 #[test]
