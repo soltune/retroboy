@@ -1,6 +1,8 @@
 use crate::emulator::initialize_emulator;
 use super::*;
 
+fn noop_renderer(_: &Vec<u32>) {}
+
 #[test]
 fn should_move_from_oam_to_vram_mode() {
     let mut emulator = initialize_emulator();
@@ -8,7 +10,7 @@ fn should_move_from_oam_to_vram_mode() {
     emulator.gpu.registers.ly = 0;
     emulator.gpu.mode_clock = 76;
     emulator.cpu.clock.instruction_clock_cycles = 4;
-    step(&mut emulator);
+    step(&mut emulator, noop_renderer);
     assert_eq!(emulator.gpu.mode, 3);
     assert_eq!(emulator.gpu.mode_clock, 0);
 }
@@ -20,7 +22,7 @@ fn should_move_from_vram_to_hblank_mode() {
     emulator.gpu.registers.ly = 0;
     emulator.gpu.mode_clock = 168;
     emulator.cpu.clock.instruction_clock_cycles = 4;
-    step(&mut emulator);
+    step(&mut emulator, noop_renderer);
     assert_eq!(emulator.gpu.mode, 0);
     assert_eq!(emulator.gpu.mode_clock, 0);
 }
@@ -32,7 +34,7 @@ fn should_not_move_from_oam_to_vram_mode_too_early() {
     emulator.gpu.registers.ly = 0;
     emulator.gpu.mode_clock = 40;
     emulator.cpu.clock.instruction_clock_cycles = 4; 
-    step(&mut emulator);
+    step(&mut emulator, noop_renderer);
     assert_eq!(emulator.gpu.mode, 2);
     assert_eq!(emulator.gpu.mode_clock, 44);
 }
@@ -44,7 +46,7 @@ fn should_move_back_to_oam_mode_from_hblank_if_not_at_last_line() {
     emulator.gpu.registers.ly = 100;
     emulator.gpu.mode_clock = 200;
     emulator.cpu.clock.instruction_clock_cycles = 4;
-    step(&mut emulator);
+    step(&mut emulator, noop_renderer);
     assert_eq!(emulator.gpu.mode, 2);
     assert_eq!(emulator.gpu.mode_clock, 0);
     assert_eq!(emulator.gpu.registers.ly, 101);
@@ -57,7 +59,7 @@ fn should_move_to_vblank_mode_from_hblank_if_at_last_line() {
     emulator.gpu.registers.ly = 142;
     emulator.gpu.mode_clock = 200;
     emulator.cpu.clock.instruction_clock_cycles = 4;
-    step(&mut emulator);
+    step(&mut emulator, noop_renderer);
     assert_eq!(emulator.gpu.mode, 1);
     assert_eq!(emulator.gpu.mode_clock, 0);
     assert_eq!(emulator.gpu.registers.ly, 143);
@@ -70,7 +72,7 @@ fn should_fire_vblank_interrupt_when_entering_vblank_mode() {
     emulator.gpu.registers.ly = 142;
     emulator.gpu.mode_clock = 200;
     emulator.cpu.clock.instruction_clock_cycles = 4;
-    step(&mut emulator);
+    step(&mut emulator, noop_renderer);
     assert_eq!(emulator.interrupts.flags, 0x1);
 }
 
@@ -81,7 +83,7 @@ fn should_move_back_to_oam_mode_from_vblank_at_correct_time() {
     emulator.gpu.registers.ly = 152;
     emulator.gpu.mode_clock = 452;
     emulator.cpu.clock.instruction_clock_cycles = 4;
-    step(&mut emulator);
+    step(&mut emulator, noop_renderer);
     assert_eq!(emulator.gpu.mode, 2);
     assert_eq!(emulator.gpu.mode_clock, 0);
     assert_eq!(emulator.gpu.registers.ly, 0);
@@ -95,7 +97,7 @@ fn should_update_stat_register_with_mode_2_status() {
     emulator.gpu.mode_clock = 452;
     emulator.cpu.clock.instruction_clock_cycles = 4;
     emulator.gpu.registers.stat = 0b00000001;
-    step(&mut emulator);
+    step(&mut emulator, noop_renderer);
     assert_eq!(emulator.gpu.registers.stat, 0b00000010);
 }
 
@@ -107,7 +109,7 @@ fn should_fire_stat_interrupt_on_switch_to_mode_2_when_enabled() {
     emulator.gpu.mode_clock = 452;
     emulator.cpu.clock.instruction_clock_cycles = 4;
     emulator.gpu.registers.stat = 0b00100001;
-    step(&mut emulator);
+    step(&mut emulator, noop_renderer);
     assert_eq!(emulator.interrupts.flags, 0x02);
 }
 
@@ -119,7 +121,7 @@ fn should_update_stat_register_with_mode_3_status() {
     emulator.gpu.mode_clock = 76;
     emulator.cpu.clock.instruction_clock_cycles = 4;
     emulator.gpu.registers.stat = 0b00000010;
-    step(&mut emulator);
+    step(&mut emulator, noop_renderer);
     assert_eq!(emulator.gpu.registers.stat, 0b00000011);
 }
 
@@ -131,7 +133,7 @@ fn should_update_stat_register_with_mode_0_status() {
     emulator.gpu.mode_clock = 168;
     emulator.cpu.clock.instruction_clock_cycles = 4;
     emulator.gpu.registers.stat = 0b00000011;
-    step(&mut emulator);
+    step(&mut emulator, noop_renderer);
     assert_eq!(emulator.gpu.registers.stat, 0b00000000);
 }
 
@@ -143,7 +145,7 @@ fn should_fire_stat_interrupt_on_switch_to_mode_0_if_enabled() {
     emulator.gpu.mode_clock = 168;
     emulator.cpu.clock.instruction_clock_cycles = 4;
     emulator.gpu.registers.stat = 0b00001011;
-    step(&mut emulator);
+    step(&mut emulator, noop_renderer);
     assert_eq!(emulator.interrupts.flags, 0x02);
 }
 
@@ -155,7 +157,7 @@ fn should_update_stat_register_with_mode_1_status() {
     emulator.gpu.mode_clock = 200;
     emulator.cpu.clock.instruction_clock_cycles = 4;
     emulator.gpu.registers.stat = 0b00000000;
-    step(&mut emulator);
+    step(&mut emulator, noop_renderer);
     assert_eq!(emulator.gpu.registers.stat, 0b00000001);
 }
 
@@ -167,7 +169,7 @@ fn should_fire_stat_interrupt_on_switch_to_mode_1_if_enabled() {
     emulator.gpu.mode_clock = 200;
     emulator.cpu.clock.instruction_clock_cycles = 4;
     emulator.gpu.registers.stat = 0b00010000;
-    step(&mut emulator);
+    step(&mut emulator, noop_renderer);
     assert_eq!(emulator.interrupts.flags, 0x03);
 }
 
@@ -180,7 +182,7 @@ fn should_fire_stat_interrupt_when_lyc_equals_ly_if_enabled() {
     emulator.gpu.mode_clock = 200;
     emulator.cpu.clock.instruction_clock_cycles = 4;
     emulator.gpu.registers.stat = 0b01000000;
-    step(&mut emulator);
+    step(&mut emulator, noop_renderer);
     assert_eq!(emulator.interrupts.flags, 0x02);
 }
 
@@ -193,7 +195,7 @@ fn should_update_stat_register_when_lyc_equals_ly() {
     emulator.gpu.mode_clock = 200;
     emulator.cpu.clock.instruction_clock_cycles = 4;
     emulator.gpu.registers.stat = 0b01000000;
-    step(&mut emulator);
+    step(&mut emulator, noop_renderer);
     assert_eq!(emulator.gpu.registers.stat, 0b01000110);
 }
 
@@ -206,7 +208,7 @@ fn should_update_stat_register_when_lyc_is_not_equal_to_ly() {
     emulator.gpu.mode_clock = 200;
     emulator.cpu.clock.instruction_clock_cycles = 4;
     emulator.gpu.registers.stat = 0b01000100;
-    step(&mut emulator);
+    step(&mut emulator, noop_renderer);
     assert_eq!(emulator.gpu.registers.stat, 0b01000010);
 }
 
@@ -219,6 +221,6 @@ fn should_not_fire_stat_interrupt_when_lyc_equals_ly_if_disabled() {
     emulator.gpu.mode_clock = 200;
     emulator.cpu.clock.instruction_clock_cycles = 4;
     emulator.gpu.registers.stat = 0b00000000;
-    step(&mut emulator);
+    step(&mut emulator, noop_renderer);
     assert_eq!(emulator.interrupts.flags, 0x0);
 }
