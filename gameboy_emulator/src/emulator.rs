@@ -60,7 +60,7 @@ fn transfer_to_game_rom(memory: &mut Memory) {
     memory.in_bios = true;
 }
 
-pub fn step(emulator: &mut Emulator, render: fn(&Vec<u32>)) {
+pub fn step(emulator: &mut Emulator, render: impl FnMut(&Vec<u32>)) {
     if at_end_of_boot_rom(&mut emulator.cpu) {
         transfer_to_game_rom(&mut emulator.memory);
     }

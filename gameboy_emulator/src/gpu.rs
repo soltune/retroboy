@@ -111,7 +111,7 @@ fn compare_ly_and_lyc(emulator: &mut Emulator) {
     }
 }
 
-pub fn step(emulator: &mut Emulator, render: fn(&Vec<u32>)) {
+pub fn step(emulator: &mut Emulator, mut render: impl FnMut(&Vec<u32>)) {
     emulator.gpu.mode_clock += emulator.cpu.clock.instruction_clock_cycles as u16;
 
     match emulator.gpu.mode {
