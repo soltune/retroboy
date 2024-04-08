@@ -4,6 +4,7 @@ use crate::gpu::scanline::write_scanline;
 use crate::gpu::sprites::{collect_scanline_sprites, Sprite};
 use crate::utils::is_bit_set;
 
+#[derive(Debug)]
 pub struct GpuRegisters {
     pub lcdc: u8,
     pub scy: u8,
@@ -18,6 +19,7 @@ pub struct GpuRegisters {
     pub obp1: u8
 }
 
+#[derive(Debug)]
 pub struct GpuState {
     pub mode: u8,
     pub mode_clock: u16,

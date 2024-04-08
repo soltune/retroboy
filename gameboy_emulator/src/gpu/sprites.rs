@@ -15,6 +15,7 @@ const SPRITE_BYTE_SIZE: u16 = 4;
 
 const SPRITE_WIDTH: i16 = 8;
 
+#[derive(Debug)]
 pub struct Sprite {
     pub y_pos: i16,
     pub x_pos: i16,

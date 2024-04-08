@@ -6,6 +6,7 @@ use crate::mmu;
 use crate::mmu::{Memory, initialize_memory};
 use std::io;
 
+#[derive(Debug)]
 pub struct Emulator {
     pub cpu: CpuState,
     pub interrupts: InterruptRegisters,
