@@ -10,9 +10,10 @@ fn conditional_jump(cpu_state: &mut CpuState, new_address: u16, condition: bool)
 }
 
 pub fn conditional_relative_jump(emulator: &mut Emulator, condition: bool) {
-    let offset_byte = read_next_instruction_byte(emulator) as u16;
+    let offset_byte = read_next_instruction_byte(emulator) as i8;
     let program_counter = emulator.cpu.registers.program_counter;
-    conditional_jump(&mut emulator.cpu, program_counter + offset_byte, condition);
+    let result_address = program_counter.wrapping_add_signed(offset_byte.into());
+    conditional_jump(&mut emulator.cpu, result_address, condition);
 }
 
 pub fn conditional_jump_using_immediate_word(emulator: &mut Emulator, condition: bool) {

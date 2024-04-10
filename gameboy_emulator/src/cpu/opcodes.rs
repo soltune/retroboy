@@ -96,8 +96,9 @@ pub fn step(emulator: &mut Emulator) {
         0x17 =>
             bitops::rotate_register_left_through_carry(&mut emulator.cpu, Register::A),
         0x18 => {
-            let byte = read_next_instruction_byte(emulator);
-            emulator.cpu.registers.program_counter += byte as u16;
+            let byte = read_next_instruction_byte(emulator) as i8;
+            let original_program_counter = emulator.cpu.registers.program_counter;
+            emulator.cpu.registers.program_counter = original_program_counter.wrapping_add_signed(byte.into());
         },
         0x19 => {
             let word = microops::read_from_register_pair(&mut emulator.cpu, &REGISTER_DE);

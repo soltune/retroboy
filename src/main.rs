@@ -23,7 +23,7 @@ fn open_gameboy_emulator_window(emulator: &mut Emulator) {
                 .update_with_buffer(&buffer, WIDTH, HEIGHT)
                 .expect("Unable to update window"); 
         };
-        
+
         step(emulator, minifb_renderer);
     }
 }

@@ -31,13 +31,13 @@ pub fn resolve_window_tile_index_address(lcdc: u8, column_tile_offset: u8, row_t
 pub fn resolve_tile_data_address(lcdc: u8, index: u8) -> u16 {
     let unsigned_addressing = get_tile_data_addressing_mode(lcdc);
     if unsigned_addressing {
-        0x8000 + (index * TILE_DATA_LENGTH) as u16
+        0x8000 + (index as u16 * TILE_DATA_LENGTH as u16)
     }
     else if index >= 128 {
-        0x8800 + ((index - 128) * TILE_DATA_LENGTH) as u16
+        0x8800 + ((index - 128) as u16 * TILE_DATA_LENGTH as u16)
     }
     else {
-        0x9000 + (index * TILE_DATA_LENGTH) as u16 
+        0x9000 + (index as u16 * TILE_DATA_LENGTH as u16)
     }
 }
 
