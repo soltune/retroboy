@@ -57,7 +57,7 @@ pub fn initialize_emulator_by_filepath(rom_filepath: &str, bios_filepath: &str) 
 }
 
 fn transfer_to_game_rom(memory: &mut Memory) {
-    memory.in_bios = true;
+    memory.in_bios = false;
 }
 
 pub fn step(emulator: &mut Emulator, render: impl FnMut(&Vec<u32>)) {
