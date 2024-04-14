@@ -641,7 +641,7 @@ fn rotates_register_a_left_through_carry() {
 }
 
 #[test]
-fn rotates_register_a_left_and_reset_z_flag_even_if_result_is_zero() {
+fn rotates_register_a_left_and_resets_z_flag_even_if_result_is_zero() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x17]);
     emulator.cpu.registers.a = 0x0;
     step(&mut emulator);
