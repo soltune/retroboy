@@ -56,20 +56,20 @@ fn should_move_back_to_oam_mode_from_hblank_if_not_at_last_line() {
 fn should_move_to_vblank_mode_from_hblank_if_at_last_line() {
     let mut emulator = initialize_emulator();
     emulator.gpu.mode = 0;
-    emulator.gpu.registers.ly = 142;
+    emulator.gpu.registers.ly = 143;
     emulator.gpu.mode_clock = 200;
     emulator.cpu.clock.instruction_clock_cycles = 4;
     step(&mut emulator, noop_renderer);
     assert_eq!(emulator.gpu.mode, 1);
     assert_eq!(emulator.gpu.mode_clock, 0);
-    assert_eq!(emulator.gpu.registers.ly, 143);
+    assert_eq!(emulator.gpu.registers.ly, 144);
 }
 
 #[test]
 fn should_fire_vblank_interrupt_when_entering_vblank_mode() {
     let mut emulator = initialize_emulator();
     emulator.gpu.mode = 0;
-    emulator.gpu.registers.ly = 142;
+    emulator.gpu.registers.ly = 143;
     emulator.gpu.mode_clock = 200;
     emulator.cpu.clock.instruction_clock_cycles = 4;
     step(&mut emulator, noop_renderer);
@@ -80,7 +80,7 @@ fn should_fire_vblank_interrupt_when_entering_vblank_mode() {
 fn should_move_back_to_oam_mode_from_vblank_at_correct_time() {
     let mut emulator = initialize_emulator();
     emulator.gpu.mode = 1;
-    emulator.gpu.registers.ly = 152;
+    emulator.gpu.registers.ly = 153;
     emulator.gpu.mode_clock = 452;
     emulator.cpu.clock.instruction_clock_cycles = 4;
     step(&mut emulator, noop_renderer);
@@ -93,7 +93,7 @@ fn should_move_back_to_oam_mode_from_vblank_at_correct_time() {
 fn should_update_stat_register_with_mode_2_status() {
     let mut emulator = initialize_emulator();
     emulator.gpu.mode = 1;
-    emulator.gpu.registers.ly = 152;
+    emulator.gpu.registers.ly = 153;
     emulator.gpu.mode_clock = 452;
     emulator.cpu.clock.instruction_clock_cycles = 4;
     emulator.gpu.registers.stat = 0b00000001;
@@ -105,7 +105,7 @@ fn should_update_stat_register_with_mode_2_status() {
 fn should_fire_stat_interrupt_on_switch_to_mode_2_when_enabled() {
     let mut emulator = initialize_emulator();
     emulator.gpu.mode = 1;
-    emulator.gpu.registers.ly = 152;
+    emulator.gpu.registers.ly = 153;
     emulator.gpu.mode_clock = 452;
     emulator.cpu.clock.instruction_clock_cycles = 4;
     emulator.gpu.registers.stat = 0b00100001;
@@ -153,7 +153,7 @@ fn should_fire_stat_interrupt_on_switch_to_mode_0_if_enabled() {
 fn should_update_stat_register_with_mode_1_status() {
     let mut emulator = initialize_emulator();
     emulator.gpu.mode = 0;
-    emulator.gpu.registers.ly = 142;
+    emulator.gpu.registers.ly = 143;
     emulator.gpu.mode_clock = 200;
     emulator.cpu.clock.instruction_clock_cycles = 4;
     emulator.gpu.registers.stat = 0b00000000;
@@ -165,7 +165,7 @@ fn should_update_stat_register_with_mode_1_status() {
 fn should_fire_stat_interrupt_on_switch_to_mode_1_if_enabled() {
     let mut emulator = initialize_emulator();
     emulator.gpu.mode = 0;
-    emulator.gpu.registers.ly = 142;
+    emulator.gpu.registers.ly = 143;
     emulator.gpu.mode_clock = 200;
     emulator.cpu.clock.instruction_clock_cycles = 4;
     emulator.gpu.registers.stat = 0b00010000;

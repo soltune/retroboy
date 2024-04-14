@@ -126,23 +126,24 @@ pub fn step(emulator: &mut Emulator, mut render: impl FnMut(&Vec<u32>)) {
             if emulator.gpu.mode_clock >= VRAM_TIME {
                 emulator.gpu.mode_clock = 0;
                 update_mode(emulator, HBLANK_MODE);
+                write_scanline(emulator);
             }
         }
         HBLANK_MODE => {
             if emulator.gpu.mode_clock >= HBLANK_TIME {
-                write_scanline(emulator);
-                emulator.gpu.registers.ly += 1;
-                emulator.gpu.mode_clock = 0;
-
-                compare_ly_and_lyc(emulator);
-
                 if emulator.gpu.registers.ly == FRAME_SCANLINE_COUNT - VBLANK_SCANLINE_COUNT - 1 {
-                    fire_vblank_interrupt(emulator);
                     update_mode(emulator, VBLANK_MODE);
+                    render(&emulator.gpu.frame_buffer);
+                    fire_vblank_interrupt(emulator);
                 }
                 else {
                     update_mode(emulator, OAM_MODE);
                 }
+
+                emulator.gpu.registers.ly += 1;
+                emulator.gpu.mode_clock = 0;
+
+                compare_ly_and_lyc(emulator);
             }
         }
         VBLANK_MODE => {
@@ -152,8 +153,7 @@ pub fn step(emulator: &mut Emulator, mut render: impl FnMut(&Vec<u32>)) {
 
                 compare_ly_and_lyc(emulator);
 
-                if emulator.gpu.registers.ly == FRAME_SCANLINE_COUNT - 1 {
-                    render(&emulator.gpu.frame_buffer);
+                if emulator.gpu.registers.ly > FRAME_SCANLINE_COUNT - 1 {
                     emulator.gpu.registers.ly = 0;
                     update_mode(emulator, OAM_MODE);
                 }
