@@ -53,8 +53,10 @@ pub fn step(emulator: &mut Emulator) {
             alu::decrement_register(&mut emulator.cpu, Register::B),
         0x06 =>
             loads::load_immediate_value(emulator, Register::B),
-        0x07 =>
-            bitops::rotate_register_left(&mut emulator.cpu, Register::A),
+        0x07 => {
+            bitops::rotate_register_left(&mut emulator.cpu, Register::A);
+            microops::set_flag_z(&mut emulator.cpu, false);
+        },
         0x08 => {
             let address = read_next_instruction_word(emulator);
             microops::store_word_in_memory(emulator, address, emulator.cpu.registers.stack_pointer);
@@ -75,8 +77,10 @@ pub fn step(emulator: &mut Emulator) {
             alu::decrement_register(&mut emulator.cpu, Register::C),
         0x0E =>
             loads::load_immediate_value(emulator, Register::C),
-        0x0F =>
-            bitops::rotate_register_right(&mut emulator.cpu, Register::A),
+        0x0F => {
+            bitops::rotate_register_right(&mut emulator.cpu, Register::A);
+            microops::set_flag_z(&mut emulator.cpu, false);
+        },
         0x11 => {
             let word = read_next_instruction_word(emulator);
             microops::store_in_register_pair(&mut emulator.cpu, REGISTER_DE, word);
@@ -93,8 +97,10 @@ pub fn step(emulator: &mut Emulator) {
             alu::decrement_register(&mut emulator.cpu, Register::D),
         0x16 =>
             loads::load_immediate_value(emulator, Register::D),
-        0x17 =>
-            bitops::rotate_register_left_through_carry(&mut emulator.cpu, Register::A),
+        0x17 => {
+            bitops::rotate_register_left_through_carry(&mut emulator.cpu, Register::A);
+            microops::set_flag_z(&mut emulator.cpu, false);
+        },
         0x18 => {
             let byte = read_next_instruction_byte(emulator) as i8;
             let original_program_counter = emulator.cpu.registers.program_counter;
@@ -116,8 +122,10 @@ pub fn step(emulator: &mut Emulator) {
             alu::decrement_register(&mut emulator.cpu, Register::E),
         0x1E =>
             loads::load_immediate_value(emulator, Register::E),
-        0x1F =>
-            bitops::rotate_register_right_through_carry(&mut emulator.cpu, Register::A),
+        0x1F => {
+            bitops::rotate_register_right_through_carry(&mut emulator.cpu, Register::A);
+            microops::set_flag_z(&mut emulator.cpu, false);
+        },
         0x20 =>
             jumps::conditional_relative_jump(emulator, !microops::is_z_flag_set(&emulator.cpu)),
         0x21 => {
