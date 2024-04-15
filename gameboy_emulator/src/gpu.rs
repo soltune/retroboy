@@ -151,12 +151,12 @@ pub fn step(emulator: &mut Emulator, mut render: impl FnMut(&Vec<u32>)) {
                 emulator.gpu.mode_clock = 0;
                 emulator.gpu.registers.ly += 1;
 
-                compare_ly_and_lyc(emulator);
-
                 if emulator.gpu.registers.ly > FRAME_SCANLINE_COUNT - 1 {
                     emulator.gpu.registers.ly = 0;
                     update_mode(emulator, OAM_MODE);
                 }
+
+                compare_ly_and_lyc(emulator);
             }
         }
         _ => ()

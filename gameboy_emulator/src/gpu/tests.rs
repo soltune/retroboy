@@ -98,7 +98,7 @@ fn should_update_stat_register_with_mode_2_status() {
     emulator.cpu.clock.instruction_clock_cycles = 4;
     emulator.gpu.registers.stat = 0b00000001;
     step(&mut emulator, noop_renderer);
-    assert_eq!(emulator.gpu.registers.stat, 0b00000010);
+    assert_eq!(emulator.gpu.registers.stat, 0b00000110);
 }
 
 #[test]
