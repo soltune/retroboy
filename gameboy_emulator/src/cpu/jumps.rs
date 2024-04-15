@@ -6,6 +6,7 @@ use crate::emulator::Emulator;
 fn conditional_jump(cpu_state: &mut CpuState, new_address: u16, condition: bool) {
     if condition {
         cpu_state.registers.program_counter = new_address;
+        microops::run_extra_machine_cycle(cpu_state);
     }   
 }
 

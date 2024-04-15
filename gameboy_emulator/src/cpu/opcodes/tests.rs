@@ -1009,7 +1009,7 @@ fn jumps_to_address_nn() {
 }
 
 #[test]
-fn jumps_to_address_nn_if_z_flag_is_reset() {
+fn avoids_jumping_to_address_nn_if_z_flag_is_reset() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xC2, 0xAA, 0x54]);
     emulator.cpu.registers.f = 0x80;
     step(&mut emulator);
@@ -1023,7 +1023,7 @@ fn jumps_to_address_nn_if_z_flag_is_set() {
     emulator.cpu.registers.f = 0x80;
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.program_counter, 0x54AA);
-    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 16);
 }
 
 #[test]
@@ -1032,7 +1032,7 @@ fn jumps_to_address_nn_if_c_flag_is_reset() {
     emulator.cpu.registers.f = 0x80;
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.program_counter, 0x54AA);
-    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 16);
 }
 
 #[test]
@@ -1076,7 +1076,7 @@ fn jumps_to_current_address_plus_n_if_z_flag_is_reset() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x20, 0x02]);
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.program_counter, 0x04);
-    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 }
 
 #[test]
@@ -1084,25 +1084,25 @@ fn jumps_to_current_address_minus_n_if_z_flag_is_reset() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x20, 0xFE]);
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.program_counter, 0x00);
-    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 }
 
 #[test]
-fn jumps_to_curent_address_plus_n_if_z_flag_is_set() {
+fn jumps_to_current_address_plus_n_if_z_flag_is_set() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x28, 0x05]);
     emulator.cpu.registers.f = 0x80;
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.program_counter, 0x07);
-    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 }
 
 #[test]
-fn jumps_to_curent_address_plus_n_if_c_flag_is_reset() {
+fn jumps_to_current_address_plus_n_if_c_flag_is_reset() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x30, 0x05]);
     emulator.cpu.registers.f = 0x80;
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.program_counter, 0x07);
-    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 }
 
 #[test]
