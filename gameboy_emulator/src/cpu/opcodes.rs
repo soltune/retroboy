@@ -135,7 +135,7 @@ pub fn step(emulator: &mut Emulator) {
         0x22 => {
             let mut address = microops::read_from_register_pair(&mut emulator.cpu, &REGISTER_HL);
             loads::load_source_register_in_memory(emulator, Register::A, address);
-            address += 1;
+            address = address.wrapping_add(1);
             microops::store_in_register_pair(&mut emulator.cpu, REGISTER_HL, address);    
         },
         0x23 =>
