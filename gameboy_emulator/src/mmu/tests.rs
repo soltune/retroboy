@@ -64,6 +64,9 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.gpu.registers.lyc = 0xAB;
     emulator.gpu.registers.stat = 0xD2;
 
+    emulator.keys.column = 0x10;
+    emulator.keys.select_buttons = 0x04;
+
     emulator.memory.in_bios = false;
 
     emulator
@@ -220,6 +223,12 @@ fn reads_lyc_from_gpu() {
 fn reads_stat_from_gpu() {
     let emulator = setup_emulator_with_test_memory();
     assert_eq!(read_byte(&emulator, 0xFF41), 0xD2);
+}
+
+#[test]
+fn reads_joyp_register() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xFF00), 0x04);
 }
 
 #[test]

@@ -8,5 +8,15 @@ pub fn get_bit(byte: u8, bit_index: u8) -> u8 {
     if is_set { 1 } else { 0 }
 }
 
+pub fn set_bit(byte: u8, bit_index: u8) -> u8 {
+    let mask: u8 = 1 << bit_index;
+    byte | mask
+}
+
+pub fn reset_bit(byte: u8, bit_index: u8) -> u8 {
+    let mask: u8 = !(1 << bit_index);
+    byte & mask
+}
+
 #[cfg(test)]
 mod tests;

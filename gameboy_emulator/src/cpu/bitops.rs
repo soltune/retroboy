@@ -1,7 +1,7 @@
 use crate::cpu::{Register, CpuState, REGISTER_HL};
 use crate::cpu::microops;
 use crate::emulator::Emulator;
-use crate::utils::is_bit_set;
+use crate::utils::{is_bit_set, set_bit, reset_bit};
 
 fn rotate_left(cpu_state: &mut CpuState, byte: u8) -> u8 {
     let most_significant_bit = byte >> 7;
@@ -190,11 +190,6 @@ pub fn test_memory_bit(emulator: &mut Emulator, bit_index: u8) {
     test_bit(&mut emulator.cpu, byte, bit_index);
 }
 
-fn reset_bit(byte: u8, bit_index: u8) -> u8 {
-    let mask: u8 = !(1 << bit_index);
-    byte & mask
-}
-
 pub fn reset_register_bit(cpu_state: &mut CpuState, register: Register, bit_index: u8) {
     let byte = microops::read_from_register(cpu_state, &register);
     let updated_byte = reset_bit(byte, bit_index);
@@ -206,11 +201,6 @@ pub fn reset_memory_bit(emulator: &mut Emulator, bit_index: u8) {
     let byte = microops::read_byte_from_memory(emulator, address);
     let updated_byte = reset_bit(byte, bit_index);
     microops::store_byte_in_memory(emulator, address, updated_byte);
-}
-
-fn set_bit(byte: u8, bit_index: u8) -> u8 {
-    let mask: u8 = 1 << bit_index;
-    byte | mask
 }
 
 pub fn set_register_bit(cpu_state: &mut CpuState, register: Register, bit_index: u8) {

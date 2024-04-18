@@ -1,4 +1,6 @@
 use crate::emulator::Emulator;
+use crate::keys::read_joyp_byte;
+use crate::keys::write_joyp_byte;
 use std::io;
 use std::io::Read;
 use std::io::BufReader;
@@ -59,6 +61,7 @@ pub fn read_byte(emulator: &Emulator, address: u16) -> u8 {
             0xF00 if address == 0xFFFF => emulator.interrupts.enabled,
             0xF00 if address >= 0xFF80 => memory.zero_page_ram[(address & 0x7F) as usize],
             _ => match address & 0xFF {
+                0x00 => read_joyp_byte(&emulator.keys),
                 0x40 => emulator.gpu.registers.lcdc,
                 0x41 => emulator.gpu.registers.stat,
                 0x42 => emulator.gpu.registers.scy,
@@ -97,6 +100,7 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
             0xF00 if address == 0xFFFF => emulator.interrupts.enabled = value,
             0xF00 if address >= 0xFF80 => memory.zero_page_ram[(address & 0x7F) as usize] = value,
             _ => match address & 0xFF {
+                0x00 => write_joyp_byte(&mut emulator.keys, value),
                 0x40 => emulator.gpu.registers.lcdc = value,
                 0x41 => emulator.gpu.registers.stat = value,
                 0x42 => emulator.gpu.registers.scy = value,

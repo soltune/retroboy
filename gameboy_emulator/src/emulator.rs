@@ -2,6 +2,7 @@ use crate::cpu::{self, at_end_of_boot_rom, initialize_cpu, CpuState};
 use crate::cpu::interrupts::InterruptRegisters;
 use crate::cpu::timers::TimerRegisters;
 use crate::gpu::{self, initialize_gpu, GpuState};
+use crate::keys::{initialize_keys, KeyState};
 use crate::mmu;
 use crate::mmu::{Memory, initialize_memory};
 use std::io;
@@ -12,7 +13,8 @@ pub struct Emulator {
     pub interrupts: InterruptRegisters,
     pub timers: TimerRegisters,
     pub memory: Memory,
-    pub gpu: GpuState
+    pub gpu: GpuState,
+    pub keys: KeyState
 }
 
 const SUPPORTED_CARTRIDGE_TYPES: [u8; 1] = [0x00]; 
@@ -34,7 +36,8 @@ pub fn initialize_emulator() -> Emulator {
             control: 0
         },
         memory: initialize_memory(),
-        gpu: initialize_gpu()
+        gpu: initialize_gpu(),
+        keys: initialize_keys()
     }
 }
 
