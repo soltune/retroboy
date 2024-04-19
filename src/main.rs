@@ -32,7 +32,7 @@ fn open_gameboy_emulator_window(emulator: &mut Emulator) {
 }
 
 fn main() -> io::Result<()> {
-    let rom_filepath = "/Users/samuelparsons/development/gb-test-roms/ttt.gb";
+    let rom_filepath = "/Users/samuelparsons/development/gb-test-roms/opus5.gb";
     let bios_filepath = "/Users/samuelparsons/development/rusty-gameboy-emulator/bios.bin";
     let mut emulator = initialize_emulator_by_filepath(rom_filepath, bios_filepath)
         .expect("An error occurred when trying to load the ROM");
