@@ -5,14 +5,6 @@ use crate::gpu::background::read_bg_rgb;
 use crate::gpu::window::read_window_rgb;
 use crate::gpu::utils::get_lcd_enabled_mode;
 
-const TILE_WIDTH: u8 = 8;
-
-fn within_viewport(scx: u8, leftmost_tile_column: u8) -> bool {
-    let rightmost_tile_column = leftmost_tile_column.wrapping_add(TILE_WIDTH);
-    let rightmost_viewport_border = scx.wrapping_add(GB_SCREEN_WIDTH as u8);
-    rightmost_tile_column >= scx || leftmost_tile_column <= rightmost_viewport_border
-}
-
 pub fn write_scanline(emulator: &mut Emulator) {
     let ly = emulator.gpu.registers.ly;
     let scx = emulator.gpu.registers.scx;
@@ -26,14 +18,11 @@ pub fn write_scanline(emulator: &mut Emulator) {
     if lcd_enabled {
         for viewport_x in 0..GB_SCREEN_WIDTH as u8 {
             let x = scx.wrapping_add(viewport_x);
-            let leftmost_tile_column = (x / 8) * 8;
-            if within_viewport(scx, leftmost_tile_column) {
-                let rgb = read_sprite_pixel_rgb(emulator, viewport_x, ly)
-                    .or(read_window_rgb(emulator, x, y))
-                    .unwrap_or(read_bg_rgb(emulator, x, y));
-                let pixel_index = (ly as u16 * GB_SCREEN_WIDTH + viewport_x as u16) as usize;
-                emulator.gpu.frame_buffer[pixel_index] = rgb;
-            }
+            let rgb = read_sprite_pixel_rgb(emulator, viewport_x, ly)
+                .or(read_window_rgb(emulator, x, y))
+                .unwrap_or(read_bg_rgb(emulator, x, y));
+            let pixel_index = (ly as u16 * GB_SCREEN_WIDTH + viewport_x as u16) as usize;
+            emulator.gpu.frame_buffer[pixel_index] = rgb;
         } 
     }
 }
