@@ -2,8 +2,9 @@ use super::*;
 use crate::emulator::initialize_emulator;
 use crate::mmu;
 
-fn init_emulator_with_test_instructions(test_instructions: Vec<u8>) -> Emulator {
+fn init_emulator_with_test_instructions(mut test_instructions: Vec<u8>) -> Emulator {
     let emulator = initialize_emulator();
+    test_instructions.resize(0x8000, 0);
     let mut updated_memory = mmu::load_rom_buffer(emulator.memory, test_instructions);
     updated_memory.in_bios = false;
     Emulator { memory: updated_memory, ..emulator }

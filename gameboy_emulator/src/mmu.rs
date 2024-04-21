@@ -10,7 +10,7 @@ use std::fs::File;
 pub struct Memory {
     pub in_bios: bool,
     pub bios: [u8; 0x100],
-    pub rom: [u8; 0x8000],
+    pub rom: Vec<u8>,
     pub video_ram: [u8; 0x2000],
     pub object_attribute_memory: [u8; 0xa0],
     pub working_ram: [u8; 0x3e00],
@@ -33,7 +33,7 @@ pub fn initialize_memory() -> Memory {
     Memory {
         in_bios: true,
         bios: [0; 0x100],
-        rom: [0; 0x8000],
+        rom: Vec::new(),
         video_ram: [0; 0x2000],
         object_attribute_memory: [0; 0xa0],
         working_ram: [0; 0x3e00],
@@ -136,14 +136,11 @@ pub fn write_word(emulator: &mut Emulator, address: u16, value: u16) {
 }
 
 pub fn load_rom_buffer(mut memory: Memory, buffer: Vec<u8>) -> Memory {
-    let slice_length = std::cmp::min(buffer.len(), 0x8000);
-    memory.rom[..slice_length].copy_from_slice(&buffer[..slice_length]);
-
     if buffer.len() > ENTRY_POINT_ADDRESS {
         memory.cartridge_header.sgb_support = buffer[SGB_SUPPORT_ADDRESS] == 0x03;
         memory.cartridge_header.type_code = buffer[CARTRIDGE_TYPE_ADDRESS];
     } 
-    
+    memory.rom = buffer; 
     memory
 }
 
