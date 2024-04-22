@@ -281,3 +281,125 @@ fn writes_word_to_video_ram() {
     assert_eq!(emulator.memory.video_ram[2], 0xDD);
     assert_eq!(emulator.memory.video_ram[3], 0xC1);
 }
+
+#[test]
+fn enable_external_ram_if_correct_cartridge_type() {
+    let mut emulator = setup_emulator_with_test_memory();
+    emulator.memory.cartridge_header.type_code = CART_TYPE_MBC1_WITH_RAM;
+    write_byte(&mut emulator, 0x0000, 0xA);
+    assert_eq!(emulator.memory.ram_enabled, true);
+}
+
+#[test]
+fn enable_external_ram_if_correct_cartridge_type_scenario_two() {
+    let mut emulator = setup_emulator_with_test_memory();
+    emulator.memory.cartridge_header.type_code = CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY;
+    write_byte(&mut emulator, 0x0000, 0xA);
+    assert_eq!(emulator.memory.ram_enabled, true);
+}
+
+#[test]
+fn not_enable_external_ram_if_incorrect_cartridge_type() {
+    let mut emulator = setup_emulator_with_test_memory();
+    emulator.memory.cartridge_header.type_code = CART_TYPE_MBC1;
+    write_byte(&mut emulator, 0x0000, 0xA);
+    assert_eq!(emulator.memory.ram_enabled, false); 
+}
+
+#[test]
+fn disable_external_ram_if_correct_cartridge_type() {
+    let mut emulator = setup_emulator_with_test_memory();
+    emulator.memory.cartridge_header.type_code = CART_TYPE_MBC1_WITH_RAM;
+    emulator.memory.ram_enabled = true;
+    write_byte(&mut emulator, 0x0000, 0xB);
+    assert_eq!(emulator.memory.ram_enabled, false);
+}
+
+#[test]
+fn set_rom_bank_number() {
+    let mut emulator = setup_emulator_with_test_memory();
+    emulator.memory.cartridge_header.type_code = CART_TYPE_MBC1;
+    write_byte(&mut emulator, 0x2000, 0x4);
+    assert_eq!(emulator.memory.rom_bank_number, 0x04);
+}
+
+#[test]
+fn sets_the_lower_five_bits_of_the_rom_bank_number() {
+    let mut emulator = setup_emulator_with_test_memory();
+    emulator.memory.cartridge_header.type_code = CART_TYPE_MBC1;
+    emulator.memory.mbc_mode = MBCMode::ROM;
+    emulator.memory.rom_bank_number = 0x41;
+    write_byte(&mut emulator, 0x2000, 0x4);
+    assert_eq!(emulator.memory.rom_bank_number, 0x44);
+}
+
+#[test]
+fn treats_setting_bank_zero_as_bank_one() {
+    let mut emulator = setup_emulator_with_test_memory();
+    emulator.memory.cartridge_header.type_code = CART_TYPE_MBC1;
+    emulator.memory.mbc_mode = MBCMode::ROM;
+    write_byte(&mut emulator, 0x2000, 0x0);
+    assert_eq!(emulator.memory.rom_bank_number, 0x1);
+}
+
+#[test]
+fn sets_ram_bank_number() {
+    let mut emulator = setup_emulator_with_test_memory();
+    emulator.memory.cartridge_header.type_code = CART_TYPE_MBC1;
+    emulator.memory.mbc_mode = MBCMode::RAM;
+    write_byte(&mut emulator, 0x4000, 0x2);
+    assert_eq!(emulator.memory.ram_bank_number, 0x2);
+}
+
+#[test]
+fn sets_high_two_bits_of_rom_bank_number() {
+    let mut emulator = setup_emulator_with_test_memory();
+    emulator.memory.cartridge_header.type_code = CART_TYPE_MBC1;
+    emulator.memory.mbc_mode = MBCMode::ROM;
+    emulator.memory.rom_bank_number = 0x41;
+    write_byte(&mut emulator, 0x4000, 0x3);
+    assert_eq!(emulator.memory.rom_bank_number, 0x61);
+}
+
+#[test]
+fn switch_mbc_mode_from_rom_mode_to_ram_mode() {
+    let mut emulator = setup_emulator_with_test_memory();
+    emulator.memory.cartridge_header.type_code = CART_TYPE_MBC1_WITH_RAM;
+    emulator.memory.ram_enabled = true;
+    emulator.memory.mbc_mode = MBCMode::ROM;
+    write_byte(&mut emulator, 0x6010, 0x01);
+    assert_eq!(emulator.memory.mbc_mode, MBCMode::RAM); 
+}
+
+#[test]
+fn switch_mbc_mode_from_ram_mode_to_rom_mode() {
+    let mut emulator = setup_emulator_with_test_memory();
+    emulator.memory.cartridge_header.type_code = CART_TYPE_MBC1_WITH_RAM;
+    emulator.memory.ram_enabled = true;
+    emulator.memory.mbc_mode = MBCMode::RAM;
+    write_byte(&mut emulator, 0x6010, 0x00);
+    assert_eq!(emulator.memory.mbc_mode, MBCMode::ROM); 
+}
+
+#[test]
+fn reads_from_different_rom_bank() {
+    let mut emulator = setup_emulator_with_test_memory();
+    emulator.memory.cartridge_header.type_code = CART_TYPE_MBC1;
+    emulator.memory.mbc_mode = MBCMode::ROM;
+    emulator.memory.rom_bank_number = 3;
+    emulator.memory.rom.resize(0x16000, 0);
+    emulator.memory.rom[0xC005] = 0xA1;
+    let result = read_byte(&emulator, 0x4005);
+    assert_eq!(result, 0xA1);
+}
+
+#[test]
+fn reads_from_different_ram_bank() {
+    let mut emulator = setup_emulator_with_test_memory();
+    emulator.memory.cartridge_header.type_code = CART_TYPE_MBC1_WITH_RAM;
+    emulator.memory.mbc_mode = MBCMode::RAM;
+    emulator.memory.ram_bank_number = 3;
+    emulator.memory.external_ram[0x6005] = 0xA1;
+    let result = read_byte(&emulator, 0xA005);
+    assert_eq!(result, 0xA1);
+}

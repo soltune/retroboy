@@ -7,6 +7,13 @@ use std::io::BufReader;
 use std::fs::File;
 
 #[derive(Debug)]
+#[derive(PartialEq)]
+pub enum MBCMode {
+    ROM,
+    RAM
+}
+
+#[derive(Debug)]
 pub struct Memory {
     pub in_bios: bool,
     pub bios: [u8; 0x100],
@@ -14,9 +21,13 @@ pub struct Memory {
     pub video_ram: [u8; 0x2000],
     pub object_attribute_memory: [u8; 0xa0],
     pub working_ram: [u8; 0x3e00],
-    pub external_ram: [u8; 0x2000],
+    pub external_ram: [u8; 0x8000],
     pub zero_page_ram: [u8; 0x80],
-    pub cartridge_header: CartridgeHeader
+    pub cartridge_header: CartridgeHeader,
+    pub ram_enabled: bool,
+    pub rom_bank_number: u8,
+    pub ram_bank_number: u8,
+    pub mbc_mode: MBCMode
 }
 
 #[derive(Debug)]
@@ -29,6 +40,16 @@ const ENTRY_POINT_ADDRESS: usize = 0x100;
 const SGB_SUPPORT_ADDRESS: usize = 0x146;
 const CARTRIDGE_TYPE_ADDRESS: usize = 0x147;
 
+pub const CART_TYPE_ROM_ONLY: u8 = 0;
+pub const CART_TYPE_MBC1: u8 = 1;
+pub const CART_TYPE_MBC1_WITH_RAM: u8 = 2;
+pub const CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY: u8 = 3;
+
+pub const SUPPORTED_CARTRIDGE_TYPES: [u8; 4] = [CART_TYPE_ROM_ONLY,
+    CART_TYPE_MBC1,
+    CART_TYPE_MBC1_WITH_RAM,
+    CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY]; 
+
 pub fn initialize_memory() -> Memory {
     Memory {
         in_bios: true,
@@ -37,12 +58,16 @@ pub fn initialize_memory() -> Memory {
         video_ram: [0; 0x2000],
         object_attribute_memory: [0; 0xa0],
         working_ram: [0; 0x3e00],
-        external_ram: [0; 0x2000],
+        external_ram: [0; 0x8000],
         zero_page_ram: [0; 0x80],
         cartridge_header: CartridgeHeader {
             sgb_support: false,
             type_code: 0,
-        }
+        },
+        ram_enabled: false,
+        rom_bank_number: 1,
+        ram_bank_number: 0,
+        mbc_mode: MBCMode::ROM 
     }
 }
 
@@ -50,10 +75,16 @@ pub fn read_byte(emulator: &Emulator, address: u16) -> u8 {
     let memory = &emulator.memory;
     match address & 0xF000 {
         0x0000 if address < 0x0100 && memory.in_bios => memory.bios[address as usize],
-        0x0000..=0x0FFF => memory.rom[address as usize],
-        0x1000..=0x7FFF => memory.rom[address as usize],
+        0x0000..=0x3FFF => memory.rom[address as usize],
+        0x4000..=0x7FFF => {
+            let calculated_address = (memory.rom_bank_number as u16 * 0x4000) + (address & 0x3FFF);
+            memory.rom[calculated_address as usize]
+        },
         0x8000..=0x9FFF => memory.video_ram[(address & 0x1FFF) as usize],
-        0xA000..=0xBFFF => memory.external_ram[(address & 0x1FFF) as usize],
+        0xA000..=0xBFFF => {
+            let calculated_address = (memory.ram_bank_number as u16 * 0x2000) + (address & 0x1FFF);
+            memory.external_ram[calculated_address as usize]
+        },
         0xC000..=0xEFFF => memory.working_ram[(address & 0x1FFF) as usize],
         0xF000 => match address & 0x0F00 {
             0x000..=0xD00 => memory.working_ram[(address & 0x1FFF) as usize],
@@ -87,10 +118,44 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
     let memory = &mut emulator.memory;
     match address & 0xF000 {
         0x0000 if address < 0x0100 && memory.in_bios => memory.bios[address as usize] = value,
-        // You can't actually write to ROM. The next couple lines will probably change when
-        // MBC support is implemented.
-        0x0000..=0x0FFF => memory.rom[address as usize] = value,
-        0x1000..=0x7FFF => memory.rom[address as usize] = value,
+        0x0000..=0x1FFF => {
+            match memory.cartridge_header.type_code {
+                CART_TYPE_MBC1_WITH_RAM | CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY => {
+                    memory.ram_enabled = value == 0xA;
+                }
+                _ => ()
+            }
+        },
+        0x2000..=0x3FFF => {
+            match memory.cartridge_header.type_code {
+                CART_TYPE_MBC1 | CART_TYPE_MBC1_WITH_RAM | CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY => {
+                    let bank_value = if value == 0 { 1 as u8 } else { value };
+                    memory.rom_bank_number = (memory.rom_bank_number & 0x60) + (bank_value & 0x1F);
+                },
+                _ => ()
+            }
+        },
+        0x4000..=0x5FFF => {
+            match memory.cartridge_header.type_code {
+                CART_TYPE_MBC1 | CART_TYPE_MBC1_WITH_RAM | CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY => {
+                    if memory.mbc_mode == MBCMode::RAM {
+                        memory.ram_bank_number = value & 0x3;
+                    }
+                    else {
+                        memory.rom_bank_number = ((value & 0x3) << 5) + (memory.rom_bank_number & 0x1F);
+                    }
+                },
+                _ => ()
+            }
+        },
+        0x6000..=0x7FFF => {
+            match memory.cartridge_header.type_code {
+                CART_TYPE_MBC1_WITH_RAM | CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY => {
+                    memory.mbc_mode = if value == 1 { MBCMode::RAM } else { MBCMode::ROM }
+                }
+                _ => ()
+            }
+        },
         0x8000..=0x9FFF => memory.video_ram[(address & 0x1FFF) as usize] = value,
         0xA000..=0xBFFF => memory.external_ram[(address & 0x1FFF) as usize] = value,
         0xC000..=0xEFFF => memory.working_ram[(address & 0x1FFF) as usize] = value,
@@ -133,6 +198,10 @@ pub fn write_word(emulator: &mut Emulator, address: u16, value: u16) {
     let second_byte = value >> 8;
     write_byte(emulator, address, first_byte as u8);
     write_byte(emulator, address + 1, second_byte as u8);
+}
+
+pub fn cartridge_type_supported(type_code: u8) -> bool {
+    SUPPORTED_CARTRIDGE_TYPES.contains(&type_code)
 }
 
 pub fn load_rom_buffer(mut memory: Memory, buffer: Vec<u8>) -> Memory {

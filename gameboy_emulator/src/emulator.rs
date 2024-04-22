@@ -17,8 +17,6 @@ pub struct Emulator {
     pub keys: KeyState
 }
 
-const SUPPORTED_CARTRIDGE_TYPES: [u8; 1] = [0x00]; 
-
 pub fn initialize_emulator() -> Emulator {
     Emulator {
         cpu: initialize_cpu(),
@@ -45,7 +43,7 @@ fn load_rom_by_filepath(emulator: Emulator, rom_filepath: &str, bios_filepath: &
     let with_loaded_rom = mmu::load_rom_by_filepath(emulator.memory, rom_filepath)?;
     let loaded_memory = mmu::load_bios_by_filepath(with_loaded_rom, bios_filepath)?; 
     let cartridge_type = loaded_memory.cartridge_header.type_code;
-    if SUPPORTED_CARTRIDGE_TYPES.contains(&cartridge_type) {
+    if mmu::cartridge_type_supported(cartridge_type) {
         Ok(Emulator { memory: loaded_memory, ..emulator })
     }
     else {
