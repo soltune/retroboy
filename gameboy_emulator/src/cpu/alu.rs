@@ -22,7 +22,6 @@ pub fn add_value_to_register_pair(cpu_state: &mut CpuState, register_pair: Regis
 
     microops::store_in_register_pair(cpu_state, register_pair, sum);
 
-    microops::set_flag_z(cpu_state, false);
     microops::set_flag_n(cpu_state, false);
     microops::set_flag_h(cpu_state, (value & 0xFFF) + (word & 0xFFF) > 0xFFF);
     microops::set_flag_c(cpu_state, (value as u32 + word as u32) > 0xFFFF);
