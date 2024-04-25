@@ -785,8 +785,10 @@ pub fn step(emulator: &mut Emulator) {
             let address = 0xFF00 + read_next_instruction_byte(emulator) as u16;
             loads::load_memory_byte_in_destination_register(emulator, address, Register::A);
         },
-        0xF1 =>
-            loads::pop_word_into_register_pair_from_stack(emulator, REGISTER_AF),
+        0xF1 => {
+            let word = loads::pop_word_from_stack(emulator);
+            microops::store_in_register_pair(&mut emulator.cpu, REGISTER_AF, word & 0xFFF0);
+        }
         0xF2 => {
             let address = 0xFF00 + microops::read_from_register(&mut emulator.cpu, &Register::C) as u16;
             loads::load_memory_byte_in_destination_register(emulator, address, Register::A);
