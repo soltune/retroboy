@@ -723,6 +723,12 @@ pub fn step(emulator: &mut Emulator) {
             handle_illegal_opcode(opcode),
         0xDC =>
             jumps::conditional_call_using_immediate_word(emulator, microops::is_c_flag_set(&emulator.cpu)),
+        0xDD =>
+            handle_illegal_opcode(opcode),
+        0xDE => {
+            let value = read_next_instruction_byte(emulator);
+            alu::subtract_value_and_carry_from_register(&mut emulator.cpu, Register::A, value);
+        },
         0xDF =>
             jumps::restart(emulator, 0x18),
         0xE0 => {
