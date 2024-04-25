@@ -105,12 +105,26 @@ fn swap_nibbles(byte: u8) -> u8 {
 
 pub fn swap_nibbles_in_register(cpu_state: &mut CpuState, register: Register) {
     let byte = microops::read_from_register(cpu_state, &register);
-    microops::store_in_register(cpu_state, register, swap_nibbles(byte));
+    let with_swapped_nibbles = swap_nibbles(byte);
+
+    microops::store_in_register(cpu_state, register, with_swapped_nibbles);
+
+    microops::set_flag_z(cpu_state, with_swapped_nibbles == 0);
+    microops::set_flag_n(cpu_state, false);
+    microops::set_flag_h(cpu_state, false);
+    microops::set_flag_c(cpu_state, false); 
 }
 
 pub fn swap_nibbles_in_memory_byte(emulator: &mut Emulator, address: u16) {
     let byte = microops::read_byte_from_memory(emulator, address);
-    microops::store_byte_in_memory(emulator, address, swap_nibbles(byte));
+    let with_swapped_nibbles = swap_nibbles(byte);
+
+    microops::store_byte_in_memory(emulator, address, with_swapped_nibbles);
+
+    microops::set_flag_z(&mut emulator.cpu, with_swapped_nibbles == 0);
+    microops::set_flag_n(&mut emulator.cpu, false);
+    microops::set_flag_h(&mut emulator.cpu, false);
+    microops::set_flag_c(&mut emulator.cpu, false);
 }
 
 fn shift_left(cpu_state: &mut CpuState, byte: u8) -> u8 {
