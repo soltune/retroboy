@@ -18,9 +18,14 @@ pub fn write_scanline(emulator: &mut Emulator) {
     if lcd_enabled {
         for viewport_x in 0..GB_SCREEN_WIDTH as u8 {
             let x = scx.wrapping_add(viewport_x);
-            let rgb = read_sprite_pixel_rgb(emulator, viewport_x, ly)
-                .or(read_window_rgb(emulator, x, y))
+
+            let bg_rgb = read_window_rgb(emulator, x, y)
                 .unwrap_or(read_bg_rgb(emulator, x, y));
+
+            let sprite_rgb = read_sprite_pixel_rgb(emulator, viewport_x, ly, bg_rgb);
+
+            let rgb = sprite_rgb.unwrap_or(bg_rgb);
+
             let pixel_index = (ly as u16 * GB_SCREEN_WIDTH + viewport_x as u16) as usize;
             emulator.gpu.frame_buffer[pixel_index] = rgb;
         } 

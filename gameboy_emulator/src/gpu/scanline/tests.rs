@@ -562,7 +562,7 @@ fn should_render_eight_by_sixteen_sprite() {
 }
 
 #[test]
-fn should_prioritize_background_colors_when_sprite_priority_flag_set_to_true() {
+fn should_prioritize_non_white_background_colors_when_sprite_priority_flag_set_to_true() {
     let mut emulator = initialize_emulator();
 
     write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
@@ -591,10 +591,10 @@ fn should_prioritize_background_colors_when_sprite_priority_flag_set_to_true() {
 
     assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
     assert_eq!(emulator.gpu.frame_buffer[1], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[2], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[3], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[4], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[5], 0xFFFFFF);
+    assert_eq!(emulator.gpu.frame_buffer[2], 0xA9A9A9);
+    assert_eq!(emulator.gpu.frame_buffer[3], 0xA9A9A9);
+    assert_eq!(emulator.gpu.frame_buffer[4], 0xA9A9A9);
+    assert_eq!(emulator.gpu.frame_buffer[5], 0xA9A9A9);
     assert_eq!(emulator.gpu.frame_buffer[6], 0xD3D3D3);
     assert_eq!(emulator.gpu.frame_buffer[7], 0x000000); 
 }

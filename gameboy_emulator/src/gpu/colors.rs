@@ -1,9 +1,9 @@
 use crate::utils::get_bit;
 
-const BLACK: u32 = 0x000000;
-const DARK_GRAY: u32 = 0xA9A9A9;
-const LIGHT_GRAY: u32 = 0xD3D3D3;
-const WHITE: u32 = 0xFFFFFF;
+pub const BLACK: u32 = 0x000000;
+pub const DARK_GRAY: u32 = 0xA9A9A9;
+pub const LIGHT_GRAY: u32 = 0xD3D3D3;
+pub const WHITE: u32 = 0xFFFFFF;
 
 fn calculate_color_id(bit_index: u8, msb_byte: u8, lsb_byte: u8, x_flip: bool) -> u8 {
     let calculated_index = if x_flip { bit_index } else { 7 - bit_index };
@@ -35,7 +35,7 @@ fn as_obj_color_key(color_id: u8, palette: u8) -> Option<u8> {
         0b11 => Some((palette & 0b11000000) >> 6),
         0b10 => Some((palette & 0b00110000) >> 4),
         0b01 => Some((palette & 0b00001100) >> 2),
-        _ => None
+        _ => None 
     }
 }
 
