@@ -184,7 +184,6 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
                         let address = source_address + (byte_offset as u16);
                         emulator.memory.object_attribute_memory[byte_offset as usize] = read_byte(&emulator, address);
                     }
-
                 },
                 0x47 => emulator.gpu.registers.palette = value,
                 0x48 => emulator.gpu.registers.obp0 = value,
