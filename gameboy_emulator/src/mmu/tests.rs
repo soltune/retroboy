@@ -65,6 +65,8 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.gpu.registers.ly = 0x2B;
     emulator.gpu.registers.lyc = 0xAB;
     emulator.gpu.registers.stat = 0xD2;
+    emulator.gpu.registers.obp0 = 0x1B;
+    emulator.gpu.registers.obp1 = 0xE4;
 
     emulator.keys.column = 0x10;
     emulator.keys.select_buttons = 0x04;
@@ -225,6 +227,32 @@ fn reads_lyc_from_gpu() {
 fn reads_stat_from_gpu() {
     let emulator = setup_emulator_with_test_memory();
     assert_eq!(read_byte(&emulator, 0xFF41), 0xD2);
+}
+
+#[test]
+fn reads_obp0_from_gpu() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xFF48), 0x1B);
+}
+
+#[test]
+fn reads_obp1_from_gpu() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xFF49), 0xE4);
+}
+
+#[test]
+fn writes_obp0_value_to_gpu() {
+    let mut emulator = setup_emulator_with_test_memory();
+    write_byte(&mut emulator, 0xFF48, 0xE4);
+    assert_eq!(read_byte(&emulator, 0xFF48), 0xE4);
+}
+
+#[test]
+fn writes_obp1_value_to_gpu() {
+    let mut emulator = setup_emulator_with_test_memory();
+    write_byte(&mut emulator, 0xFF49, 0x1B);
+    assert_eq!(read_byte(&emulator, 0xFF49), 0x1B);
 }
 
 #[test]
