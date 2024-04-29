@@ -256,6 +256,22 @@ fn writes_obp1_value_to_gpu() {
 }
 
 #[test]
+fn initiates_dma_transfer() {
+    let mut emulator = setup_emulator_with_test_memory();
+
+    for byte_offset in 0..DMA_TRANSFER_BYTES {
+        write_byte(&mut emulator, 0xC100 + (byte_offset as u16), 0xAA);
+    }
+
+    // Write to FF46 to initiate DMA transfer to OAM memory
+    write_byte(&mut emulator, 0xFF46, 0xC1);
+
+    for byte_offset in 0..DMA_TRANSFER_BYTES {
+        assert_eq!(read_byte(&emulator, 0xFE00 + (byte_offset as u16)), 0xAA);
+    }
+}
+
+#[test]
 fn reads_joyp_register() {
     let emulator = setup_emulator_with_test_memory();
     assert_eq!(read_byte(&emulator, 0xFF00), 0x04);

@@ -50,6 +50,8 @@ pub const SUPPORTED_CARTRIDGE_TYPES: [u8; 4] = [CART_TYPE_ROM_ONLY,
     CART_TYPE_MBC1_WITH_RAM,
     CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY]; 
 
+pub const DMA_TRANSFER_BYTES: u8 = 160;
+
 pub fn initialize_memory() -> Memory {
     Memory {
         in_bios: true,
@@ -99,6 +101,7 @@ pub fn read_byte(emulator: &Emulator, address: u16) -> u8 {
                 0x43 => emulator.gpu.registers.scx,
                 0x44 => emulator.gpu.registers.ly,
                 0x45 => emulator.gpu.registers.lyc,
+                0x46 => emulator.gpu.registers.dma,
                 0x47 => emulator.gpu.registers.palette,
                 0x48 => emulator.gpu.registers.obp0,
                 0x49 => emulator.gpu.registers.obp1,
@@ -174,6 +177,15 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
                 0x43 => emulator.gpu.registers.scx = value,
                 0x44 => emulator.gpu.registers.ly = value,
                 0x45 => emulator.gpu.registers.lyc = value,
+                0x46 => {
+                    emulator.gpu.registers.dma = value;
+                    let source_address = (value as u16) << 8;
+                    for byte_offset in 0..DMA_TRANSFER_BYTES {
+                        let address = source_address + (byte_offset as u16);
+                        emulator.memory.object_attribute_memory[byte_offset as usize] = read_byte(&emulator, address);
+                    }
+
+                },
                 0x47 => emulator.gpu.registers.palette = value,
                 0x48 => emulator.gpu.registers.obp0 = value,
                 0x49 => emulator.gpu.registers.obp1 = value,

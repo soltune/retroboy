@@ -16,7 +16,8 @@ pub struct GpuRegisters {
     pub lyc: u8,
     pub stat: u8,
     pub obp0: u8,
-    pub obp1: u8
+    pub obp1: u8,
+    pub dma: u8
 }
 
 #[derive(Debug)]
@@ -64,7 +65,8 @@ pub fn initialize_gpu() -> GpuState {
             lyc: 0,
             stat: 0,
             obp0: 0,
-            obp1: 0
+            obp1: 0,
+            dma: 0
         },
         frame_buffer: vec![0; (GB_SCREEN_WIDTH * GB_SCREEN_HEIGHT) as usize],
         sprite_buffer: Vec::new()
