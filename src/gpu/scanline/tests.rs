@@ -1,4 +1,5 @@
 use crate::emulator::initialize_emulator;
+use crate::gpu::colors::{Color, BLACK, DARK_GRAY, LIGHT_GRAY, WHITE};
 use crate::gpu::sprites::{Sprite, collect_scanline_sprites};
 use super::*;
 
@@ -34,8 +35,16 @@ fn write_sprite(emulator: &mut Emulator, sprit_number: u8, y_pos: u8, x_pos: u8,
     emulator.memory.object_attribute_memory[index + 3] = attributes;
 }
 
-fn line(index: u8) -> usize {
-    (index as u16 * GB_SCREEN_WIDTH) as usize
+fn line(index: u32) -> u32 {
+    index * GB_SCREEN_WIDTH
+}
+
+fn assert_pixel_color(frame_buffer: &Vec<u8>, pixel_position: u32, color: Color) {
+    let pixel_index = (pixel_position * 4) as usize;
+    assert_eq!(frame_buffer[pixel_index], color[0]);
+    assert_eq!(frame_buffer[pixel_index + 1], color[1]);
+    assert_eq!(frame_buffer[pixel_index + 2], color[2]);
+    assert_eq!(frame_buffer[pixel_index + 3], color[3]);
 }
 
 #[test]
@@ -49,15 +58,17 @@ fn should_render_nothing_if_lcd_enable_flag_is_off() {
     emulator.gpu.registers.lcdc = 0b00000011;
     
     write_scanline(&mut emulator);
+
+    let frame_buffer = &emulator.gpu.frame_buffer;
     
-    assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[1], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[2], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[3], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[4], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[5], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[6], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[7], 0x000000);
+    assert_pixel_color(frame_buffer, 0, WHITE);
+    assert_pixel_color(frame_buffer, 1, WHITE);
+    assert_pixel_color(frame_buffer, 2, WHITE);
+    assert_pixel_color(frame_buffer, 3, WHITE);
+    assert_pixel_color(frame_buffer, 4, WHITE);
+    assert_pixel_color(frame_buffer, 5, WHITE);
+    assert_pixel_color(frame_buffer, 6, WHITE);
+    assert_pixel_color(frame_buffer, 7, WHITE);
 }
 
 #[test]
@@ -71,15 +82,17 @@ fn should_render_tile_line() {
     emulator.gpu.registers.lcdc = 0b10000011;
     
     write_scanline(&mut emulator);
-    
-    assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[1], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[2], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[3], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[4], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[5], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[6], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[7], 0x000000);
+
+    let frame_buffer = &emulator.gpu.frame_buffer;
+
+    assert_pixel_color(frame_buffer, 0, BLACK);
+    assert_pixel_color(frame_buffer, 1, LIGHT_GRAY);
+    assert_pixel_color(frame_buffer, 2, WHITE);
+    assert_pixel_color(frame_buffer, 3, WHITE);
+    assert_pixel_color(frame_buffer, 4, WHITE);
+    assert_pixel_color(frame_buffer, 5, WHITE);
+    assert_pixel_color(frame_buffer, 6, LIGHT_GRAY);
+    assert_pixel_color(frame_buffer, 7, BLACK);
 }
 
 #[test]
@@ -96,32 +109,34 @@ fn should_render_multiple_tile_lines() {
         emulator.gpu.registers.ly += 1;
     }
 
-    assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[1], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[2], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[3], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[4], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[5], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[6], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[7], 0x000000);
+    let frame_buffer = &emulator.gpu.frame_buffer;
 
-    assert_eq!(emulator.gpu.frame_buffer[line(1) + 0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[line(1) + 1], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[line(1) + 2], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[line(1) + 3], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[line(1) + 4], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[line(1) + 5], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[line(1) + 6], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[line(1) + 7], 0x000000); 
+    assert_pixel_color(frame_buffer, 0, BLACK);
+    assert_pixel_color(frame_buffer, 1, LIGHT_GRAY);
+    assert_pixel_color(frame_buffer, 2, WHITE);
+    assert_pixel_color(frame_buffer, 3, WHITE);
+    assert_pixel_color(frame_buffer, 4, WHITE);
+    assert_pixel_color(frame_buffer, 5, WHITE);
+    assert_pixel_color(frame_buffer, 6, LIGHT_GRAY);
+    assert_pixel_color(frame_buffer, 7, BLACK);
 
-    assert_eq!(emulator.gpu.frame_buffer[line(2) + 0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[line(2) + 1], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[line(2) + 2], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[line(2) + 3], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[line(2) + 4], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[line(2) + 5], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[line(2) + 6], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[line(2) + 7], 0x000000);
+    assert_pixel_color(frame_buffer, line(1) + 0, BLACK);
+    assert_pixel_color(frame_buffer, line(1) + 1, WHITE);
+    assert_pixel_color(frame_buffer, line(1) + 2, BLACK);
+    assert_pixel_color(frame_buffer, line(1) + 3, BLACK);
+    assert_pixel_color(frame_buffer, line(1) + 4, BLACK);
+    assert_pixel_color(frame_buffer, line(1) + 5, BLACK);
+    assert_pixel_color(frame_buffer, line(1) + 6, WHITE);
+    assert_pixel_color(frame_buffer, line(1) + 7, BLACK);
+
+    assert_pixel_color(frame_buffer, line(2) + 0, BLACK);
+    assert_pixel_color(frame_buffer, line(2) + 1, WHITE);
+    assert_pixel_color(frame_buffer, line(2) + 2, BLACK);
+    assert_pixel_color(frame_buffer, line(2) + 3, BLACK);
+    assert_pixel_color(frame_buffer, line(2) + 4, BLACK);
+    assert_pixel_color(frame_buffer, line(2) + 5, BLACK);
+    assert_pixel_color(frame_buffer, line(2) + 6, WHITE);
+    assert_pixel_color(frame_buffer, line(2) + 7, BLACK);
 }
 
 #[test]
@@ -142,32 +157,34 @@ fn should_overlay_window_over_multiple_tile_lines() {
         emulator.gpu.registers.ly += 1;
     }
 
-    assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[1], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[2], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[3], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[4], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[5], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[6], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[7], 0x000000);
+    let frame_buffer = &emulator.gpu.frame_buffer;
 
-    assert_eq!(emulator.gpu.frame_buffer[line(1) + 0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[line(1) + 1], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[line(1) + 2], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[line(1) + 3], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[line(1) + 4], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[line(1) + 5], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[line(1) + 6], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[line(1) + 7], 0xFFFFFF); 
+    assert_pixel_color(frame_buffer, 0, BLACK);
+    assert_pixel_color(frame_buffer, 1, LIGHT_GRAY);
+    assert_pixel_color(frame_buffer, 2, WHITE);
+    assert_pixel_color(frame_buffer, 3, WHITE);
+    assert_pixel_color(frame_buffer, 4, WHITE);
+    assert_pixel_color(frame_buffer, 5, WHITE);
+    assert_pixel_color(frame_buffer, 6, LIGHT_GRAY);
+    assert_pixel_color(frame_buffer, 7, BLACK);
 
-    assert_eq!(emulator.gpu.frame_buffer[line(2) + 0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[line(2) + 1], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[line(2) + 2], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[line(2) + 3], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[line(2) + 4], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[line(2) + 5], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[line(2) + 6], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[line(2) + 7], 0xFFFFFF);
+    assert_pixel_color(frame_buffer, line(1) + 0, BLACK);
+    assert_pixel_color(frame_buffer, line(1) + 1, WHITE);
+    assert_pixel_color(frame_buffer, line(1) + 2, WHITE);
+    assert_pixel_color(frame_buffer, line(1) + 3, WHITE);
+    assert_pixel_color(frame_buffer, line(1) + 4, WHITE);
+    assert_pixel_color(frame_buffer, line(1) + 5, WHITE);
+    assert_pixel_color(frame_buffer, line(1) + 6, WHITE);
+    assert_pixel_color(frame_buffer, line(1) + 7, WHITE);
+
+    assert_pixel_color(frame_buffer, line(2) + 0, BLACK);
+    assert_pixel_color(frame_buffer, line(2) + 1, WHITE);
+    assert_pixel_color(frame_buffer, line(2) + 2, WHITE);
+    assert_pixel_color(frame_buffer, line(2) + 3, WHITE);
+    assert_pixel_color(frame_buffer, line(2) + 4, WHITE);
+    assert_pixel_color(frame_buffer, line(2) + 5, WHITE);
+    assert_pixel_color(frame_buffer, line(2) + 6, WHITE);
+    assert_pixel_color(frame_buffer, line(2) + 7, WHITE);
 }
 
 #[test]
@@ -184,15 +201,17 @@ fn should_render_tile_line_in_middle_of_frame() {
     emulator.gpu.registers.lcdc = 0b10000011;
     
     write_scanline(&mut emulator);
-    
-    assert_eq!(emulator.gpu.frame_buffer[line(3) + 0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[line(3) + 1], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[line(3) + 2], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[line(3) + 3], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[line(3) + 4], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[line(3) + 5], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[line(3) + 6], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[line(3) + 7], 0x000000);
+
+    let frame_buffer = &emulator.gpu.frame_buffer;
+
+    assert_pixel_color(frame_buffer, line(3) + 0, BLACK);
+    assert_pixel_color(frame_buffer, line(3) + 1, WHITE);
+    assert_pixel_color(frame_buffer, line(3) + 2, BLACK);
+    assert_pixel_color(frame_buffer, line(3) + 3, BLACK);
+    assert_pixel_color(frame_buffer, line(3) + 4, BLACK);
+    assert_pixel_color(frame_buffer, line(3) + 5, BLACK);
+    assert_pixel_color(frame_buffer, line(3) + 6, WHITE);
+    assert_pixel_color(frame_buffer, line(3) + 7, BLACK);
 }
 
 #[test]
@@ -209,15 +228,17 @@ fn should_render_tile_line_properly_with_greater_scroll_x_value() {
     emulator.gpu.registers.lcdc = 0b10000011;
     
     write_scanline(&mut emulator);
-    
-    assert_eq!(emulator.gpu.frame_buffer[line(3) + 0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[line(3) + 1], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[line(3) + 2], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[line(3) + 3], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[line(3) + 4], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[line(3) + 5], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[line(3) + 6], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[line(3) + 7], 0x000000);
+
+    let frame_buffer = &emulator.gpu.frame_buffer;
+
+    assert_pixel_color(frame_buffer, line(3) + 0, BLACK);
+    assert_pixel_color(frame_buffer, line(3) + 1, BLACK);
+    assert_pixel_color(frame_buffer, line(3) + 2, BLACK);
+    assert_pixel_color(frame_buffer, line(3) + 3, BLACK);
+    assert_pixel_color(frame_buffer, line(3) + 4, WHITE);
+    assert_pixel_color(frame_buffer, line(3) + 5, BLACK);
+    assert_pixel_color(frame_buffer, line(3) + 6, BLACK);
+    assert_pixel_color(frame_buffer, line(3) + 7, BLACK);
 }
 
 #[test]
@@ -233,15 +254,17 @@ fn should_wrap_around_when_rendering_past_max_tile_map_x_value() {
     emulator.gpu.registers.lcdc = 0b10000011;
     
     write_scanline(&mut emulator);
-    
-    assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[1], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[2], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[3], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[4], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[5], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[6], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[7], 0xFFFFFF);
+
+    let frame_buffer = &emulator.gpu.frame_buffer;
+
+    assert_pixel_color(frame_buffer, 0, BLACK);
+    assert_pixel_color(frame_buffer, 1, BLACK);
+    assert_pixel_color(frame_buffer, 2, BLACK);
+    assert_pixel_color(frame_buffer, 3, LIGHT_GRAY);
+    assert_pixel_color(frame_buffer, 4, WHITE);
+    assert_pixel_color(frame_buffer, 5, WHITE);
+    assert_pixel_color(frame_buffer, 6, WHITE);
+    assert_pixel_color(frame_buffer, 7, WHITE);
 }
 
 #[test]
@@ -257,15 +280,17 @@ fn should_wrap_around_when_rendering_past_max_tile_map_y_value() {
     emulator.gpu.registers.lcdc = 0b10000011;
     
     write_scanline(&mut emulator);
-    
-    assert_eq!(emulator.gpu.frame_buffer[line(2) + 0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[line(2) + 1], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[line(2) + 2], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[line(2) + 3], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[line(2) + 4], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[line(2) + 5], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[line(2) + 6], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[line(2) + 7], 0x000000);
+
+    let frame_buffer = &emulator.gpu.frame_buffer;
+
+    assert_pixel_color(frame_buffer, line(2) + 0, BLACK);
+    assert_pixel_color(frame_buffer, line(2) + 1, LIGHT_GRAY);
+    assert_pixel_color(frame_buffer, line(2) + 2, WHITE);
+    assert_pixel_color(frame_buffer, line(2) + 3, WHITE);
+    assert_pixel_color(frame_buffer, line(2) + 4, WHITE);
+    assert_pixel_color(frame_buffer, line(2) + 5, WHITE);
+    assert_pixel_color(frame_buffer, line(2) + 6, LIGHT_GRAY);
+    assert_pixel_color(frame_buffer, line(2) + 7, BLACK);
 }
 
 #[test]
@@ -348,14 +373,16 @@ fn should_render_tile_line_with_sprite() {
 
     write_scanline(&mut emulator);
 
-    assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[1], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[2], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[3], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[4], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[5], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[6], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[7], 0xA9A9A9);
+    let frame_buffer: &Vec<u8> = &emulator.gpu.frame_buffer;
+
+    assert_pixel_color(frame_buffer, 0, BLACK);
+    assert_pixel_color(frame_buffer, 1, LIGHT_GRAY);
+    assert_pixel_color(frame_buffer, 2, DARK_GRAY);
+    assert_pixel_color(frame_buffer, 3, DARK_GRAY);
+    assert_pixel_color(frame_buffer, 4, DARK_GRAY);
+    assert_pixel_color(frame_buffer, 5, DARK_GRAY);
+    assert_pixel_color(frame_buffer, 6, DARK_GRAY);
+    assert_pixel_color(frame_buffer, 7, DARK_GRAY);
 }
 
 #[test]
@@ -386,14 +413,16 @@ fn should_render_sprite_with_white_background_if_background_and_window_enabled_i
 
     write_scanline(&mut emulator);
 
-    assert_eq!(emulator.gpu.frame_buffer[0], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[1], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[2], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[3], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[4], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[5], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[6], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[7], 0xA9A9A9);
+    let frame_buffer = &emulator.gpu.frame_buffer;
+
+    assert_pixel_color(frame_buffer, 0, WHITE);
+    assert_pixel_color(frame_buffer, 1, WHITE);
+    assert_pixel_color(frame_buffer, 2, DARK_GRAY);
+    assert_pixel_color(frame_buffer, 3, DARK_GRAY);
+    assert_pixel_color(frame_buffer, 4, DARK_GRAY);
+    assert_pixel_color(frame_buffer, 5, DARK_GRAY);
+    assert_pixel_color(frame_buffer, 6, DARK_GRAY);
+    assert_pixel_color(frame_buffer, 7, DARK_GRAY);
 }
 
 #[test]
@@ -424,14 +453,16 @@ fn should_render_tile_line_with_sprite_having_negative_y_pos() {
 
     write_scanline(&mut emulator);
 
-    assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[1], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[2], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[3], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[4], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[5], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[6], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[7], 0xA9A9A9); 
+    let frame_buffer = &emulator.gpu.frame_buffer;
+
+    assert_pixel_color(frame_buffer, 0, BLACK);
+    assert_pixel_color(frame_buffer, 1, LIGHT_GRAY);
+    assert_pixel_color(frame_buffer, 2, WHITE);
+    assert_pixel_color(frame_buffer, 3, WHITE);
+    assert_pixel_color(frame_buffer, 4, WHITE);
+    assert_pixel_color(frame_buffer, 5, WHITE);
+    assert_pixel_color(frame_buffer, 6, LIGHT_GRAY);
+    assert_pixel_color(frame_buffer, 7, DARK_GRAY);
 }
 
 #[test]
@@ -462,14 +493,16 @@ fn should_flip_sprite_on_x_axis() {
 
     write_scanline(&mut emulator);
 
-    assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[1], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[2], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[3], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[4], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[5], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[6], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[7], 0x000000);  
+    let frame_buffer = &emulator.gpu.frame_buffer;
+
+    assert_pixel_color(frame_buffer, 0, BLACK);
+    assert_pixel_color(frame_buffer, 1, LIGHT_GRAY);
+    assert_pixel_color(frame_buffer, 2, WHITE);
+    assert_pixel_color(frame_buffer, 3, WHITE);
+    assert_pixel_color(frame_buffer, 4, DARK_GRAY);
+    assert_pixel_color(frame_buffer, 5, WHITE);
+    assert_pixel_color(frame_buffer, 6, LIGHT_GRAY);
+    assert_pixel_color(frame_buffer, 7, BLACK); 
 }
 
 #[test]
@@ -500,14 +533,16 @@ fn should_flip_sprite_on_y_axis() {
 
     write_scanline(&mut emulator);
 
-    assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[1], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[2], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[3], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[4], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[5], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[6], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[7], 0xA9A9A9); 
+    let frame_buffer = &emulator.gpu.frame_buffer;
+
+    assert_pixel_color(frame_buffer, 0, BLACK);
+    assert_pixel_color(frame_buffer, 1, LIGHT_GRAY);
+    assert_pixel_color(frame_buffer, 2, WHITE);
+    assert_pixel_color(frame_buffer, 3, WHITE);
+    assert_pixel_color(frame_buffer, 4, DARK_GRAY);
+    assert_pixel_color(frame_buffer, 5, WHITE);
+    assert_pixel_color(frame_buffer, 6, LIGHT_GRAY);
+    assert_pixel_color(frame_buffer, 7, DARK_GRAY);
 }
 
 #[test]
@@ -542,23 +577,25 @@ fn should_render_eight_by_sixteen_sprite() {
         emulator.gpu.registers.ly += 1;
     }
 
-    assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[1], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[2], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[3], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[4], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[5], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[6], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[7], 0xFFFFFF);
+    let frame_buffer = &emulator.gpu.frame_buffer;
 
-    assert_eq!(emulator.gpu.frame_buffer[line(8) + 0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[line(8) + 1], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[line(8) + 2], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[line(8) + 3], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[line(8) + 4], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[line(8) + 5], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[line(8) + 6], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[line(8) + 7], 0xA9A9A9);
+    assert_pixel_color(frame_buffer, 0, BLACK);
+    assert_pixel_color(frame_buffer, 1, BLACK);
+    assert_pixel_color(frame_buffer, 2, BLACK);
+    assert_pixel_color(frame_buffer, 3, LIGHT_GRAY);
+    assert_pixel_color(frame_buffer, 4, WHITE);
+    assert_pixel_color(frame_buffer, 5, WHITE);
+    assert_pixel_color(frame_buffer, 6, WHITE);
+    assert_pixel_color(frame_buffer, 7, WHITE);
+
+    assert_pixel_color(frame_buffer, line(8) + 0, BLACK);
+    assert_pixel_color(frame_buffer, line(8) + 1, BLACK);
+    assert_pixel_color(frame_buffer, line(8) + 2, DARK_GRAY);
+    assert_pixel_color(frame_buffer, line(8) + 3, DARK_GRAY);
+    assert_pixel_color(frame_buffer, line(8) + 4, DARK_GRAY);
+    assert_pixel_color(frame_buffer, line(8) + 5, DARK_GRAY);
+    assert_pixel_color(frame_buffer, line(8) + 6, DARK_GRAY);
+    assert_pixel_color(frame_buffer, line(8) + 7, DARK_GRAY);
 }
 
 #[test]
@@ -589,14 +626,16 @@ fn should_prioritize_non_white_background_colors_when_sprite_priority_flag_set_t
 
     write_scanline(&mut emulator);
 
-    assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[1], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[2], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[3], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[4], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[5], 0xA9A9A9);
-    assert_eq!(emulator.gpu.frame_buffer[6], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[7], 0x000000); 
+    let frame_buffer = &emulator.gpu.frame_buffer;
+
+    assert_pixel_color(frame_buffer, 0, BLACK);
+    assert_pixel_color(frame_buffer, 1, LIGHT_GRAY);
+    assert_pixel_color(frame_buffer, 2, DARK_GRAY);
+    assert_pixel_color(frame_buffer, 3, DARK_GRAY);
+    assert_pixel_color(frame_buffer, 4, DARK_GRAY);
+    assert_pixel_color(frame_buffer, 5, DARK_GRAY);
+    assert_pixel_color(frame_buffer, 6, LIGHT_GRAY);
+    assert_pixel_color(frame_buffer, 7, BLACK); 
 }
 
 #[test]
@@ -627,12 +666,14 @@ fn should_prioritize_background_colors_when_lcdc_bit_1_is_off() {
 
     write_scanline(&mut emulator);
 
-    assert_eq!(emulator.gpu.frame_buffer[0], 0x000000);
-    assert_eq!(emulator.gpu.frame_buffer[1], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[2], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[3], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[4], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[5], 0xFFFFFF);
-    assert_eq!(emulator.gpu.frame_buffer[6], 0xD3D3D3);
-    assert_eq!(emulator.gpu.frame_buffer[7], 0x000000); 
+    let frame_buffer = &emulator.gpu.frame_buffer;
+
+    assert_pixel_color(frame_buffer, 0, BLACK);
+    assert_pixel_color(frame_buffer, 1, LIGHT_GRAY);
+    assert_pixel_color(frame_buffer, 2, WHITE);
+    assert_pixel_color(frame_buffer, 3, WHITE);
+    assert_pixel_color(frame_buffer, 4, WHITE);
+    assert_pixel_color(frame_buffer, 5, WHITE);
+    assert_pixel_color(frame_buffer, 6, LIGHT_GRAY);
+    assert_pixel_color(frame_buffer, 7, BLACK);
 }

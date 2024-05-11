@@ -1,5 +1,5 @@
 use crate::emulator::Emulator;
-use crate::gpu::constants::{GB_SCREEN_HEIGHT, GB_SCREEN_WIDTH};
+use crate::gpu::constants::{GB_SCREEN_HEIGHT, GB_SCREEN_WIDTH, BYTES_PER_COLOR};
 use crate::gpu::scanline::write_scanline;
 use crate::gpu::sprites::{collect_scanline_sprites, Sprite};
 use crate::utils::is_bit_set;
@@ -25,7 +25,7 @@ pub struct GpuState {
     pub mode: u8,
     pub mode_clock: u16,
     pub registers: GpuRegisters,
-    pub frame_buffer: Vec<u32>,
+    pub frame_buffer: Vec<u8>,
     pub sprite_buffer: Vec<Sprite>
 }
 
@@ -68,7 +68,7 @@ pub fn initialize_gpu() -> GpuState {
             obp1: 0,
             dma: 0
         },
-        frame_buffer: vec![0; (GB_SCREEN_WIDTH * GB_SCREEN_HEIGHT) as usize],
+        frame_buffer: vec![0xFF; (GB_SCREEN_WIDTH * GB_SCREEN_HEIGHT * BYTES_PER_COLOR) as usize],
         sprite_buffer: Vec::new()
     }
 }
@@ -113,7 +113,7 @@ fn compare_ly_and_lyc(emulator: &mut Emulator) {
     }
 }
 
-pub fn step(emulator: &mut Emulator, mut render: impl FnMut(&Vec<u32>)) {
+pub fn step(emulator: &mut Emulator, mut render: impl FnMut(&Vec<u8>)) {
     emulator.gpu.mode_clock += emulator.cpu.clock.instruction_clock_cycles as u16;
 
     match emulator.gpu.mode {

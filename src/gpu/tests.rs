@@ -1,7 +1,7 @@
 use crate::emulator::initialize_emulator;
 use super::*;
 
-fn noop_renderer(_: &Vec<u32>) {}
+fn noop_renderer(_: &Vec<u8>) {}
 
 #[test]
 fn should_move_from_oam_to_vram_mode() {

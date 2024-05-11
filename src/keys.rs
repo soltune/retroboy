@@ -1,5 +1,3 @@
-use minifb::{Key, KeyRepeat, Window};
-
 use crate::utils::{reset_bit, set_bit};
 
 #[derive(Debug)]
@@ -7,6 +5,17 @@ pub struct KeyState {
     pub column: u8,
     pub select_buttons: u8,
     pub directional_buttons: u8
+}
+
+pub enum Key {
+    Z,
+    X,
+    Enter,
+    Space,
+    Down,
+    Up,
+    Left,
+    Right
 }
 
 const DOWN_BIT: u8 = 3;
@@ -18,8 +27,6 @@ const START_BIT: u8 = 3;
 const SELECT_BIT: u8 = 2;
 const B_BIT: u8 = 1;
 const A_BIT: u8 = 0;
-
-const KEYS: [Key; 8] = [Key::Down, Key::Up, Key::Left, Key::Right, Key::Enter, Key::Space, Key::X, Key::Z];
 
 pub fn initialize_keys() -> KeyState {
     KeyState {
@@ -63,7 +70,6 @@ pub fn handle_key_press(key_state: &mut KeyState, key: &Key) {
             key_state.select_buttons = reset_bit(key_state.select_buttons, B_BIT),
         Key::Z =>
             key_state.select_buttons = reset_bit(key_state.select_buttons, A_BIT),
-        _ => ()
     }
 }
 
@@ -85,23 +91,6 @@ pub fn handle_key_release(key_state: &mut KeyState, key: &Key) {
             key_state.select_buttons = set_bit(key_state.select_buttons, B_BIT),
         Key::Z =>
             key_state.select_buttons = set_bit(key_state.select_buttons, A_BIT),
-        _ => ()
-    }
-}
-
-pub fn detect_key_presses(key_state: &mut KeyState, window: &Window) {
-    for key in KEYS.iter() {
-        if window.is_key_pressed(*key, KeyRepeat::No) {
-            handle_key_press(key_state, key);
-        }
-    }
-}
-
-pub fn detect_key_releases(key_state: &mut KeyState, window: &Window) {
-    for key in KEYS.iter() {
-        if window.is_key_released(*key) {
-            handle_key_release(key_state, key);
-        }
     }
 }
 

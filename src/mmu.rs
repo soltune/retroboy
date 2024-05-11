@@ -1,10 +1,6 @@
 use crate::emulator::Emulator;
 use crate::keys::read_joyp_byte;
 use crate::keys::write_joyp_byte;
-use std::io;
-use std::io::Read;
-use std::io::BufReader;
-use std::fs::File;
 
 #[derive(Debug)]
 #[derive(PartialEq)]
@@ -219,32 +215,18 @@ pub fn cartridge_type_supported(type_code: u8) -> bool {
     SUPPORTED_CARTRIDGE_TYPES.contains(&type_code)
 }
 
-pub fn load_rom_buffer(mut memory: Memory, buffer: Vec<u8>) -> Memory {
+pub fn load_rom_buffer(memory: &mut Memory, buffer: Vec<u8>) {
     if buffer.len() > ENTRY_POINT_ADDRESS {
         memory.cartridge_header.sgb_support = buffer[SGB_SUPPORT_ADDRESS] == 0x03;
         memory.cartridge_header.type_code = buffer[CARTRIDGE_TYPE_ADDRESS];
     } 
     memory.rom = buffer; 
-    memory
 }
 
-pub fn load_rom_by_filepath(memory: Memory, filepath: &str) -> io::Result<Memory> {
-    let f = File::open(filepath)?;
-    let mut reader = BufReader::new(f);
-    let mut buffer = Vec::new();
-
-    reader.read_to_end(&mut buffer)?;
-    let loaded_memory = load_rom_buffer(memory, buffer);
-    
-    Ok(loaded_memory)
-}
-
-pub fn load_bios_by_filepath(memory: Memory, filepath: &str) -> io::Result<Memory> {
-    let mut file = File::open(filepath)?;
-    let mut bios = [0; 0x100];
-    file.read_exact(&mut bios)?;
-    
-    Ok(Memory { bios, ..memory })
+pub fn load_bios_buffer_slice(memory: &mut Memory, buffer_slice: &[u8]) {
+    let mut buffer: [u8; 256] = [0; 256];
+    buffer.copy_from_slice(buffer_slice);
+    memory.bios = buffer;
 }
 
 #[cfg(test)]

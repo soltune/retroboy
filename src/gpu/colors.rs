@@ -1,9 +1,12 @@
 use crate::utils::get_bit;
 
-pub const BLACK: u32 = 0x000000;
-pub const DARK_GRAY: u32 = 0xA9A9A9;
-pub const LIGHT_GRAY: u32 = 0xD3D3D3;
-pub const WHITE: u32 = 0xFFFFFF;
+// Each RGBA color is represented in four bytes.
+pub type Color = [u8; 4];
+
+pub const BLACK: Color = [0x0, 0x0, 0x0, 0xFF];
+pub const DARK_GRAY: Color = [0xA9, 0xA9, 0xA9, 0xFF];
+pub const LIGHT_GRAY: Color = [0xD3, 0xD3, 0xD3, 0xFF];
+pub const WHITE: Color = [0xFF, 0xFF, 0xFF, 0xFF];
 
 fn calculate_color_id(bit_index: u8, msb_byte: u8, lsb_byte: u8, x_flip: bool) -> u8 {
     let calculated_index = if x_flip { bit_index } else { 7 - bit_index };
@@ -12,7 +15,7 @@ fn calculate_color_id(bit_index: u8, msb_byte: u8, lsb_byte: u8, x_flip: bool) -
     (msb * 2) + lsb
 }
 
-fn decode_color_key(color_key: u8) -> u32 {
+fn decode_color_key(color_key: u8) -> Color {
     match color_key {
         0b11 => BLACK,
         0b10 => DARK_GRAY,
@@ -39,13 +42,13 @@ fn as_obj_color_key(color_id: u8, palette: u8) -> Option<u8> {
     }
 }
 
-pub fn as_bg_color_rgb(bit_index: u8, palette: u8, msb_byte: u8, lsb_byte: u8) -> u32 {
+pub fn as_bg_color_rgb(bit_index: u8, palette: u8, msb_byte: u8, lsb_byte: u8) -> Color {
     let color_id = calculate_color_id(bit_index, msb_byte, lsb_byte, false);
     let key = as_bg_color_key(color_id, palette); 
     decode_color_key(key)
 }
 
-pub fn as_obj_color_rgb(bit_index: u8, palette: u8, msb_byte: u8, lsb_byte: u8, x_flip: bool) -> Option<u32> {
+pub fn as_obj_color_rgb(bit_index: u8, palette: u8, msb_byte: u8, lsb_byte: u8, x_flip: bool) -> Option<Color> {
     let color_id = calculate_color_id(bit_index, msb_byte, lsb_byte, x_flip);
     let maybe_key = as_obj_color_key(color_id, palette); 
     maybe_key.map(decode_color_key)

@@ -1,5 +1,5 @@
 use crate::emulator::Emulator;
-use crate::gpu::colors::as_bg_color_rgb;
+use crate::gpu::colors::{Color, as_bg_color_rgb};
 use crate::gpu::line_addressing::{resolve_bg_tile_index_address, resolve_tile_data_address};
 use crate::gpu::utils::get_bg_and_window_enabled_mode;
 use crate::mmu;
@@ -12,7 +12,7 @@ fn resolve_line_address(emulator: &Emulator, y: u8, column_tile_offset: u8, row_
     tile_data_address + ((y % 8) * 2) as u16
 }
 
-pub fn read_bg_rgb(emulator: &Emulator, x: u8, y: u8) -> u32 {
+pub fn read_bg_color(emulator: &Emulator, x: u8, y: u8) -> Color {
     let lcdc = emulator.gpu.registers.lcdc;
     let palette = emulator.gpu.registers.palette;
 
@@ -30,6 +30,6 @@ pub fn read_bg_rgb(emulator: &Emulator, x: u8, y: u8) -> u32 {
         as_bg_color_rgb(bit_index, palette, msb_byte, lsb_byte)
     }
     else {
-        0xFFFFFF
+        [0xFF, 0xFF, 0xFF, 0xFF]
     }
 }

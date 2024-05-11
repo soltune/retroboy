@@ -298,7 +298,7 @@ fn loads_rom_buffer_into_emulator() {
     rom_buffer[0x8000] = 0xBB;
     rom_buffer[0x8001] = 0xD1;
 
-    emulator.memory = load_rom_buffer(emulator.memory, rom_buffer);
+    load_rom_buffer(&mut emulator.memory, rom_buffer);
 
     assert_eq!(read_byte(&emulator, 0x0000), 0xA0);
     assert_eq!(read_byte(&emulator, 0x0001), 0xCC);

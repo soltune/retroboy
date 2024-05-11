@@ -1,5 +1,5 @@
 use crate::emulator::Emulator;
-use crate::gpu::colors::{as_obj_color_rgb, WHITE};
+use crate::gpu::colors::{as_obj_color_rgb, WHITE, Color};
 use crate::mmu;
 use crate::utils::is_bit_set;
 use crate::gpu::utils::{get_obj_enabled_mode, get_obj_size_mode};
@@ -131,7 +131,7 @@ fn calculate_tile_index(sprite: &Sprite, y_int: i16, eight_by_sixteen_mode: bool
     }
 }
 
-pub fn read_sprite_pixel_rgb(emulator: &Emulator, x: u8, y: u8, bg_rgb: u32) -> Option<u32> {
+pub fn read_sprite_pixel_color(emulator: &Emulator, x: u8, y: u8, bg_color: Color) -> Option<Color> {
     let lcdc = emulator.gpu.registers.lcdc;
 
     let eight_by_sixteen_mode = get_obj_size_mode(lcdc);
@@ -155,7 +155,7 @@ pub fn read_sprite_pixel_rgb(emulator: &Emulator, x: u8, y: u8, bg_rgb: u32) -> 
                 let msb_byte = mmu::read_byte(&emulator, line_address + 1);
                 let palette = get_sprite_palette(sprite.dmg_palette, emulator.gpu.registers.obp0, emulator.gpu.registers.obp1);
 
-                if (sprite.priority && bg_rgb == WHITE) || !sprite.priority {
+                if (sprite.priority && bg_color == WHITE) || !sprite.priority {
                     as_obj_color_rgb(column_offset as u8, palette, msb_byte, lsb_byte, sprite.x_flip) 
                 }
                 else {

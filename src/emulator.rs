@@ -5,6 +5,7 @@ use crate::gpu::{self, initialize_gpu, GpuState};
 use crate::keys::{initialize_keys, KeyState};
 use crate::mmu;
 use crate::mmu::{Memory, initialize_memory};
+use std::cell::RefMut;
 use std::io;
 
 #[derive(Debug)]
@@ -39,12 +40,12 @@ pub fn initialize_emulator() -> Emulator {
     }
 }
 
-fn load_rom_by_filepath(emulator: Emulator, rom_filepath: &str, bios_filepath: &str) -> io::Result<Emulator> {
-    let with_loaded_rom = mmu::load_rom_by_filepath(emulator.memory, rom_filepath)?;
-    let loaded_memory = mmu::load_bios_by_filepath(with_loaded_rom, bios_filepath)?; 
-    let cartridge_type = loaded_memory.cartridge_header.type_code;
+pub fn load_rom(mut emulator: RefMut<Emulator>, rom: &[u8]) -> io::Result<()> {
+    let buffer = rom.to_vec();
+    mmu::load_rom_buffer(&mut emulator.memory, buffer);
+    let cartridge_type = emulator.memory.cartridge_header.type_code;
     if mmu::cartridge_type_supported(cartridge_type) {
-        Ok(Emulator { memory: loaded_memory, ..emulator })
+        Ok(())
     }
     else {
         let error_message  = format!("Unsupported cartridge type {cartridge_type}."); 
@@ -52,16 +53,15 @@ fn load_rom_by_filepath(emulator: Emulator, rom_filepath: &str, bios_filepath: &
     }
 }
 
-pub fn initialize_emulator_by_filepath(rom_filepath: &str, bios_filepath: &str) -> io::Result<Emulator> {
-    let emulator = initialize_emulator();
-    load_rom_by_filepath(emulator, rom_filepath, bios_filepath)
+pub fn load_bios(mut emulator: RefMut<Emulator>, bios: &[u8]) {
+    mmu::load_bios_buffer_slice(&mut emulator.memory, bios);
 }
 
 fn transfer_to_game_rom(memory: &mut Memory) {
     memory.in_bios = false;
 }
 
-pub fn step(emulator: &mut Emulator, render: impl FnMut(&Vec<u32>)) {
+pub fn step(emulator: &mut Emulator, render: impl FnMut(&Vec<u8>)) {
     if at_end_of_boot_rom(&mut emulator.cpu) {
         transfer_to_game_rom(&mut emulator.memory);
     }
