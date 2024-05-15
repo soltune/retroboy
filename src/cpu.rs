@@ -99,6 +99,21 @@ pub fn handle_illegal_opcode(opcode: u8) {
     panic!("Encountered illegal opcode {:#04X}", opcode);
 }
 
+pub fn skip_bios(cpu_state: &mut CpuState) {
+    // Initialize the CPU to a state that it would be after running the BIOS.
+    // This code assumes the DMG boot ROM has run.
+    cpu_state.registers.a = 0x01;
+    cpu_state.registers.f = 0xB0;
+    cpu_state.registers.b = 0x00;
+    cpu_state.registers.c = 0x13;
+    cpu_state.registers.d = 0x00;
+    cpu_state.registers.e = 0xD8;
+    cpu_state.registers.h = 0x01;
+    cpu_state.registers.l = 0x4D;
+    cpu_state.registers.program_counter = 0x100;
+    cpu_state.registers.stack_pointer = 0xFFFE;
+}
+
 pub fn at_end_of_boot_rom(cpu_state: &mut CpuState) -> bool {
     cpu_state.registers.program_counter == 0x100
 }

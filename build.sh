@@ -1,1 +1,1 @@
-wasm-pack build --target web --out-dir ../webboy-client/pkg
+wasm-pack build --target web --out-dir ../webboy-client/src/pkg

@@ -26,26 +26,31 @@ extern "C" {
 }
 
 #[wasm_bindgen]
-pub fn load_rom(rom_buffer: &[u8]) {
+pub fn initialize_emulator(rom_buffer: &[u8], bios_buffer: &[u8]) {
     EMULATOR.with(|emulator_cell| {
-        let emulator = emulator_cell.borrow_mut();
+        let mut emulator = emulator_cell.borrow_mut();
 
-        emulator::load_rom(emulator, rom_buffer)
-            .expect("An error occurred when trying to load the ROM.");
-        
-        log("ROM loaded!");
-    });
+        emulator::load_rom(&mut emulator, rom_buffer)
+            .expect("An error occurred when trying to load the ROM."); 
+
+        emulator::load_bios(&mut emulator, bios_buffer);
+
+        log("Emulator initialized!");
+    })
 }
 
 #[wasm_bindgen]
-pub fn load_bios(bios_buffer: &[u8]) {
+pub fn initialize_emulator_without_bios(rom_buffer: &[u8]) {
     EMULATOR.with(|emulator_cell| {
-        let emulator = emulator_cell.borrow_mut();
+        let mut emulator = emulator_cell.borrow_mut();
 
-        emulator::load_bios(emulator, bios_buffer);
-        
-        log("BIOS loaded!")
-    })
+        emulator::load_rom(&mut emulator, rom_buffer)
+            .expect("An error occurred when trying to load the ROM."); 
+
+        emulator::skip_bios(&mut emulator);
+
+        log("Emulator initialized!");
+    }) 
 }
 
 #[wasm_bindgen]

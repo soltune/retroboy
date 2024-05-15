@@ -40,7 +40,7 @@ pub fn initialize_emulator() -> Emulator {
     }
 }
 
-pub fn load_rom(mut emulator: RefMut<Emulator>, rom: &[u8]) -> io::Result<()> {
+pub fn load_rom(emulator: &mut RefMut<Emulator>, rom: &[u8]) -> io::Result<()> {
     let buffer = rom.to_vec();
     mmu::load_rom_buffer(&mut emulator.memory, buffer);
     let cartridge_type = emulator.memory.cartridge_header.type_code;
@@ -53,8 +53,12 @@ pub fn load_rom(mut emulator: RefMut<Emulator>, rom: &[u8]) -> io::Result<()> {
     }
 }
 
-pub fn load_bios(mut emulator: RefMut<Emulator>, bios: &[u8]) {
+pub fn load_bios(emulator: &mut RefMut<Emulator>, bios: &[u8]) {
     mmu::load_bios_buffer_slice(&mut emulator.memory, bios);
+}
+
+pub fn skip_bios(emulator: &mut RefMut<Emulator>) {
+    cpu::skip_bios(&mut emulator.cpu)
 }
 
 fn transfer_to_game_rom(memory: &mut Memory) {
