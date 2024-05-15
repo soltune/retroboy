@@ -25,7 +25,7 @@ extern "C" {
     pub fn render(frame_buffer: &[u8]); 
 }
 
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = initializeEmulator)]
 pub fn initialize_emulator(rom_buffer: &[u8], bios_buffer: &[u8]) {
     EMULATOR.with(|emulator_cell| {
         let mut emulator = emulator_cell.borrow_mut();
@@ -39,7 +39,7 @@ pub fn initialize_emulator(rom_buffer: &[u8], bios_buffer: &[u8]) {
     })
 }
 
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = initializeEmulatorWithoutBios)]
 pub fn initialize_emulator_without_bios(rom_buffer: &[u8]) {
     EMULATOR.with(|emulator_cell| {
         let mut emulator = emulator_cell.borrow_mut();
@@ -53,7 +53,7 @@ pub fn initialize_emulator_without_bios(rom_buffer: &[u8]) {
     }) 
 }
 
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = stepFrame)]
 pub fn step_frame() {
     EMULATOR.with(|emulator_cell| {
         let mut emulator = emulator_cell.borrow_mut();
@@ -85,7 +85,7 @@ fn as_maybe_key(key_code: u8) -> Option<Key> {
     }
 }
 
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = pressKey)]
 pub fn press_key(key_code: u8) {
     let maybe_key = as_maybe_key(key_code);
 
@@ -99,7 +99,7 @@ pub fn press_key(key_code: u8) {
     );
 }
 
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = releaseKey)]
 pub fn release_key(key_code: u8) {
     let maybe_key = as_maybe_key(key_code);
 
