@@ -58,7 +58,8 @@ pub fn load_bios(emulator: &mut RefMut<Emulator>, bios: &[u8]) {
 }
 
 pub fn skip_bios(emulator: &mut RefMut<Emulator>) {
-    cpu::skip_bios(&mut emulator.cpu)
+    cpu::skip_bios(&mut emulator.cpu);
+    gpu::skip_bios(&mut emulator.gpu);
 }
 
 fn transfer_to_game_rom(memory: &mut Memory) {
