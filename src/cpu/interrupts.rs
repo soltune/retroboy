@@ -72,6 +72,10 @@ pub fn interrupts_fired(emulator: &Emulator) -> bool {
     fired_interrupt_bits != 0
 }
 
+pub fn skip_bios(emulator: &mut Emulator) {
+    emulator.interrupts.flags = 0xE1;
+}
+
 pub fn step(emulator: &mut Emulator) {
     if emulator.cpu.interrupts.enabled && interrupts_fired(emulator) {
         let maybe_fired_interrupt = get_fired_interrupt(emulator);

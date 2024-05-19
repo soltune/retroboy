@@ -1,4 +1,4 @@
-use crate::cpu::{self, at_end_of_boot_rom, initialize_cpu, CpuState};
+use crate::cpu::{self, at_end_of_boot_rom, initialize_cpu, interrupts, timers, CpuState};
 use crate::cpu::interrupts::InterruptRegisters;
 use crate::cpu::timers::TimerRegisters;
 use crate::gpu::{self, initialize_gpu, GpuState};
@@ -60,6 +60,8 @@ pub fn load_bios(emulator: &mut RefMut<Emulator>, bios: &[u8]) {
 pub fn skip_bios(emulator: &mut RefMut<Emulator>) {
     cpu::skip_bios(&mut emulator.cpu);
     gpu::skip_bios(&mut emulator.gpu);
+    timers::skip_bios(emulator);
+    interrupts::skip_bios(emulator);
 }
 
 fn transfer_to_game_rom(memory: &mut Memory) {
