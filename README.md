@@ -2,7 +2,7 @@
 
 This repo holds the core logic for WebBoy: a Game Boy emulator written in Rust. The code can be compiled down to WebAssembly so it can be played on the web.
 
-This emulator passes all [CPU instruction tests](https://github.com/retrio/gb-test-roms/tree/master/cpu_instrs) from Blargg's test ROM collection. Eventually, I plan to test this emulator using Blargg's [CPU instruction timing tests](https://github.com/retrio/gb-test-roms/tree/master/instr_timing) as well as the [Mooneye test ROM collection](https://github.com/Gekkio/mooneye-test-suite).
+This emulator passes all [CPU instruction tests](https://github.com/retrio/gb-test-roms/tree/master/cpu_instrs) from Blargg's test ROM collection.
 
 ## How to Use
 
@@ -51,3 +51,9 @@ For convenience, here is a list of the resources I used:
 3. [Blargg's Test ROM Collection](https://github.com/retrio/gb-test-roms)
 4. [Gameboy Doctor](https://github.com/robert/gameboy-doctor)
 5. [Imran Nazar's Gameboy Emulator Tutorial](https://imrannazar.com/series/gameboy-emulation-in-javascript)
+
+## Future Plans
+
+Eventually, I plan to test this emulator using Blargg's [CPU instruction timing tests](https://github.com/retrio/gb-test-roms/tree/master/instr_timing) as well as the [Mooneye test ROM collection](https://github.com/Gekkio/mooneye-test-suite).
+
+This emulator can reliably run Tetris and Tic-Tac-Toe, however I need to test it with other games as well.
