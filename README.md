@@ -2,6 +2,8 @@
 
 This repo holds the core logic for WebBoy: a Game Boy emulator written in Rust. The code can be compiled down to WebAssembly so it can be played on the web.
 
+This emulator passes all [CPU instruction tests](https://github.com/retrio/gb-test-roms/tree/master/cpu_instrs) from Blargg's test ROM collection.
+
 ## How to Use
 
 1. Clone [webboy-client](https://github.com/smparsons/webboy-client) to your local machine. The project should live under the same directory as webboy-core.
