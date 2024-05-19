@@ -42,7 +42,9 @@ At the moment, only MBC1 is supported.
 
 ## Helpful Resources
 
-I described some of the resources I used to build this emulator in a [blog post](https://samthecoder.com/must-have-resources-for-building-a-gameboy-emulator). But here is a list of resources I used:
+I described some of the resources I used to build this emulator in a [blog post](https://samthecoder.com/must-have-resources-for-building-a-gameboy-emulator).
+
+For convenience, here is a list of the resources I used:
 
 1. [Gameboy CPU Manual](http://marc.rawer.de/Gameboy/Docs/GBCPUman.pdf)
 2. [Pan Docs](https://gbdev.io/pandocs/)
