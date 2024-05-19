@@ -1,6 +1,6 @@
 # WebBoy
 
-WebBoy is a Game Boy emulator written in Rust. The code can be compiled down to WebAssembly so it can be played on the web.
+This repo holds the core logic for WebBoy: a Game Boy emulator written in Rust. The code can be compiled down to WebAssembly so it can be played on the web.
 
 ## How to Use
 
