@@ -11,3 +11,27 @@ This repo holds the core logic for WebBoy: a Game Boy emulator written in Rust. 
 ## Test Suite
 
 This project holds a fairly extensive test suite, as the bulk of the logic was designed using a TDD approach. There are a lot of tests that exercise CPU opcodes, and basic tests that exercise the GPU. Run `cargo test` to run the test suite.
+
+## Supported Features
+
+This emulator is still a work in progress and not all features are supported.
+
+1. CPU ✅
+2. Basic Graphics ✅
+3. Audio ❌
+4. Color Support ❌
+5. GameShark Codes ❌
+
+### MBC Support
+
+At the moment, only MBC1 is supported.
+
+| Type | Supported |
+| ---- | --------- |
+| MBC1 | ✅        |
+| MBC2 | ❌        |
+| MBC3 | ❌        |
+| MBC4 | ❌        |
+| MBC5 | ❌        |
+| MBC6 | ❌        |
+| MBC7 | ❌        |
