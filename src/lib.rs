@@ -65,15 +65,13 @@ pub fn step_frame() {
     EMULATOR.with(|emulator_cell| {
         let mut emulator = emulator_cell.borrow_mut();
 
-        let mut gpu_render = false;
-        loop {
+        let mut frame_rendered = false;
+
+        while !frame_rendered {
             emulator::step(&mut emulator, |buffer: &Vec<u8>| {
                 render(buffer.as_slice());
-                gpu_render = true;
-             });
-             if gpu_render {
-                break;
-             }
+                frame_rendered = true;
+            });
         }
     })
 }
