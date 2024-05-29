@@ -1,3 +1,4 @@
+use crate::apu::{initialize_apu, ApuState};
 use crate::cpu::{self, at_end_of_boot_rom, initialize_cpu, interrupts, timers, CpuState};
 use crate::cpu::interrupts::InterruptRegisters;
 use crate::cpu::timers::TimerRegisters;
@@ -15,7 +16,8 @@ pub struct Emulator {
     pub timers: TimerRegisters,
     pub memory: Memory,
     pub gpu: GpuState,
-    pub keys: KeyState
+    pub keys: KeyState,
+    pub apu: ApuState
 }
 
 pub fn initialize_emulator() -> Emulator {
@@ -36,7 +38,8 @@ pub fn initialize_emulator() -> Emulator {
         },
         memory: initialize_memory(),
         gpu: initialize_gpu(),
-        keys: initialize_keys()
+        keys: initialize_keys(),
+        apu: initialize_apu()
     }
 }
 

@@ -121,6 +121,7 @@ pub fn release_key(key_code: &str) {
 pub mod cpu;
 pub mod mmu;
 pub mod gpu;
+pub mod apu;
 pub mod utils;
 pub mod keys;
 pub mod emulator;
