@@ -86,16 +86,10 @@ fn step_channel_1(emulator: &mut Emulator) {
 }
 
 fn should_step_div_apu(emulator: &mut Emulator) -> bool {
-    if emulator.apu.last_divider_time > 0 && emulator.timers.divider > 0 {
-        // The Divider APU steps every time bit 4 of the DIV timer falls from 1 to 0.
-        let last_bit_four = get_bit(emulator.apu.last_divider_time, 4);
-        let current_bit_four = get_bit(emulator.timers.divider, 4);
-
-        last_bit_four == 1 && current_bit_four == 0
-    }
-    else {
-        false
-    }
+    emulator.apu.last_divider_time > 0
+        && emulator.timers.divider > 0
+        && get_bit(emulator.apu.last_divider_time, 4) == 1
+        && get_bit(emulator.timers.divider, 4) == 0
 }
 
 fn step_div_apu(emulator: &mut Emulator) {
