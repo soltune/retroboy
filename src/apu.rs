@@ -66,6 +66,8 @@ pub fn initialize_apu() -> ApuState {
 // Work In Progress
 
 const APU_ENABLED_INDEX: u8 = 7;
+const MAX_WAVEFORM_STEPS: u8 = 7;
+const MAX_DIV_APU_STEPS: u8 = 7;
 
 fn calculate_period_divider(ch_period_high: u8, ch_period_low: u8) -> u16 {
     let period_high = (ch_period_high & 0b111) as u16;
@@ -74,16 +76,21 @@ fn calculate_period_divider(ch_period_high: u8, ch_period_low: u8) -> u16 {
     2048 - new_period
 }
 
+fn bounded_wrapping_add(original_value: u8, max_value: u8) -> u8 {
+    let mut new_value = original_value + 1;
+    if new_value > max_value {
+        new_value = 0;
+    }
+    new_value
+}
+
 fn step_channel_1(emulator: &mut Emulator) {
     let mut period_divider_increment = (emulator.cpu.clock.instruction_clock_cycles / 4) as u16;
     while period_divider_increment > 0 {
         emulator.apu.ch1_period_divider -= 1;
         if emulator.apu.ch1_period_divider == 0 {
             emulator.apu.ch1_period_divider = calculate_period_divider(emulator.apu.ch1_period_high, emulator.apu.ch1_period_low);
-            emulator.apu.ch1_wave_duty_position += 1;
-            if emulator.apu.ch1_wave_duty_position > 7 {
-                emulator.apu.ch1_wave_duty_position = 0;
-            }
+            emulator.apu.ch1_wave_duty_position = bounded_wrapping_add(emulator.apu.ch1_wave_duty_position, MAX_WAVEFORM_STEPS)
         }
         period_divider_increment -= 1;
     }
@@ -100,10 +107,7 @@ fn step_div_apu(emulator: &mut Emulator) {
     // TODO: Add logic to step length, envelope, and sweep
 
     emulator.apu.last_divider_time = emulator.timers.divider;
-    emulator.apu.divider_apu += 1;
-    if emulator.apu.divider_apu > 7 {
-        emulator.apu.divider_apu = 0;
-    }
+    emulator.apu.divider_apu = bounded_wrapping_add(emulator.apu.divider_apu, MAX_DIV_APU_STEPS)
 }
 
 fn apu_enabled(audio_master_control: u8) -> bool {
