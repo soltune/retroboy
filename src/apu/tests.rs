@@ -1,4 +1,4 @@
-use crate::emulator::{self, initialize_emulator};
+use crate::emulator::initialize_emulator;
 use super::*;
 
 #[test]
