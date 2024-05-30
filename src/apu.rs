@@ -67,15 +67,19 @@ pub fn initialize_apu() -> ApuState {
 
 const APU_ENABLED_INDEX: u8 = 7;
 
+fn calculate_period_divider(ch_period_high: u8, ch_period_low: u8) -> u16 {
+    let period_high = (ch_period_high & 0b111) as u16;
+    let period_low = ch_period_low as u16;
+    let new_period = (period_high << 8) | period_low;
+    2048 - new_period
+}
+
 fn step_channel_1(emulator: &mut Emulator) {
     let mut period_divider_increment = (emulator.cpu.clock.instruction_clock_cycles / 4) as u16;
     while period_divider_increment > 0 {
         emulator.apu.ch1_period_divider -= 1;
         if emulator.apu.ch1_period_divider == 0 {
-            let period_high = (emulator.apu.ch1_period_high & 0b111) as u16;
-            let period_low = (emulator.apu.ch1_period_low) as u16;
-            let new_period = (period_high << 8) | period_low;
-            emulator.apu.ch1_period_divider = 2048 - new_period;
+            emulator.apu.ch1_period_divider = calculate_period_divider(emulator.apu.ch1_period_high, emulator.apu.ch1_period_low);
             emulator.apu.ch1_wave_duty_position += 1;
             if emulator.apu.ch1_wave_duty_position > 7 {
                 emulator.apu.ch1_wave_duty_position = 0;
