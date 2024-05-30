@@ -71,8 +71,7 @@ const MAX_DIV_APU_STEPS: u8 = 7;
 
 fn calculate_period_divider(ch_period_high: u8, ch_period_low: u8) -> u16 {
     let period_high = (ch_period_high & 0b111) as u16;
-    let period_low = ch_period_low as u16;
-    let new_period = (period_high << 8) | period_low;
+    let new_period = (period_high << 8) | ch_period_low as u16;
     2048 - new_period
 }
 
