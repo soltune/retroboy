@@ -1,4 +1,4 @@
-use crate::{emulator::Emulator, utils::get_bit};
+use crate::{emulator::Emulator, utils::{get_bit, is_bit_set}};
 
 #[derive(Debug)]
 pub struct ApuState {
@@ -65,6 +65,8 @@ pub fn initialize_apu() -> ApuState {
 
 // Work In Progress
 
+const APU_ENABLED_INDEX: u8 = 7;
+
 fn step_channel_1(emulator: &mut Emulator) {
     let mut period_divider_increment = (emulator.cpu.clock.instruction_clock_cycles / 4) as u16;
     while period_divider_increment > 0 {
@@ -106,12 +108,18 @@ fn step_div_apu(emulator: &mut Emulator) {
     }
 }
 
-pub fn step(emulator: &mut Emulator) {        
-    step_channel_1(emulator);
+fn apu_enabled(audio_master_control: u8) -> bool {
+    is_bit_set(audio_master_control, APU_ENABLED_INDEX)
+}
 
-    if should_step_div_apu(emulator) {
-        step_div_apu(emulator);
-    }
+pub fn step(emulator: &mut Emulator) {    
+    if apu_enabled(emulator.apu.audio_master_control) {
+        step_channel_1(emulator);
+
+        if should_step_div_apu(emulator) {
+            step_div_apu(emulator);
+        } 
+    }    
 }
 
 #[cfg(test)]
