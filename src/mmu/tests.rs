@@ -71,6 +71,15 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.keys.column = 0x10;
     emulator.keys.select_buttons = 0x04;
 
+    emulator.apu.audio_master_control = 0xB1;
+    emulator.apu.sound_panning = 0xF2;
+    emulator.apu.master_volume = 0xC1;
+    emulator.apu.ch1_sweep = 0xDD;
+    emulator.apu.ch1_length_and_duty = 0xB0;
+    emulator.apu.ch1_volume = 0xAA;
+    emulator.apu.ch1_period_low = 0xB2;
+    emulator.apu.ch1_period_high = 0xC2;
+
     emulator.memory.in_bios = false;
 
     emulator
@@ -446,4 +455,68 @@ fn reads_from_different_ram_bank() {
     emulator.memory.external_ram[0x6005] = 0xA1;
     let result = read_byte(&emulator, 0xA005);
     assert_eq!(result, 0xA1);
+}
+
+// emulator.apu.audio_master_control = 0xB1;
+// emulator.apu.sound_panning = 0xF2;
+// emulator.apu.master_volume = 0xC1;
+// emulator.apu.ch1_sweep = 0xDD;
+// emulator.apu.ch1_length_and_duty = 0xB0;
+// emulator.apu.ch1_volume = 0xAA;
+// emulator.apu.ch1_period_low = 0xB2;
+// emulator.apu.ch1_period_high = 0xC2;
+
+#[test]
+fn reads_from_audio_master_control() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xFF26), 0xB1);
+}
+
+#[test]
+fn writes_to_audio_master_control() {
+    let mut emulator = setup_emulator_with_test_memory();
+    write_byte(&mut emulator, 0xFF26, 0xDA);
+    assert_eq!(emulator.apu.audio_master_control, 0xDA);
+}
+
+#[test]
+fn reads_from_sound_panning() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xFF25), 0xF2);
+}
+
+#[test]
+fn reads_from_master_volume() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xFF24), 0xC1);
+}
+
+#[test]
+fn reads_from_ch1_sweep() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xFF10), 0xDD);
+}
+
+#[test]
+fn reads_from_ch1_length_and_duty() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xFF11), 0xB0);
+}
+
+#[test]
+fn reads_from_ch1_volume() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xFF12), 0xAA);
+}
+
+#[test]
+fn reads_from_ch1_period_low() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xFF13), 0xB2);
+}
+
+#[test]
+fn reads_from_ch1_period_high() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xFF14), 0xC2);
 }
