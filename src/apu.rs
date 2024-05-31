@@ -66,6 +66,7 @@ pub fn initialize_apu() -> ApuState {
 // Work In Progress
 
 const APU_ENABLED_INDEX: u8 = 7;
+const CH1_ENABLED_INDEX: u8 = 0;
 const MAX_WAVEFORM_STEPS: u8 = 7;
 const MAX_DIV_APU_STEPS: u8 = 7;
 
@@ -84,14 +85,17 @@ fn bounded_wrapping_add(original_value: u8, max_value: u8) -> u8 {
 }
 
 fn step_channel_1(emulator: &mut Emulator) {
-    let mut period_divider_increment = (emulator.cpu.clock.instruction_clock_cycles / 4) as u16;
-    while period_divider_increment > 0 {
-        emulator.apu.ch1_period_divider -= 1;
-        if emulator.apu.ch1_period_divider == 0 {
-            emulator.apu.ch1_period_divider = calculate_period_divider(emulator.apu.ch1_period_high, emulator.apu.ch1_period_low);
-            emulator.apu.ch1_wave_duty_position = bounded_wrapping_add(emulator.apu.ch1_wave_duty_position, MAX_WAVEFORM_STEPS)
-        }
-        period_divider_increment -= 1;
+    let ch1_enabled = is_bit_set(emulator.apu.audio_master_control, CH1_ENABLED_INDEX);
+    if ch1_enabled {
+        let mut period_divider_increment = (emulator.cpu.clock.instruction_clock_cycles / 4) as u16;
+        while period_divider_increment > 0 {
+            emulator.apu.ch1_period_divider -= 1;
+            if emulator.apu.ch1_period_divider == 0 {
+                emulator.apu.ch1_period_divider = calculate_period_divider(emulator.apu.ch1_period_high, emulator.apu.ch1_period_low);
+                emulator.apu.ch1_wave_duty_position = bounded_wrapping_add(emulator.apu.ch1_wave_duty_position, MAX_WAVEFORM_STEPS)
+            }
+            period_divider_increment -= 1;
+        } 
     }
 }
 
@@ -105,8 +109,10 @@ fn should_step_div_apu(emulator: &mut Emulator) -> bool {
 fn step_div_apu(emulator: &mut Emulator) {
     // TODO: Add logic to step length, envelope, and sweep
 
-    emulator.apu.last_divider_time = emulator.timers.divider;
-    emulator.apu.divider_apu = bounded_wrapping_add(emulator.apu.divider_apu, MAX_DIV_APU_STEPS)
+    if should_step_div_apu(emulator) {
+        emulator.apu.last_divider_time = emulator.timers.divider;
+        emulator.apu.divider_apu = bounded_wrapping_add(emulator.apu.divider_apu, MAX_DIV_APU_STEPS)
+    }
 }
 
 fn apu_enabled(audio_master_control: u8) -> bool {
@@ -116,10 +122,7 @@ fn apu_enabled(audio_master_control: u8) -> bool {
 pub fn step(emulator: &mut Emulator) {    
     if apu_enabled(emulator.apu.audio_master_control) {
         step_channel_1(emulator);
-
-        if should_step_div_apu(emulator) {
-            step_div_apu(emulator);
-        } 
+        step_div_apu(emulator);
     }    
 }
 
