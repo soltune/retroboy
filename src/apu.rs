@@ -1,10 +1,12 @@
-use crate::{emulator::Emulator, utils::{get_bit, is_bit_set}};
+use crate::{emulator::Emulator, utils::{get_bit, set_bit, is_bit_set}};
 
 #[derive(Debug)]
 pub struct ApuState {
     pub audio_master_control: u8, // NR52
     pub sound_panning: u8, // NR51
     pub master_volume: u8, // NR50
+    pub ch1_enabled: bool,
+    pub ch1_dac_enabled: bool,
     pub ch1_sweep: u8, // NR10
     pub ch1_length_and_duty: u8, // NR11
     pub ch1_wave_duty_position: u8,
@@ -12,17 +14,22 @@ pub struct ApuState {
     pub ch1_period_low: u8, // NR13
     pub ch1_period_high: u8, // NR14
     pub ch1_period_divider: u16,
+    pub ch2_enabled: bool,
+    pub ch2_dac_enabled: bool,
     pub ch2_length_and_duty: u8, // NR21
     pub ch2_wave_duty_position: u8,
     pub ch2_volume: u8, // NR22
     pub ch2_period_low: u8, // NR23
     pub ch2_period_high: u8, // NR24
     pub ch2_period_divider: u16,
+    pub ch3_enabled: bool,
     pub ch3_dac_enable: u8, // NR30
     pub ch3_length: u8, // NR31
     pub ch3_volume: u8, // NR32
     pub ch3_period_low: u8, // NR33
     pub ch3_period_high: u8, // NR34
+    pub ch4_enabled: bool,
+    pub ch4_dac_enabled: bool,
     pub ch4_length: u8, // NR41
     pub ch4_volume: u8, // NR42
     pub ch4_randomness: u8, // NR43
@@ -36,6 +43,8 @@ pub fn initialize_apu() -> ApuState {
         audio_master_control: 0,
         sound_panning: 0,
         master_volume: 0,
+        ch1_enabled: false,
+        ch1_dac_enabled: false,
         ch1_sweep: 0,
         ch1_length_and_duty: 0,
         ch1_wave_duty_position: 0,
@@ -43,17 +52,22 @@ pub fn initialize_apu() -> ApuState {
         ch1_period_low: 0,
         ch1_period_high: 0,
         ch1_period_divider: 0,
+        ch2_enabled: false,
+        ch2_dac_enabled: false,
         ch2_length_and_duty: 0,
         ch2_wave_duty_position: 0,
         ch2_volume: 0,
         ch2_period_low: 0,
         ch2_period_high: 0,
         ch2_period_divider: 0,
+        ch3_enabled: false,
         ch3_dac_enable: 0,
         ch3_length: 0,
         ch3_volume: 0,
         ch3_period_low: 0,
         ch3_period_high: 0,
+        ch4_enabled: false,
+        ch4_dac_enabled: false,
         ch4_length: 0,
         ch4_volume: 0,
         ch4_randomness: 0,
@@ -67,6 +81,7 @@ pub fn initialize_apu() -> ApuState {
 
 const APU_ENABLED_INDEX: u8 = 7;
 const CH1_ENABLED_INDEX: u8 = 0;
+const NR14_TIRGER_INDEX: u8 = 7;
 const MAX_WAVEFORM_STEPS: u8 = 7;
 const MAX_DIV_APU_STEPS: u8 = 7;
 
@@ -85,8 +100,7 @@ fn bounded_wrapping_add(original_value: u8, max_value: u8) -> u8 {
 }
 
 fn step_channel_1(emulator: &mut Emulator) {
-    let ch1_enabled = is_bit_set(emulator.apu.audio_master_control, CH1_ENABLED_INDEX);
-    if ch1_enabled {
+    if emulator.apu.ch1_enabled {
         let mut period_divider_increment = (emulator.cpu.clock.instruction_clock_cycles / 4) as u16;
         while period_divider_increment > 0 {
             emulator.apu.ch1_period_divider -= 1;
@@ -117,6 +131,18 @@ fn step_div_apu(emulator: &mut Emulator) {
 
 fn apu_enabled(audio_master_control: u8) -> bool {
     is_bit_set(audio_master_control, APU_ENABLED_INDEX)
+}
+
+pub fn set_nr14(emulator: &mut Emulator, new_nr14_value: u8) {
+    emulator.apu.ch1_period_high = new_nr14_value;
+    
+    let should_trigger_ch1 = emulator.apu.ch1_dac_enabled 
+        && is_bit_set(emulator.apu.ch1_period_high, NR14_TIRGER_INDEX);
+    
+    if should_trigger_ch1 { 
+        emulator.apu.ch1_enabled = true;
+        emulator.apu.audio_master_control = set_bit(emulator.apu.audio_master_control, CH1_ENABLED_INDEX);
+    }
 }
 
 pub fn step(emulator: &mut Emulator) {    
