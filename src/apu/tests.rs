@@ -146,7 +146,7 @@ fn should_trigger_ch1() {
     emulator.apu.audio_master_control = 0b10000000;
     emulator.apu.ch1_dac_enabled = true;
     emulator.apu.ch1_enabled = false;
-    set_nr14(&mut emulator, 0b10000000);
+    set_ch1_period_high(&mut emulator, 0b10000000);
     assert_eq!(emulator.apu.audio_master_control, 0b10000001);
     assert_eq!(emulator.apu.ch1_enabled, true);
     assert_eq!(emulator.apu.ch1_period_high, 0b10000000);
@@ -158,7 +158,7 @@ fn should_not_trigger_ch1_if_trigger_bit_is_not_set() {
     emulator.apu.audio_master_control = 0b10000000;
     emulator.apu.ch1_dac_enabled = true;
     emulator.apu.ch1_enabled = false;
-    set_nr14(&mut emulator, 0b00000001);
+    set_ch1_period_high(&mut emulator, 0b00000001);
     assert_eq!(emulator.apu.audio_master_control, 0b10000000);
     assert_eq!(emulator.apu.ch1_enabled, false);
     assert_eq!(emulator.apu.ch1_period_high, 0b00000001); 
@@ -170,7 +170,7 @@ fn should_not_trigger_ch1_if_dac_is_disabled() {
     emulator.apu.audio_master_control = 0b10000000;
     emulator.apu.ch1_dac_enabled = false;
     emulator.apu.ch1_enabled = false;
-    set_nr14(&mut emulator, 0b10000000);
+    set_ch1_period_high(&mut emulator, 0b10000000);
     assert_eq!(emulator.apu.audio_master_control, 0b10000000);
     assert_eq!(emulator.apu.ch1_enabled, false);
     assert_eq!(emulator.apu.ch1_period_high, 0b10000000); 

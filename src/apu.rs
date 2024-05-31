@@ -81,7 +81,7 @@ pub fn initialize_apu() -> ApuState {
 
 const APU_ENABLED_INDEX: u8 = 7;
 const CH1_ENABLED_INDEX: u8 = 0;
-const NR14_TIRGER_INDEX: u8 = 7;
+const CH1_PERIOD_HIGH_TIRGER_INDEX: u8 = 7;
 const MAX_WAVEFORM_STEPS: u8 = 7;
 const MAX_DIV_APU_STEPS: u8 = 7;
 
@@ -133,11 +133,11 @@ fn apu_enabled(audio_master_control: u8) -> bool {
     is_bit_set(audio_master_control, APU_ENABLED_INDEX)
 }
 
-pub fn set_nr14(emulator: &mut Emulator, new_nr14_value: u8) {
-    emulator.apu.ch1_period_high = new_nr14_value;
+pub fn set_ch1_period_high(emulator: &mut Emulator, new_period_high_value: u8) {
+    emulator.apu.ch1_period_high = new_period_high_value;
     
     let should_trigger_ch1 = emulator.apu.ch1_dac_enabled 
-        && is_bit_set(emulator.apu.ch1_period_high, NR14_TIRGER_INDEX);
+        && is_bit_set(emulator.apu.ch1_period_high, CH1_PERIOD_HIGH_TIRGER_INDEX);
     
     if should_trigger_ch1 { 
         emulator.apu.ch1_enabled = true;
