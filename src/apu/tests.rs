@@ -141,7 +141,7 @@ fn should_wrap_div_apu_to_zero_when_increased_above_seven() {
 }
 
 #[test]
-fn should_trigger_ch1() {
+fn should_trigger_ch1_when_writing_to_ch1_period_high() {
     let mut emulator = initialize_emulator();
     emulator.apu.audio_master_control = 0b10000000;
     emulator.apu.ch1_dac_enabled = true;
@@ -153,7 +153,7 @@ fn should_trigger_ch1() {
 }
 
 #[test]
-fn should_not_trigger_ch1_if_trigger_bit_is_not_set() {
+fn should_not_trigger_ch1_if_trigger_bit_is_not_set_when_writing_to_ch1_period_high() {
     let mut emulator = initialize_emulator();
     emulator.apu.audio_master_control = 0b10000000;
     emulator.apu.ch1_dac_enabled = true;
@@ -165,7 +165,7 @@ fn should_not_trigger_ch1_if_trigger_bit_is_not_set() {
 }
 
 #[test]
-fn should_not_trigger_ch1_if_dac_is_disabled() {
+fn should_not_trigger_ch1_if_dac_is_disabled_when_writing_to_ch1_period_high() {
     let mut emulator = initialize_emulator();
     emulator.apu.audio_master_control = 0b10000000;
     emulator.apu.ch1_dac_enabled = false;
@@ -174,4 +174,30 @@ fn should_not_trigger_ch1_if_dac_is_disabled() {
     assert_eq!(emulator.apu.audio_master_control, 0b10000000);
     assert_eq!(emulator.apu.ch1_enabled, false);
     assert_eq!(emulator.apu.ch1_period_high, 0b10000000); 
+}
+
+#[test]
+fn should_disable_dac_and_ch1_when_writing_to_ch1_volume() {
+    let mut emulator = initialize_emulator();
+    emulator.apu.audio_master_control = 0b10000001;
+    emulator.apu.ch1_dac_enabled = true;
+    emulator.apu.ch1_enabled = true;
+    set_ch1_volume(&mut emulator, 0b00000001);
+    assert_eq!(emulator.apu.audio_master_control, 0b10000000);
+    assert_eq!(emulator.apu.ch1_dac_enabled, false);
+    assert_eq!(emulator.apu.ch1_enabled, false);
+    assert_eq!(emulator.apu.ch1_volume, 0b00000001);
+}
+
+#[test]
+fn should_not_disable_dac_if_bits_three_through_seven_have_values_when_writing_to_ch1_volume() {
+    let mut emulator = initialize_emulator();
+    emulator.apu.audio_master_control = 0b10000001;
+    emulator.apu.ch1_dac_enabled = true;
+    emulator.apu.ch1_enabled = true;
+    set_ch1_volume(&mut emulator, 0b00101001);
+    assert_eq!(emulator.apu.audio_master_control, 0b10000001);
+    assert_eq!(emulator.apu.ch1_dac_enabled, true);
+    assert_eq!(emulator.apu.ch1_enabled, true);
+    assert_eq!(emulator.apu.ch1_volume, 0b00101001); 
 }

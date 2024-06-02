@@ -1,4 +1,4 @@
-use crate::{emulator::Emulator, utils::{get_bit, set_bit, is_bit_set}};
+use crate::{emulator::Emulator, utils::{get_bit, is_bit_set, reset_bit, set_bit}};
 
 #[derive(Debug)]
 pub struct ApuState {
@@ -142,6 +142,18 @@ pub fn set_ch1_period_high(emulator: &mut Emulator, new_period_high_value: u8) {
     if should_trigger_ch1 { 
         emulator.apu.ch1_enabled = true;
         emulator.apu.audio_master_control = set_bit(emulator.apu.audio_master_control, CH1_ENABLED_INDEX);
+    }
+}
+
+pub fn set_ch1_volume(emulator: &mut Emulator, new_volume_value: u8) {
+    emulator.apu.ch1_volume = new_volume_value;
+
+    let should_disable_ch1_dac = emulator.apu.ch1_volume & 0xF8 == 0;
+
+    if should_disable_ch1_dac {
+        emulator.apu.ch1_dac_enabled = false;
+        emulator.apu.ch1_enabled = false;
+        emulator.apu.audio_master_control = reset_bit(emulator.apu.audio_master_control, CH1_ENABLED_INDEX);
     }
 }
 

@@ -1,4 +1,5 @@
 use crate::apu::set_ch1_period_high;
+use crate::apu::set_ch1_volume;
 use crate::emulator::Emulator;
 use crate::keys::read_joyp_byte;
 use crate::keys::write_joyp_byte;
@@ -178,7 +179,7 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
                 0x00 => write_joyp_byte(&mut emulator.keys, value),
                 0x10 => emulator.apu.ch1_sweep = value,
                 0x11 => emulator.apu.ch1_length_and_duty = value,
-                0x12 => emulator.apu.ch1_volume = value,
+                0x12 => set_ch1_volume(emulator, value),
                 0x13 => emulator.apu.ch1_period_low = value,
                 0x14 => set_ch1_period_high(emulator, value),
                 0x24 => emulator.apu.master_volume = value,
