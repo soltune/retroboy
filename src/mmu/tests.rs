@@ -74,11 +74,11 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.apu.audio_master_control = 0xB1;
     emulator.apu.sound_panning = 0xF2;
     emulator.apu.master_volume = 0xC1;
-    emulator.apu.ch1_sweep = 0xDD;
-    emulator.apu.ch1_length_and_duty = 0xB0;
-    emulator.apu.ch1_volume = 0xAA;
-    emulator.apu.ch1_period_low = 0xB2;
-    emulator.apu.ch1_period_high = 0xC2;
+    emulator.apu.channel1.sweep = 0xDD;
+    emulator.apu.channel1.length_and_duty = 0xB0;
+    emulator.apu.channel1.envelope.initial_settings = 0xAA;
+    emulator.apu.channel1.period.low = 0xB2;
+    emulator.apu.channel1.period.high = 0xC2;
 
     emulator.memory.in_bios = false;
 

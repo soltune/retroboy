@@ -1,5 +1,5 @@
 use crate::apu::set_ch1_period_high;
-use crate::apu::set_ch1_volume;
+use crate::apu::set_ch1_envelope_settings;
 use crate::emulator::Emulator;
 use crate::keys::read_joyp_byte;
 use crate::keys::write_joyp_byte;
@@ -93,11 +93,11 @@ pub fn read_byte(emulator: &Emulator, address: u16) -> u8 {
             0xF00 if address >= 0xFF80 => memory.zero_page_ram[(address & 0x7F) as usize],
             _ => match address & 0xFF {
                 0x00 => read_joyp_byte(&emulator.keys),
-                0x10 => emulator.apu.ch1_sweep,
-                0x11 => emulator.apu.ch1_length_and_duty,
-                0x12 => emulator.apu.ch1_volume,
-                0x13 => emulator.apu.ch1_period_low,
-                0x14 => emulator.apu.ch1_period_high,
+                0x10 => emulator.apu.channel1.sweep,
+                0x11 => emulator.apu.channel1.length_and_duty,
+                0x12 => emulator.apu.channel1.envelope.initial_settings,
+                0x13 => emulator.apu.channel1.period.low,
+                0x14 => emulator.apu.channel1.period.high,
                 0x24 => emulator.apu.master_volume,
                 0x25 => emulator.apu.sound_panning,
                 0x26 => emulator.apu.audio_master_control,
@@ -177,10 +177,10 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
             0xF00 if address >= 0xFF80 => memory.zero_page_ram[(address & 0x7F) as usize] = value,
             _ => match address & 0xFF {
                 0x00 => write_joyp_byte(&mut emulator.keys, value),
-                0x10 => emulator.apu.ch1_sweep = value,
-                0x11 => emulator.apu.ch1_length_and_duty = value,
-                0x12 => set_ch1_volume(emulator, value),
-                0x13 => emulator.apu.ch1_period_low = value,
+                0x10 => emulator.apu.channel1.sweep = value,
+                0x11 => emulator.apu.channel1.length_and_duty = value,
+                0x12 => set_ch1_envelope_settings(emulator, value),
+                0x13 => emulator.apu.channel1.period.low = value,
                 0x14 => set_ch1_period_high(emulator, value),
                 0x24 => emulator.apu.master_volume = value,
                 0x25 => emulator.apu.sound_panning = value,
