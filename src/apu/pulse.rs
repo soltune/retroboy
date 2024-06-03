@@ -11,10 +11,9 @@ pub struct PulseChannel {
     pub wave_duty_position: u8,
     pub envelope: Envelope,
     pub period: Period,
-    pub channel_id: u8
 }
 
-pub fn initialize_pulse_channel(channel_id: u8) -> PulseChannel {
+pub fn initialize_pulse_channel() -> PulseChannel {
     PulseChannel {
         enabled: false,
         dac_enabled: false,
@@ -23,7 +22,6 @@ pub fn initialize_pulse_channel(channel_id: u8) -> PulseChannel {
         wave_duty_position: 0,
         envelope: initialize_envelope(),
         period: initalize_period(),
-        channel_id
     } 
 }
 
