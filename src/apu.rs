@@ -35,6 +35,7 @@ pub fn initialize_apu() -> ApuState {
 
 // Work In Progress
 const CH1_ENABLED_INDEX: u8 = 0;
+const CH2_ENABLED_INDEX: u8 = 1;
 const APU_ENABLED_INDEX: u8 = 7;
 const MAX_DIV_APU_STEPS: u8 = 7;
 
@@ -60,7 +61,9 @@ fn apu_enabled(audio_master_control: u8) -> bool {
 
 pub fn step(emulator: &mut Emulator) {    
     if apu_enabled(emulator.apu.audio_master_control) {
-        pulse::step(&mut emulator.apu.channel1, emulator.cpu.clock.instruction_clock_cycles);
+        let instruction_clock_cycles = emulator.cpu.clock.instruction_clock_cycles;
+        pulse::step(&mut emulator.apu.channel1, instruction_clock_cycles);
+        pulse::step(&mut emulator.apu.channel2, instruction_clock_cycles);
         step_div_apu(emulator);
     }    
 }
@@ -74,6 +77,15 @@ pub fn set_ch1_period_high(emulator: &mut Emulator, new_period_high_value: u8) {
     }
 }
 
+pub fn set_ch2_period_high(emulator: &mut Emulator, new_period_high_value: u8) {
+    emulator.apu.channel2.period.high = new_period_high_value;
+    
+    if should_trigger(&emulator.apu.channel2) { 
+        emulator.apu.channel2.enabled = true;
+        emulator.apu.audio_master_control = set_bit(emulator.apu.audio_master_control, CH2_ENABLED_INDEX);
+    }
+}
+
 pub fn set_ch1_envelope_settings(emulator: &mut Emulator, new_envelope_settings: u8) {
     emulator.apu.channel1.envelope.initial_settings = new_envelope_settings;
 
@@ -81,6 +93,16 @@ pub fn set_ch1_envelope_settings(emulator: &mut Emulator, new_envelope_settings:
         emulator.apu.channel1.dac_enabled = false;
         emulator.apu.channel1.enabled = false;
         emulator.apu.audio_master_control = reset_bit(emulator.apu.audio_master_control, CH1_ENABLED_INDEX);
+    }
+}
+
+pub fn set_ch2_envelope_settings(emulator: &mut Emulator, new_envelope_settings: u8) {
+    emulator.apu.channel2.envelope.initial_settings = new_envelope_settings;
+
+    if should_disable_dac(&emulator.apu.channel2.envelope) {
+        emulator.apu.channel2.dac_enabled = false;
+        emulator.apu.channel2.enabled = false;
+        emulator.apu.audio_master_control = reset_bit(emulator.apu.audio_master_control, CH2_ENABLED_INDEX);
     }
 }
 

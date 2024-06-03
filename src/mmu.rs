@@ -1,5 +1,7 @@
 use crate::apu::set_ch1_period_high;
 use crate::apu::set_ch1_envelope_settings;
+use crate::apu::set_ch2_envelope_settings;
+use crate::apu::set_ch2_period_high;
 use crate::emulator::Emulator;
 use crate::keys::read_joyp_byte;
 use crate::keys::write_joyp_byte;
@@ -98,6 +100,10 @@ pub fn read_byte(emulator: &Emulator, address: u16) -> u8 {
                 0x12 => emulator.apu.channel1.envelope.initial_settings,
                 0x13 => emulator.apu.channel1.period.low,
                 0x14 => emulator.apu.channel1.period.high,
+                0x16 => emulator.apu.channel2.length_and_duty,
+                0x17 => emulator.apu.channel2.envelope.initial_settings,
+                0x18 => emulator.apu.channel2.period.low,
+                0x19 => emulator.apu.channel2.period.high,
                 0x24 => emulator.apu.master_volume,
                 0x25 => emulator.apu.sound_panning,
                 0x26 => emulator.apu.audio_master_control,
@@ -182,6 +188,10 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
                 0x12 => set_ch1_envelope_settings(emulator, value),
                 0x13 => emulator.apu.channel1.period.low = value,
                 0x14 => set_ch1_period_high(emulator, value),
+                0x16 => emulator.apu.channel2.length_and_duty = value,
+                0x17 => set_ch2_envelope_settings(emulator, value),
+                0x18 => emulator.apu.channel2.period.low = value,
+                0x19 => set_ch2_period_high(emulator, value),
                 0x24 => emulator.apu.master_volume = value,
                 0x25 => emulator.apu.sound_panning = value,
                 0x26 => emulator.apu.audio_master_control = value,

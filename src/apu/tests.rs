@@ -15,6 +15,19 @@ fn should_decrement_period_divider() {
 }
 
 #[test]
+fn should_increment_period_divider_for_channel_2() {
+    let mut emulator = initialize_emulator();
+    emulator.apu.audio_master_control = 0b10000010;
+    emulator.apu.channel2.enabled = true;
+    emulator.apu.channel2.period.divider = 742;
+    emulator.apu.channel2.period.low = 26;
+    emulator.apu.channel2.period.high = 197;
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    step(&mut emulator);
+    assert_eq!(emulator.apu.channel2.period.divider, 741); 
+}
+
+#[test]
 fn should_do_nothing_if_apu_is_off() {
     let mut emulator = initialize_emulator();
     emulator.apu.audio_master_control = 0;
@@ -153,6 +166,18 @@ fn should_trigger_ch1_when_writing_to_ch1_period_high() {
 }
 
 #[test]
+fn should_trigger_ch2_when_writing_to_ch2_period_high() {
+    let mut emulator = initialize_emulator();
+    emulator.apu.audio_master_control = 0b10000000;
+    emulator.apu.channel2.dac_enabled = true;
+    emulator.apu.channel2.enabled = false;
+    set_ch2_period_high(&mut emulator, 0b10000000);
+    assert_eq!(emulator.apu.audio_master_control, 0b10000010);
+    assert_eq!(emulator.apu.channel2.enabled, true);
+    assert_eq!(emulator.apu.channel2.period.high, 0b10000000);
+}
+
+#[test]
 fn should_not_trigger_ch1_if_trigger_bit_is_not_set_when_writing_to_ch1_period_high() {
     let mut emulator = initialize_emulator();
     emulator.apu.audio_master_control = 0b10000000;
@@ -187,6 +212,19 @@ fn should_disable_dac_and_ch1_when_writing_to_ch1_volume() {
     assert_eq!(emulator.apu.channel1.dac_enabled, false);
     assert_eq!(emulator.apu.channel1.enabled, false);
     assert_eq!(emulator.apu.channel1.envelope.initial_settings, 0b00000001);
+}
+
+#[test]
+fn should_disable_dac_and_ch2_when_writing_to_ch2_volume() {
+    let mut emulator = initialize_emulator();
+    emulator.apu.audio_master_control = 0b10000010;
+    emulator.apu.channel2.dac_enabled = true;
+    emulator.apu.channel2.enabled = true;
+    set_ch2_envelope_settings(&mut emulator, 0b00000001);
+    assert_eq!(emulator.apu.audio_master_control, 0b10000000);
+    assert_eq!(emulator.apu.channel2.dac_enabled, false);
+    assert_eq!(emulator.apu.channel2.enabled, false);
+    assert_eq!(emulator.apu.channel2.envelope.initial_settings, 0b00000001);
 }
 
 #[test]
