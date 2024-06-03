@@ -1,6 +1,7 @@
 use crate::apu::envelope::{initialize_envelope, Envelope};
 use crate::apu::period::{initalize_period, Period};
 use crate::apu::utils::bounded_wrapping_add;
+use crate::utils::is_bit_set;
 
 #[derive(Debug)]
 pub struct PulseChannel {
@@ -26,6 +27,7 @@ pub fn initialize_pulse_channel() -> PulseChannel {
 }
 
 const MAX_WAVEFORM_STEPS: u8 = 7;
+const PERIOD_HIGH_TRIGGER_INDEX: u8 = 7;
 
 fn calculate_period_divider(ch_period_high: u8, ch_period_low: u8) -> u16 {
     let period_high = (ch_period_high & 0b111) as u16;
@@ -45,4 +47,8 @@ pub fn step(channel: &mut PulseChannel, last_instruction_clock_cycles: u8) {
             period_divider_increment -= 1;
         } 
     }
+}
+
+pub fn should_trigger(channel: &PulseChannel) -> bool {
+   channel.dac_enabled && is_bit_set(channel.period.high, PERIOD_HIGH_TRIGGER_INDEX)
 }

@@ -1,6 +1,7 @@
+use crate::apu::envelope::should_disable_dac;
 use crate::apu::noise::{initialize_noise_channel, NoiseChannel};
 use crate::apu::wave::{initialize_wave_channel, WaveChannel};
-use crate::apu::pulse::{initialize_pulse_channel, PulseChannel};
+use crate::apu::pulse::{initialize_pulse_channel, should_trigger, PulseChannel};
 use crate::apu::utils::bounded_wrapping_add;
 use crate::emulator::Emulator;
 use crate::utils::{get_bit, is_bit_set, reset_bit, set_bit};
@@ -36,7 +37,6 @@ pub fn initialize_apu() -> ApuState {
 const CH1_ENABLED_INDEX: u8 = 0;
 const APU_ENABLED_INDEX: u8 = 7;
 const MAX_DIV_APU_STEPS: u8 = 7;
-const PERIOD_HIGH_TRIGGER_INDEX: u8 = 7;
 
 fn should_step_div_apu(emulator: &mut Emulator) -> bool {
     emulator.apu.last_divider_time > 0
@@ -68,10 +68,7 @@ pub fn step(emulator: &mut Emulator) {
 pub fn set_ch1_period_high(emulator: &mut Emulator, new_period_high_value: u8) {
     emulator.apu.channel1.period.high = new_period_high_value;
     
-    let should_trigger = emulator.apu.channel1.dac_enabled
-        && is_bit_set(emulator.apu.channel1.period.high, PERIOD_HIGH_TRIGGER_INDEX);
-    
-    if should_trigger { 
+    if should_trigger(&emulator.apu.channel1) { 
         emulator.apu.channel1.enabled = true;
         emulator.apu.audio_master_control = set_bit(emulator.apu.audio_master_control, CH1_ENABLED_INDEX);
     }
@@ -80,9 +77,7 @@ pub fn set_ch1_period_high(emulator: &mut Emulator, new_period_high_value: u8) {
 pub fn set_ch1_envelope_settings(emulator: &mut Emulator, new_envelope_settings: u8) {
     emulator.apu.channel1.envelope.initial_settings = new_envelope_settings;
 
-    let should_disable_dac = emulator.apu.channel1.envelope.initial_settings & 0xF8 == 0;
-
-    if should_disable_dac {
+    if should_disable_dac(&emulator.apu.channel1.envelope) {
         emulator.apu.channel1.dac_enabled = false;
         emulator.apu.channel1.enabled = false;
         emulator.apu.audio_master_control = reset_bit(emulator.apu.audio_master_control, CH1_ENABLED_INDEX);

@@ -12,3 +12,7 @@ pub fn initialize_envelope() -> Envelope {
         timer: 0
     }
 }
+    
+pub fn should_disable_dac(envelope: &Envelope) -> bool {
+    envelope.initial_settings & 0xF8 == 0
+}
