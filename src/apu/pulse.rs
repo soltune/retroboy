@@ -1,5 +1,5 @@
 use crate::apu::envelope::{initialize_envelope, Envelope};
-use crate::apu::period::{initalize_period, Period};
+use crate::apu::period::{calculate_period_divider, initalize_period, Period};
 use crate::apu::utils::bounded_wrapping_add;
 use crate::utils::is_bit_set;
 
@@ -29,19 +29,13 @@ pub fn initialize_pulse_channel() -> PulseChannel {
 const MAX_WAVEFORM_STEPS: u8 = 7;
 const PERIOD_HIGH_TRIGGER_INDEX: u8 = 7;
 
-fn calculate_period_divider(ch_period_high: u8, ch_period_low: u8) -> u16 {
-    let period_high = (ch_period_high & 0b111) as u16;
-    let new_period = (period_high << 8) | ch_period_low as u16;
-    2048 - new_period
-}
-
 pub fn step(channel: &mut PulseChannel, last_instruction_clock_cycles: u8) {
     if channel.enabled {
         let mut period_divider_increment = (last_instruction_clock_cycles / 4) as u16;
         while period_divider_increment > 0 {
             channel.period.divider -= 1;
             if channel.period.divider == 0 {
-                channel.period.divider = calculate_period_divider(channel.period.high, channel.period.low);
+                channel.period.divider = calculate_period_divider(&channel.period);
                 channel.wave_duty_position = bounded_wrapping_add(channel.wave_duty_position, MAX_WAVEFORM_STEPS)
             }
             period_divider_increment -= 1;
