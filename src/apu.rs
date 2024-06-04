@@ -47,9 +47,17 @@ fn should_step_div_apu(emulator: &mut Emulator) -> bool {
 }
 
 fn step_div_apu(emulator: &mut Emulator) {
-    // TODO: Add logic to step length, envelope, and sweep
+    // TODO: Add logic to step length and sweep
 
     if should_step_div_apu(emulator) {
+        match emulator.apu.divider_apu {
+            7 => {
+                pulse::step_envelope(&mut emulator.apu.channel1);
+                pulse::step_envelope(&mut emulator.apu.channel2);
+            }
+            _ => ()
+        }
+
         emulator.apu.last_divider_time = emulator.timers.divider;
         emulator.apu.divider_apu = bounded_wrapping_add(emulator.apu.divider_apu, MAX_DIV_APU_STEPS)
     }

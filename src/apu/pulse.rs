@@ -44,6 +44,12 @@ pub fn step(channel: &mut PulseChannel, last_instruction_clock_cycles: u8) {
     }
 }
 
+pub fn step_envelope(channel: &mut PulseChannel) {
+    if channel.enabled {
+        envelope::step(&mut channel.envelope);
+    }
+}
+
 pub fn trigger(channel: &mut PulseChannel) {
     channel.enabled = true;
     envelope::trigger(&mut channel.envelope);

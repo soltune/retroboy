@@ -242,3 +242,88 @@ fn should_not_disable_dac_if_bits_three_through_seven_have_values_when_writing_t
     assert_eq!(emulator.apu.channel1.enabled, true);
     assert_eq!(emulator.apu.channel1.envelope.initial_settings, 0b00101001); 
 }
+
+#[test]
+fn should_reset_ch1_envelope_volume_and_timer_when_timer_decrements_to_zero() {
+    let mut emulator = initialize_emulator();
+
+    emulator.apu.audio_master_control = 0b10000001;
+    emulator.apu.divider_apu = 7;
+    emulator.apu.last_divider_time = 0b10011111;
+    emulator.timers.divider = 0b10100000;
+
+    emulator.apu.channel1.enabled = true;
+    emulator.apu.channel1.dac_enabled = true;
+    
+    emulator.apu.channel1.period.divider = 742;
+    emulator.apu.channel1.period.low = 26;
+    emulator.apu.channel1.period.high = 197;
+    
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    
+    emulator.apu.channel1.envelope.initial_settings = 0b10100101;
+    emulator.apu.channel1.envelope.current_volume = 0b1010;
+    emulator.apu.channel1.envelope.timer = 0b1;
+
+    step(&mut emulator);
+    
+    assert_eq!(emulator.apu.channel1.envelope.current_volume, 0b1001);
+    assert_eq!(emulator.apu.channel1.envelope.timer, 0b101);
+}
+
+#[test]
+fn should_decrement_ch1_envelope_timer() {
+    let mut emulator = initialize_emulator();
+
+    emulator.apu.audio_master_control = 0b10000001;
+    emulator.apu.divider_apu = 7;
+    emulator.apu.last_divider_time = 0b10011111;
+    emulator.timers.divider = 0b10100000;
+
+    emulator.apu.channel1.enabled = true;
+    emulator.apu.channel1.dac_enabled = true;
+    
+    emulator.apu.channel1.period.divider = 742;
+    emulator.apu.channel1.period.low = 26;
+    emulator.apu.channel1.period.high = 197;
+    
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    
+    emulator.apu.channel1.envelope.initial_settings = 0b10100101;
+    emulator.apu.channel1.envelope.current_volume = 0b1010;
+    emulator.apu.channel1.envelope.timer = 0b101;
+
+    step(&mut emulator);
+    
+    assert_eq!(emulator.apu.channel1.envelope.current_volume, 0b1010);
+    assert_eq!(emulator.apu.channel1.envelope.timer, 0b100);
+}
+
+
+#[test]
+fn should_not_step_ch1_envelope_if_divider_apu_is_on_wrong_step() {
+    let mut emulator = initialize_emulator();
+
+    emulator.apu.audio_master_control = 0b10000001;
+    emulator.apu.divider_apu = 4;
+    emulator.apu.last_divider_time = 0b10011111;
+    emulator.timers.divider = 0b10100000;
+
+    emulator.apu.channel1.enabled = true;
+    emulator.apu.channel1.dac_enabled = true;
+    
+    emulator.apu.channel1.period.divider = 742;
+    emulator.apu.channel1.period.low = 26;
+    emulator.apu.channel1.period.high = 197;
+    
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    
+    emulator.apu.channel1.envelope.initial_settings = 0b10100101;
+    emulator.apu.channel1.envelope.current_volume = 0b1010;
+    emulator.apu.channel1.envelope.timer = 0b101;
+
+    step(&mut emulator);
+    
+    assert_eq!(emulator.apu.channel1.envelope.current_volume, 0b1010);
+    assert_eq!(emulator.apu.channel1.envelope.timer, 0b101);
+}
