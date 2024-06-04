@@ -159,10 +159,13 @@ fn should_trigger_ch1_when_writing_to_ch1_period_high() {
     emulator.apu.audio_master_control = 0b10000000;
     emulator.apu.channel1.dac_enabled = true;
     emulator.apu.channel1.enabled = false;
+    emulator.apu.channel1.envelope.initial_settings = 0b10100101;
     set_ch1_period_high(&mut emulator, 0b10000000);
     assert_eq!(emulator.apu.audio_master_control, 0b10000001);
     assert_eq!(emulator.apu.channel1.enabled, true);
     assert_eq!(emulator.apu.channel1.period.high, 0b10000000);
+    assert_eq!(emulator.apu.channel1.envelope.current_volume, 0b1010);
+    assert_eq!(emulator.apu.channel1.envelope.timer, 0b101)
 }
 
 #[test]

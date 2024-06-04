@@ -1,3 +1,4 @@
+use crate::apu::envelope;
 use crate::apu::envelope::{initialize_envelope, Envelope};
 use crate::apu::period::{calculate_period_divider, initalize_period, Period};
 use crate::apu::utils::bounded_wrapping_add;
@@ -41,6 +42,11 @@ pub fn step(channel: &mut PulseChannel, last_instruction_clock_cycles: u8) {
             period_divider_increment -= 1;
         } 
     }
+}
+
+pub fn trigger(channel: &mut PulseChannel) {
+    channel.enabled = true;
+    envelope::trigger(&mut channel.envelope);
 }
 
 pub fn should_trigger(channel: &PulseChannel) -> bool {

@@ -12,6 +12,13 @@ pub fn initialize_envelope() -> Envelope {
         timer: 0
     }
 }
+
+pub fn trigger(envelope: &mut Envelope) {
+    let initial_timer = envelope.initial_settings & 0b00000111;
+    let initial_volume = (envelope.initial_settings & 0b11110000) >> 4;
+    envelope.timer = initial_timer;
+    envelope.current_volume = initial_volume;
+}
     
 pub fn should_disable_dac(envelope: &Envelope) -> bool {
     envelope.initial_settings & 0xF8 == 0

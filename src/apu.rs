@@ -1,7 +1,7 @@
 use crate::apu::envelope::should_disable_dac;
 use crate::apu::noise::{initialize_noise_channel, NoiseChannel};
 use crate::apu::wave::{initialize_wave_channel, WaveChannel};
-use crate::apu::pulse::{initialize_pulse_channel, should_trigger, PulseChannel};
+use crate::apu::pulse::{initialize_pulse_channel, PulseChannel};
 use crate::apu::utils::bounded_wrapping_add;
 use crate::emulator::Emulator;
 use crate::utils::{get_bit, is_bit_set, reset_bit, set_bit};
@@ -71,8 +71,8 @@ pub fn step(emulator: &mut Emulator) {
 pub fn set_ch1_period_high(emulator: &mut Emulator, new_period_high_value: u8) {
     emulator.apu.channel1.period.high = new_period_high_value;
     
-    if should_trigger(&emulator.apu.channel1) { 
-        emulator.apu.channel1.enabled = true;
+    if pulse::should_trigger(&emulator.apu.channel1) { 
+        pulse::trigger(&mut emulator.apu.channel1); 
         emulator.apu.audio_master_control = set_bit(emulator.apu.audio_master_control, CH1_ENABLED_INDEX);
     }
 }
@@ -80,8 +80,8 @@ pub fn set_ch1_period_high(emulator: &mut Emulator, new_period_high_value: u8) {
 pub fn set_ch2_period_high(emulator: &mut Emulator, new_period_high_value: u8) {
     emulator.apu.channel2.period.high = new_period_high_value;
     
-    if should_trigger(&emulator.apu.channel2) { 
-        emulator.apu.channel2.enabled = true;
+    if pulse::should_trigger(&emulator.apu.channel2) { 
+        pulse::trigger(&mut emulator.apu.channel2);
         emulator.apu.audio_master_control = set_bit(emulator.apu.audio_master_control, CH2_ENABLED_INDEX);
     }
 }
