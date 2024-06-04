@@ -244,7 +244,7 @@ fn should_not_disable_dac_if_bits_three_through_seven_have_values_when_writing_t
 }
 
 #[test]
-fn should_reset_ch1_envelope_volume_and_timer_when_timer_decrements_to_zero() {
+fn should_update_ch1_envelope_volume_and_reset_timer_when_timer_decrements_to_zero() {
     let mut emulator = initialize_emulator();
 
     emulator.apu.audio_master_control = 0b10000001;
