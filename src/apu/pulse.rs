@@ -1,5 +1,7 @@
 use crate::apu::envelope;
 use crate::apu::envelope::{initialize_envelope, Envelope};
+use crate::apu::length;
+use crate::apu::length::{initialize_length, Length};
 use crate::apu::period::{calculate_period_divider, initalize_period, Period};
 use crate::apu::utils::bounded_wrapping_add;
 use crate::utils::is_bit_set;
@@ -9,8 +11,9 @@ pub struct PulseChannel {
     pub enabled: bool,
     pub dac_enabled: bool,
     pub sweep: u8,
-    pub length_and_duty: u8,
+    pub duty: u8,
     pub wave_duty_position: u8,
+    pub length: Length,
     pub envelope: Envelope,
     pub period: Period,
 }
@@ -20,8 +23,9 @@ pub fn initialize_pulse_channel() -> PulseChannel {
         enabled: false,
         dac_enabled: false,
         sweep: 0,
-        length_and_duty: 0,
+        duty: 0,
         wave_duty_position: 0,
+        length: initialize_length(),
         envelope: initialize_envelope(),
         period: initalize_period(),
     } 
@@ -29,6 +33,7 @@ pub fn initialize_pulse_channel() -> PulseChannel {
 
 const MAX_WAVEFORM_STEPS: u8 = 7;
 const PERIOD_HIGH_TRIGGER_INDEX: u8 = 7;
+const PERIOD_HIGH_LENGTH_ENABLED_INDEX: u8 = 6;
 
 pub fn step(channel: &mut PulseChannel, last_instruction_clock_cycles: u8) {
     if channel.enabled {
@@ -50,9 +55,27 @@ pub fn step_envelope(channel: &mut PulseChannel) {
     }
 }
 
+pub fn step_length(channel: &mut PulseChannel) {
+    if channel.enabled {
+        let length_timer_enabled = is_bit_set(channel.period.high, PERIOD_HIGH_LENGTH_ENABLED_INDEX);
+        if length_timer_enabled {
+            length::step(&mut channel.length);
+            if channel.length.timer == 0 {
+                disable(channel);
+            } 
+        }
+    }
+}
+
 pub fn trigger(channel: &mut PulseChannel) {
     channel.enabled = true;
     envelope::trigger(&mut channel.envelope);
+    length::trigger(&mut channel.length, false);
+}
+
+pub fn disable(channel: &mut PulseChannel) {
+    channel.dac_enabled = false;
+    channel.enabled = false;
 }
 
 pub fn should_trigger(channel: &PulseChannel) -> bool {

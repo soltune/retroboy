@@ -47,13 +47,17 @@ fn should_step_div_apu(emulator: &mut Emulator) -> bool {
 }
 
 fn step_div_apu(emulator: &mut Emulator) {
-    // TODO: Add logic to step length and sweep
+    // TODO: Add logic to step sweep
 
     if should_step_div_apu(emulator) {
         match emulator.apu.divider_apu {
             7 => {
                 pulse::step_envelope(&mut emulator.apu.channel1);
                 pulse::step_envelope(&mut emulator.apu.channel2);
+            }
+            0 | 2 | 4 | 6 => {
+                pulse::step_length(&mut emulator.apu.channel1);
+                pulse::step_length(&mut emulator.apu.channel2);
             }
             _ => ()
         }
@@ -98,8 +102,7 @@ pub fn set_ch1_envelope_settings(emulator: &mut Emulator, new_envelope_settings:
     emulator.apu.channel1.envelope.initial_settings = new_envelope_settings;
 
     if should_disable_dac(&emulator.apu.channel1.envelope) {
-        emulator.apu.channel1.dac_enabled = false;
-        emulator.apu.channel1.enabled = false;
+        pulse::disable(&mut emulator.apu.channel1); 
         emulator.apu.audio_master_control = reset_bit(emulator.apu.audio_master_control, CH1_ENABLED_INDEX);
     }
 }
@@ -108,8 +111,7 @@ pub fn set_ch2_envelope_settings(emulator: &mut Emulator, new_envelope_settings:
     emulator.apu.channel2.envelope.initial_settings = new_envelope_settings;
 
     if should_disable_dac(&emulator.apu.channel2.envelope) {
-        emulator.apu.channel2.dac_enabled = false;
-        emulator.apu.channel2.enabled = false;
+        pulse::disable(&mut emulator.apu.channel2); 
         emulator.apu.audio_master_control = reset_bit(emulator.apu.audio_master_control, CH2_ENABLED_INDEX);
     }
 }
@@ -120,6 +122,7 @@ mod tests;
 pub mod pulse;
 pub mod wave;
 pub mod noise;
+pub mod length;
 mod envelope;
 mod period;
 mod utils;

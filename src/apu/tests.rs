@@ -327,3 +327,103 @@ fn should_not_step_ch1_envelope_if_divider_apu_is_on_wrong_step() {
     assert_eq!(emulator.apu.channel1.envelope.current_volume, 0b1010);
     assert_eq!(emulator.apu.channel1.envelope.timer, 0b101);
 }
+
+#[test]
+fn should_step_ch1_length_timer() {
+    let mut emulator = initialize_emulator();
+
+    emulator.apu.audio_master_control = 0b10000001;
+    emulator.apu.divider_apu = 0;
+    emulator.apu.last_divider_time = 0b10011111;
+    emulator.timers.divider = 0b10100000;
+
+    emulator.apu.channel1.enabled = true;
+    emulator.apu.channel1.dac_enabled = true;
+    
+    emulator.apu.channel1.period.divider = 742;
+    emulator.apu.channel1.period.low = 26;
+    emulator.apu.channel1.period.high = 197;
+    
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    
+    emulator.apu.channel1.length.initial_value_and_duty = 0b01001110;
+    emulator.apu.channel1.length.timer = 0b00000110;
+    emulator.apu.channel1.period.high = 0b11000110;
+
+    step(&mut emulator);
+    
+    assert_eq!(emulator.apu.channel1.length.timer, 0b00000101);
+}
+
+#[test]
+fn should_not_step_ch1_length_timer_if_divider_apu_is_on_wrong_step() {
+    let mut emulator = initialize_emulator();
+
+    emulator.apu.audio_master_control = 0b10000001;
+    emulator.apu.divider_apu = 1;
+    emulator.apu.last_divider_time = 0b10011111;
+    emulator.timers.divider = 0b10100000;
+
+    emulator.apu.channel1.enabled = true;
+    emulator.apu.channel1.dac_enabled = true;
+    
+    emulator.apu.channel1.period.divider = 742;
+    emulator.apu.channel1.period.low = 26;
+    emulator.apu.channel1.period.high = 197;
+    
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    
+    emulator.apu.channel1.length.initial_value_and_duty = 0b01001110;
+    emulator.apu.channel1.length.timer = 0b00000110;
+    emulator.apu.channel1.period.high = 0b11000110;
+
+    step(&mut emulator);
+    
+    assert_eq!(emulator.apu.channel1.length.timer, 0b00000110);
+}
+
+#[test]
+fn should_disable_ch1_when_length_timer_reaches_zero() {
+    let mut emulator = initialize_emulator();
+
+    emulator.apu.audio_master_control = 0b10000001;
+    emulator.apu.divider_apu = 0;
+    emulator.apu.last_divider_time = 0b10011111;
+    emulator.timers.divider = 0b10100000;
+
+    emulator.apu.channel1.enabled = true;
+    emulator.apu.channel1.dac_enabled = true;
+    
+    emulator.apu.channel1.period.divider = 742;
+    emulator.apu.channel1.period.low = 26;
+    emulator.apu.channel1.period.high = 197;
+    
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    
+    emulator.apu.channel1.length.initial_value_and_duty = 0b01001110;
+    emulator.apu.channel1.length.timer = 0b00000001;
+    emulator.apu.channel1.period.high = 0b11000110;
+
+    step(&mut emulator);
+    
+    assert_eq!(emulator.apu.channel1.length.timer, 0b00000000);
+    assert_eq!(emulator.apu.channel1.enabled, false);
+    assert_eq!(emulator.apu.channel1.dac_enabled, false);
+}
+
+#[test]
+fn should_initialize_length_timer_when_ch1_is_triggered() {
+    let mut emulator = initialize_emulator();
+
+    emulator.apu.audio_master_control = 0b10000000;
+    emulator.apu.channel1.dac_enabled = true;
+    emulator.apu.channel1.enabled = false;
+    emulator.apu.channel1.length.initial_value_and_duty = 0b01101010;
+
+    set_ch1_period_high(&mut emulator, 0b11000000);
+    
+    assert_eq!(emulator.apu.audio_master_control, 0b10000001);
+    assert_eq!(emulator.apu.channel1.enabled, true);
+    assert_eq!(emulator.apu.channel1.period.high, 0b11000000);
+    assert_eq!(emulator.apu.channel1.length.timer, 0b00010110);
+}
