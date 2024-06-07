@@ -95,7 +95,7 @@ pub fn read_byte(emulator: &Emulator, address: u16) -> u8 {
             0xF00 if address >= 0xFF80 => memory.zero_page_ram[(address & 0x7F) as usize],
             _ => match address & 0xFF {
                 0x00 => read_joyp_byte(&emulator.keys),
-                0x10 => emulator.apu.channel1.sweep,
+                0x10 => emulator.apu.channel1.sweep.initial_settings,
                 0x11 => emulator.apu.channel1.length.initial_value_and_duty,
                 0x12 => emulator.apu.channel1.envelope.initial_settings,
                 0x13 => emulator.apu.channel1.period.low,
@@ -183,7 +183,7 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
             0xF00 if address >= 0xFF80 => memory.zero_page_ram[(address & 0x7F) as usize] = value,
             _ => match address & 0xFF {
                 0x00 => write_joyp_byte(&mut emulator.keys, value),
-                0x10 => emulator.apu.channel1.sweep = value,
+                0x10 => emulator.apu.channel1.sweep.initial_settings = value,
                 0x11 => emulator.apu.channel1.length.initial_value_and_duty = value,
                 0x12 => set_ch1_envelope_settings(emulator, value),
                 0x13 => emulator.apu.channel1.period.low = value,

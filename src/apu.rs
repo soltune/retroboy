@@ -47,19 +47,25 @@ fn should_step_div_apu(emulator: &mut Emulator) -> bool {
 }
 
 fn step_div_apu(emulator: &mut Emulator) {
-    // TODO: Add logic to step sweep
-
     if should_step_div_apu(emulator) {
-        match emulator.apu.divider_apu {
-            7 => {
-                pulse::step_envelope(&mut emulator.apu.channel1);
-                pulse::step_envelope(&mut emulator.apu.channel2);
-            }
-            0 | 2 | 4 | 6 => {
-                pulse::step_length(&mut emulator.apu.channel1);
-                pulse::step_length(&mut emulator.apu.channel2);
-            }
-            _ => ()
+        let current_divider_apu = emulator.apu.divider_apu;
+
+        let envelop_step = 7;
+        let length_steps = vec![0, 2, 4, 6];
+        let sweep_steps = vec![2, 6];
+
+        if current_divider_apu == envelop_step {
+            pulse::step_envelope(&mut emulator.apu.channel1);
+            pulse::step_envelope(&mut emulator.apu.channel2); 
+        }
+
+        if length_steps.contains(&current_divider_apu) {
+            pulse::step_length(&mut emulator.apu.channel1);
+            pulse::step_length(&mut emulator.apu.channel2); 
+        }
+        
+        if sweep_steps.contains(&current_divider_apu) {
+            pulse::step_sweep(&mut emulator.apu.channel1);
         }
 
         emulator.apu.last_divider_time = emulator.timers.divider;
@@ -84,7 +90,7 @@ pub fn set_ch1_period_high(emulator: &mut Emulator, new_period_high_value: u8) {
     emulator.apu.channel1.period.high = new_period_high_value;
     
     if pulse::should_trigger(&emulator.apu.channel1) { 
-        pulse::trigger(&mut emulator.apu.channel1); 
+        pulse::trigger(&mut emulator.apu.channel1, true); 
         emulator.apu.audio_master_control = set_bit(emulator.apu.audio_master_control, CH1_ENABLED_INDEX);
     }
 }
@@ -93,7 +99,7 @@ pub fn set_ch2_period_high(emulator: &mut Emulator, new_period_high_value: u8) {
     emulator.apu.channel2.period.high = new_period_high_value;
     
     if pulse::should_trigger(&emulator.apu.channel2) { 
-        pulse::trigger(&mut emulator.apu.channel2);
+        pulse::trigger(&mut emulator.apu.channel2, false);
         emulator.apu.audio_master_control = set_bit(emulator.apu.audio_master_control, CH2_ENABLED_INDEX);
     }
 }
@@ -123,6 +129,7 @@ pub mod pulse;
 pub mod wave;
 pub mod noise;
 pub mod length;
+pub mod sweep;
 mod envelope;
 mod period;
 mod utils;

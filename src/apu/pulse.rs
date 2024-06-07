@@ -3,6 +3,8 @@ use crate::apu::envelope::{initialize_envelope, Envelope};
 use crate::apu::length;
 use crate::apu::length::{initialize_length, Length};
 use crate::apu::period::{calculate_period_divider, initalize_period, Period};
+use crate::apu::sweep;
+use crate::apu::sweep::{initialize_sweep, Sweep};
 use crate::apu::utils::bounded_wrapping_add;
 use crate::utils::is_bit_set;
 
@@ -10,8 +12,8 @@ use crate::utils::is_bit_set;
 pub struct PulseChannel {
     pub enabled: bool,
     pub dac_enabled: bool,
-    pub sweep: u8,
     pub wave_duty_position: u8,
+    pub sweep: Sweep,
     pub length: Length,
     pub envelope: Envelope,
     pub period: Period,
@@ -21,8 +23,8 @@ pub fn initialize_pulse_channel() -> PulseChannel {
     PulseChannel {
         enabled: false,
         dac_enabled: false,
-        sweep: 0,
         wave_duty_position: 0,
+        sweep: initialize_sweep(),
         length: initialize_length(),
         envelope: initialize_envelope(),
         period: initalize_period(),
@@ -65,10 +67,19 @@ pub fn step_length(channel: &mut PulseChannel) {
     }
 }
 
-pub fn trigger(channel: &mut PulseChannel) {
+pub fn step_sweep(channel: &mut PulseChannel) {
+    if channel.enabled {
+        sweep::step(channel);
+    }
+}
+
+pub fn trigger(channel: &mut PulseChannel, with_sweep: bool) {
     channel.enabled = true;
     envelope::trigger(&mut channel.envelope);
     length::trigger(&mut channel.length, false);
+    if with_sweep {
+        sweep::trigger(channel);
+    }
 }
 
 pub fn disable(channel: &mut PulseChannel) {
