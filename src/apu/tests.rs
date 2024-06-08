@@ -2,7 +2,7 @@ use crate::emulator::initialize_emulator;
 use super::*;
 
 #[test]
-fn should_decrement_period_divider() {
+fn should_decrement_period_divider_for_channel_1() {
     let mut emulator = initialize_emulator();
     emulator.apu.audio_master_control = 0b10000001;
     emulator.apu.channel1.enabled = true;
@@ -15,7 +15,7 @@ fn should_decrement_period_divider() {
 }
 
 #[test]
-fn should_increment_period_divider_for_channel_2() {
+fn should_decrement_period_divider_for_channel_2() {
     let mut emulator = initialize_emulator();
     emulator.apu.audio_master_control = 0b10000010;
     emulator.apu.channel2.enabled = true;
@@ -536,4 +536,46 @@ fn should_properly_initialize_sweep_timer_and_shadow_frequency_on_trigger() {
     assert_eq!(emulator.apu.channel1.sweep.timer, 0b010);
     assert_eq!(emulator.apu.channel1.sweep.shadow_frequency, 0b01000011010);
     assert_eq!(emulator.apu.channel1.sweep.enabled, true);
+}
+
+#[test]
+fn should_decrement_period_divider_for_channel_3() {
+    let mut emulator = initialize_emulator();
+    emulator.apu.audio_master_control = 0b10000100;
+    emulator.apu.channel3.dac_enabled = true;
+    emulator.apu.channel3.enabled = true;
+    emulator.apu.channel3.period.divider = 742;
+    emulator.apu.channel3.period.low = 26;
+    emulator.apu.channel3.period.high = 197;
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    step(&mut emulator);
+    assert_eq!(emulator.apu.channel3.period.divider, 740);
+}
+
+#[test]
+fn should_reload_period_divider_once_it_reaches_zero_for_channel_3() {
+    let mut emulator = initialize_emulator();
+    emulator.apu.audio_master_control = 0b10000001;
+    emulator.apu.channel3.enabled = true;
+    emulator.apu.channel3.dac_enabled = true;
+    emulator.apu.channel3.period.divider = 2;
+    emulator.apu.channel3.period.low = 26;
+    emulator.apu.channel3.period.high = 197;
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    step(&mut emulator);
+    assert_eq!(emulator.apu.channel3.period.divider, 742);
+}
+
+#[test]
+fn should_increment_wave_position_when_period_divider_reaches_zero_for_channel_3() {
+    let mut emulator = initialize_emulator();
+    emulator.apu.audio_master_control = 0b10000100;
+    emulator.apu.channel3.enabled = true;
+    emulator.apu.channel3.dac_enabled = true;
+    emulator.apu.channel3.period.divider = 2;
+    emulator.apu.channel3.period.low = 26;
+    emulator.apu.channel3.period.high = 197;
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    step(&mut emulator);
+    assert_eq!(emulator.apu.channel3.wave_position, 1);
 }

@@ -82,6 +82,7 @@ pub fn step(emulator: &mut Emulator) {
         let instruction_clock_cycles = emulator.cpu.clock.instruction_clock_cycles;
         pulse::step(&mut emulator.apu.channel1, instruction_clock_cycles);
         pulse::step(&mut emulator.apu.channel2, instruction_clock_cycles);
+        wave::step(&mut emulator.apu.channel3, instruction_clock_cycles);
         step_div_apu(emulator);
     }    
 }
