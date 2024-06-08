@@ -38,7 +38,7 @@ const PERIOD_HIGH_LENGTH_ENABLED_INDEX: u8 = 6;
 
 pub fn step(channel: &mut PulseChannel, last_instruction_clock_cycles: u8) {
     if channel.enabled {
-        period::step(&mut channel.period, last_instruction_clock_cycles, 4, || {
+        period::step(&mut channel.period, last_instruction_clock_cycles / 4, || {
             channel.wave_duty_position = bounded_wrapping_add(channel.wave_duty_position, MAX_WAVEFORM_STEPS);
         });
     }

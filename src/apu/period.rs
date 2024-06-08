@@ -13,15 +13,14 @@ pub fn initalize_period() -> Period {
     }
 }
 
-pub fn step(period: &mut Period, last_instruction_clock_cycles: u8, cycle_rate: u8, mut handle_divider_reload: impl FnMut()) {
-    let mut period_divider_increment = (last_instruction_clock_cycles / cycle_rate) as u16;
-    while period_divider_increment > 0 {
+pub fn step(period: &mut Period, mut divider_increment: u8, mut handle_divider_reload: impl FnMut()) {
+    while divider_increment > 0 {
         period.divider -= 1;
         if period.divider == 0 {
             period.divider = calculate_period_divider(&period);
             handle_divider_reload();
         }
-        period_divider_increment -= 1;
+        divider_increment -= 1;
     } 
 }
 
