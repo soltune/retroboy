@@ -2,7 +2,8 @@ use crate::apu::envelope;
 use crate::apu::envelope::{initialize_envelope, Envelope};
 use crate::apu::length;
 use crate::apu::length::{initialize_length, Length};
-use crate::apu::period::{calculate_period_divider, initalize_period, Period};
+use crate::apu::period;
+use crate::apu::period::{initalize_period, Period};
 use crate::apu::sweep;
 use crate::apu::sweep::{initialize_sweep, Sweep};
 use crate::apu::utils::bounded_wrapping_add;
@@ -37,15 +38,9 @@ const PERIOD_HIGH_LENGTH_ENABLED_INDEX: u8 = 6;
 
 pub fn step(channel: &mut PulseChannel, last_instruction_clock_cycles: u8) {
     if channel.enabled {
-        let mut period_divider_increment = (last_instruction_clock_cycles / 4) as u16;
-        while period_divider_increment > 0 {
-            channel.period.divider -= 1;
-            if channel.period.divider == 0 {
-                channel.period.divider = calculate_period_divider(&channel.period);
-                channel.wave_duty_position = bounded_wrapping_add(channel.wave_duty_position, MAX_WAVEFORM_STEPS)
-            }
-            period_divider_increment -= 1;
-        } 
+        period::step(&mut channel.period, last_instruction_clock_cycles, 4, || {
+            channel.wave_duty_position = bounded_wrapping_add(channel.wave_duty_position, MAX_WAVEFORM_STEPS);
+        });
     }
 }
 
