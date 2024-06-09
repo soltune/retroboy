@@ -36,6 +36,7 @@ pub fn initialize_apu() -> ApuState {
 // Work In Progress
 const CH1_ENABLED_INDEX: u8 = 0;
 const CH2_ENABLED_INDEX: u8 = 1;
+const CH3_ENABLED_INDEX: u8 = 2;
 const APU_ENABLED_INDEX: u8 = 7;
 const MAX_DIV_APU_STEPS: u8 = 7;
 
@@ -102,6 +103,15 @@ pub fn set_ch2_period_high(emulator: &mut Emulator, new_period_high_value: u8) {
     if pulse::should_trigger(&emulator.apu.channel2) { 
         pulse::trigger(&mut emulator.apu.channel2, false);
         emulator.apu.audio_master_control = set_bit(emulator.apu.audio_master_control, CH2_ENABLED_INDEX);
+    }
+}
+
+pub fn set_ch3_period_high(emulator: &mut Emulator, new_period_high_value: u8) {
+    emulator.apu.channel3.period.high = new_period_high_value;
+
+    if wave::should_trigger(&emulator.apu.channel3) {
+        wave::trigger(&mut emulator.apu.channel3);
+        emulator.apu.audio_master_control = set_bit(emulator.apu.audio_master_control, CH3_ENABLED_INDEX);
     }
 }
 

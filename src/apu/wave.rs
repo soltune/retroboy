@@ -1,7 +1,9 @@
 use crate::apu::period;
 use crate::apu::period::{initalize_period, Period};
+use crate::apu::length;
 use crate::apu::length::{initialize_length, Length};
 use crate::apu::utils::bounded_wrapping_add;
+use crate::utils::is_bit_set;
 
 #[derive(Debug)]
 pub struct WaveChannel {
@@ -25,6 +27,7 @@ pub fn initialize_wave_channel() -> WaveChannel {
 }
 
 const MAX_WAVE_SAMPLE_STEPS: u8 = 32;
+const PERIOD_HIGH_TRIGGER_INDEX: u8 = 7;
 
 pub fn step(channel: &mut WaveChannel, last_instruction_clock_cycles: u8) {
     if channel.enabled {
@@ -32,4 +35,13 @@ pub fn step(channel: &mut WaveChannel, last_instruction_clock_cycles: u8) {
             channel.wave_position = bounded_wrapping_add(channel.wave_position, MAX_WAVE_SAMPLE_STEPS);
         });
     }
+}
+
+pub fn trigger(channel: &mut WaveChannel) {
+    channel.enabled = true;
+    length::trigger(&mut channel.length, true);
+}
+
+pub fn should_trigger(channel: &WaveChannel) -> bool {
+   channel.dac_enabled && is_bit_set(channel.period.high, PERIOD_HIGH_TRIGGER_INDEX)
 }

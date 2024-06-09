@@ -577,3 +577,15 @@ fn should_increment_wave_position_when_period_divider_reaches_zero_for_channel_3
     step(&mut emulator);
     assert_eq!(emulator.apu.channel3.wave_position, 1);
 }
+
+#[test]
+fn should_trigger_channel_3_when_writing_to_channel_3_period_high() {
+    let mut emulator = initialize_emulator();
+    emulator.apu.audio_master_control = 0b10000000;
+    emulator.apu.channel3.dac_enabled = true;
+    emulator.apu.channel3.enabled = false;
+    set_ch3_period_high(&mut emulator, 0b10000000);
+    assert_eq!(emulator.apu.audio_master_control, 0b10000100);
+    assert_eq!(emulator.apu.channel3.enabled, true);
+    assert_eq!(emulator.apu.channel3.period.high, 0b10000000);
+}
