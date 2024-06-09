@@ -2,6 +2,32 @@ use crate::emulator::initialize_emulator;
 use super::*;
 
 #[test]
+fn should_not_decrement_period_divider_when_apu_is_off() {
+    let mut emulator = initialize_emulator();
+    emulator.apu.audio_master_control = 0;
+    emulator.apu.channel1.enabled = true;
+    emulator.apu.channel1.period.divider = 742;
+    emulator.apu.channel1.period.low = 26;
+    emulator.apu.channel1.period.high = 197;
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    step(&mut emulator);
+    assert_eq!(emulator.apu.channel1.period.divider, 742); 
+}
+
+#[test]
+fn should_not_decrement_period_divider_if_channel_1_is_off() {
+    let mut emulator = initialize_emulator();
+    emulator.apu.audio_master_control = 0b10000000;
+    emulator.apu.channel1.enabled = false;
+    emulator.apu.channel1.period.divider = 742;
+    emulator.apu.channel1.period.low = 26;
+    emulator.apu.channel1.period.high = 197;
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    step(&mut emulator);
+    assert_eq!(emulator.apu.channel1.period.divider, 742); 
+}
+
+#[test]
 fn should_decrement_period_divider_for_channel_1() {
     let mut emulator = initialize_emulator();
     emulator.apu.audio_master_control = 0b10000001;
@@ -25,32 +51,6 @@ fn should_decrement_period_divider_for_channel_2() {
     emulator.cpu.clock.instruction_clock_cycles = 4;
     step(&mut emulator);
     assert_eq!(emulator.apu.channel2.period.divider, 741); 
-}
-
-#[test]
-fn should_do_nothing_if_apu_is_off() {
-    let mut emulator = initialize_emulator();
-    emulator.apu.audio_master_control = 0;
-    emulator.apu.channel1.enabled = true;
-    emulator.apu.channel1.period.divider = 742;
-    emulator.apu.channel1.period.low = 26;
-    emulator.apu.channel1.period.high = 197;
-    emulator.cpu.clock.instruction_clock_cycles = 4;
-    step(&mut emulator);
-    assert_eq!(emulator.apu.channel1.period.divider, 742); 
-}
-
-#[test]
-fn should_do_nothing_if_ch1_is_off() {
-    let mut emulator = initialize_emulator();
-    emulator.apu.audio_master_control = 0b10000000;
-    emulator.apu.channel1.enabled = false;
-    emulator.apu.channel1.period.divider = 742;
-    emulator.apu.channel1.period.low = 26;
-    emulator.apu.channel1.period.high = 197;
-    emulator.cpu.clock.instruction_clock_cycles = 4;
-    step(&mut emulator);
-    assert_eq!(emulator.apu.channel1.period.divider, 742); 
 }
 
 #[test]
@@ -80,7 +80,7 @@ fn should_reload_period_divider_once_it_reaches_zero() {
 }
 
 #[test]
-fn should_properly_wrap_period_divider_value_with_eight_instruction_cycles() {
+fn should_properly_wrap_period_divider_value_when_decrementing_it() {
     let mut emulator = initialize_emulator();
     emulator.apu.audio_master_control = 0b10000001;
     emulator.apu.channel1.enabled = true;
@@ -100,6 +100,7 @@ fn should_increment_wave_duty_position_when_period_divider_reaches_zero() {
     emulator.apu.channel1.period.divider = 1;
     emulator.apu.channel1.period.low = 26;
     emulator.apu.channel1.period.high = 197;
+    emulator.apu.channel1.wave_duty_position = 0;
     emulator.cpu.clock.instruction_clock_cycles = 4;
     step(&mut emulator);
     assert_eq!(emulator.apu.channel1.wave_duty_position, 1);
@@ -154,7 +155,7 @@ fn should_wrap_div_apu_to_zero_when_increased_above_seven() {
 }
 
 #[test]
-fn should_trigger_ch1_when_writing_to_ch1_period_high() {
+fn should_trigger_channel_1_when_writing_to_channel_1_period_high() {
     let mut emulator = initialize_emulator();
     emulator.apu.audio_master_control = 0b10000000;
     emulator.apu.channel1.dac_enabled = true;
@@ -169,7 +170,7 @@ fn should_trigger_ch1_when_writing_to_ch1_period_high() {
 }
 
 #[test]
-fn should_trigger_ch2_when_writing_to_ch2_period_high() {
+fn should_trigger_channel_2_when_writing_to_channel_2_period_high() {
     let mut emulator = initialize_emulator();
     emulator.apu.audio_master_control = 0b10000000;
     emulator.apu.channel2.dac_enabled = true;
@@ -181,7 +182,7 @@ fn should_trigger_ch2_when_writing_to_ch2_period_high() {
 }
 
 #[test]
-fn should_not_trigger_ch1_if_trigger_bit_is_not_set_when_writing_to_ch1_period_high() {
+fn should_not_trigger_channel_1_if_trigger_bit_is_not_set_when_writing_to_channel_1_period_high() {
     let mut emulator = initialize_emulator();
     emulator.apu.audio_master_control = 0b10000000;
     emulator.apu.channel1.dac_enabled = true;
@@ -193,7 +194,7 @@ fn should_not_trigger_ch1_if_trigger_bit_is_not_set_when_writing_to_ch1_period_h
 }
 
 #[test]
-fn should_not_trigger_ch1_if_dac_is_disabled_when_writing_to_ch1_period_high() {
+fn should_not_trigger_channel_1_if_dac_is_disabled_when_writing_to_channel_1_period_high() {
     let mut emulator = initialize_emulator();
     emulator.apu.audio_master_control = 0b10000000;
     emulator.apu.channel1.dac_enabled = false;
@@ -205,7 +206,7 @@ fn should_not_trigger_ch1_if_dac_is_disabled_when_writing_to_ch1_period_high() {
 }
 
 #[test]
-fn should_disable_dac_and_ch1_when_writing_to_ch1_volume() {
+fn should_disable_dac_and_channel_1_when_writing_to_channel_1_volume() {
     let mut emulator = initialize_emulator();
     emulator.apu.audio_master_control = 0b10000001;
     emulator.apu.channel1.dac_enabled = true;
@@ -218,7 +219,7 @@ fn should_disable_dac_and_ch1_when_writing_to_ch1_volume() {
 }
 
 #[test]
-fn should_disable_dac_and_ch2_when_writing_to_ch2_volume() {
+fn should_disable_dac_and_chanel_2_when_writing_to_channel_2_volume() {
     let mut emulator = initialize_emulator();
     emulator.apu.audio_master_control = 0b10000010;
     emulator.apu.channel2.dac_enabled = true;
@@ -231,7 +232,7 @@ fn should_disable_dac_and_ch2_when_writing_to_ch2_volume() {
 }
 
 #[test]
-fn should_not_disable_dac_if_bits_three_through_seven_have_values_when_writing_to_ch1_volume() {
+fn should_not_disable_dac_if_bits_three_through_seven_have_values_when_writing_to_channel_1_volume() {
     let mut emulator = initialize_emulator();
     emulator.apu.audio_master_control = 0b10000001;
     emulator.apu.channel1.dac_enabled = true;
@@ -244,7 +245,7 @@ fn should_not_disable_dac_if_bits_three_through_seven_have_values_when_writing_t
 }
 
 #[test]
-fn should_update_ch1_envelope_volume_and_reset_timer_when_timer_decrements_to_zero() {
+fn should_update_channel_1_envelope_volume_and_reset_timer_when_timer_decrements_to_zero() {
     let mut emulator = initialize_emulator();
 
     emulator.apu.audio_master_control = 0b10000001;
@@ -272,7 +273,7 @@ fn should_update_ch1_envelope_volume_and_reset_timer_when_timer_decrements_to_ze
 }
 
 #[test]
-fn should_decrement_ch1_envelope_timer() {
+fn should_decrement_channel_1_envelope_timer() {
     let mut emulator = initialize_emulator();
 
     emulator.apu.audio_master_control = 0b10000001;
@@ -301,7 +302,7 @@ fn should_decrement_ch1_envelope_timer() {
 
 
 #[test]
-fn should_not_step_ch1_envelope_if_divider_apu_is_on_wrong_step() {
+fn should_not_step_channel_1_envelope_if_divider_apu_is_on_wrong_step() {
     let mut emulator = initialize_emulator();
 
     emulator.apu.audio_master_control = 0b10000001;
@@ -329,7 +330,7 @@ fn should_not_step_ch1_envelope_if_divider_apu_is_on_wrong_step() {
 }
 
 #[test]
-fn should_step_ch1_length_timer() {
+fn should_step_channel_1_length_timer() {
     let mut emulator = initialize_emulator();
 
     emulator.apu.audio_master_control = 0b10000001;
@@ -356,7 +357,7 @@ fn should_step_ch1_length_timer() {
 }
 
 #[test]
-fn should_not_step_ch1_length_timer_if_divider_apu_is_on_wrong_step() {
+fn should_not_step_channel_1_length_timer_if_divider_apu_is_on_wrong_step() {
     let mut emulator = initialize_emulator();
 
     emulator.apu.audio_master_control = 0b10000001;
@@ -383,7 +384,7 @@ fn should_not_step_ch1_length_timer_if_divider_apu_is_on_wrong_step() {
 }
 
 #[test]
-fn should_disable_ch1_when_length_timer_reaches_zero() {
+fn should_disable_channel_1_when_length_timer_reaches_zero() {
     let mut emulator = initialize_emulator();
 
     emulator.apu.audio_master_control = 0b10000001;
@@ -401,27 +402,24 @@ fn should_disable_ch1_when_length_timer_reaches_zero() {
     emulator.cpu.clock.instruction_clock_cycles = 4;
     
     emulator.apu.channel1.length.initial_value_and_duty = 0b01001110;
-    emulator.apu.channel1.length.timer = 0b00000001;
+    emulator.apu.channel1.length.timer = 0b1;
     emulator.apu.channel1.period.high = 0b11000110;
 
     step(&mut emulator);
     
-    assert_eq!(emulator.apu.channel1.length.timer, 0b00000000);
+    assert_eq!(emulator.apu.channel1.length.timer, 0);
     assert_eq!(emulator.apu.channel1.enabled, false);
     assert_eq!(emulator.apu.channel1.dac_enabled, false);
 }
 
 #[test]
-fn should_initialize_length_timer_when_ch1_is_triggered() {
+fn should_initialize_length_timer_when_channel_1_is_triggered() {
     let mut emulator = initialize_emulator();
-
     emulator.apu.audio_master_control = 0b10000000;
     emulator.apu.channel1.dac_enabled = true;
     emulator.apu.channel1.enabled = false;
     emulator.apu.channel1.length.initial_value_and_duty = 0b01101010;
-
     set_ch1_period_high(&mut emulator, 0b11000000);
-    
     assert_eq!(emulator.apu.audio_master_control, 0b10000001);
     assert_eq!(emulator.apu.channel1.enabled, true);
     assert_eq!(emulator.apu.channel1.period.high, 0b11000000);
@@ -429,7 +427,7 @@ fn should_initialize_length_timer_when_ch1_is_triggered() {
 }
 
 #[test]
-fn should_step_ch1_sweep() {
+fn should_decrement_channel_1_sweep_timer() {
     let mut emulator = initialize_emulator();
 
     emulator.apu.audio_master_control = 0b10000001;
@@ -457,7 +455,7 @@ fn should_step_ch1_sweep() {
 }
 
 #[test]
-fn should_disable_ch1_on_sweep_overflow() {
+fn should_disable_channel_1_on_sweep_overflow() {
     let mut emulator = initialize_emulator();
 
     emulator.apu.audio_master_control = 0b10000001;

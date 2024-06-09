@@ -1,8 +1,7 @@
 use crate::apu::period;
 use crate::apu::period::{initalize_period, Period};
 use crate::apu::length::{initialize_length, Length};
-
-use super::utils::bounded_wrapping_add;
+use crate::apu::utils::bounded_wrapping_add;
 
 #[derive(Debug)]
 pub struct WaveChannel {
