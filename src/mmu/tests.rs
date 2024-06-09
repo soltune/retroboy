@@ -1,4 +1,4 @@
-use crate::emulator::initialize_emulator;
+use crate::emulator::{self, initialize_emulator};
 
 use super::*;
 
@@ -48,6 +48,9 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.memory.zero_page_ram[0x21] = 0x44;
     emulator.memory.zero_page_ram[0x5B] = 0x5F;
 
+    emulator.memory.wave_pattern_ram[0x0] = 0xB1;
+    emulator.memory.wave_pattern_ram[0x1] = 0xD2;
+
     emulator.interrupts.enabled = 0x1F;
     emulator.interrupts.flags = 0xA;
 
@@ -85,6 +88,10 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.apu.channel2.envelope.initial_settings = 0xC1;
     emulator.apu.channel2.period.low = 0x14;
     emulator.apu.channel2.period.high = 0x24;
+
+    emulator.apu.channel3.dac_enabled = true;
+    emulator.apu.channel3.volume = 0x60;
+    emulator.apu.channel3.period.high = 0x44;
 
     emulator.memory.in_bios = false;
 
@@ -540,4 +547,29 @@ fn reads_from_ch2_period_low() {
 fn reads_from_ch2_period_high() {
     let emulator = setup_emulator_with_test_memory();
     assert_eq!(read_byte(&emulator, 0xFF19), 0x24);
+}
+
+#[test]
+fn reads_from_ch3_dac_enabled() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xFF1A), 0x80);
+}
+
+#[test]
+fn reads_from_ch3_output() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xFF1C), 0x60);
+}
+
+#[test]
+fn reads_from_ch3_period_high() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xFF1E), 0x44);
+}
+
+#[test]
+fn reads_from_wave_pattern_ram() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xFF30), 0xB1);
+    assert_eq!(read_byte(&emulator, 0xFF31), 0xD2);
 }
