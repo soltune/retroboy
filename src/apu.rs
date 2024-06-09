@@ -37,6 +37,7 @@ pub fn initialize_apu() -> ApuState {
 const CH1_ENABLED_INDEX: u8 = 0;
 const CH2_ENABLED_INDEX: u8 = 1;
 const CH3_ENABLED_INDEX: u8 = 2;
+const CH3_DAC_ENABLED_INDEX: u8 = 7;
 const APU_ENABLED_INDEX: u8 = 7;
 const MAX_DIV_APU_STEPS: u8 = 7;
 
@@ -130,6 +131,17 @@ pub fn set_ch2_envelope_settings(emulator: &mut Emulator, new_envelope_settings:
     if should_disable_dac(&emulator.apu.channel2.envelope) {
         pulse::disable(&mut emulator.apu.channel2); 
         emulator.apu.audio_master_control = reset_bit(emulator.apu.audio_master_control, CH2_ENABLED_INDEX);
+    }
+}
+
+pub fn set_ch3_dac_enabled(emulator: &mut Emulator, dac_enabled_register_value: u8) {
+    let enabled = is_bit_set(dac_enabled_register_value, CH3_DAC_ENABLED_INDEX);
+
+    emulator.apu.channel3.dac_enabled = enabled;
+    
+    if !enabled {
+        wave::disable(&mut emulator.apu.channel3);
+        emulator.apu.audio_master_control = reset_bit(emulator.apu.audio_master_control, CH3_ENABLED_INDEX);
     }
 }
 

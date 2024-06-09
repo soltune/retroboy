@@ -589,3 +589,14 @@ fn should_trigger_channel_3_when_writing_to_channel_3_period_high() {
     assert_eq!(emulator.apu.channel3.enabled, true);
     assert_eq!(emulator.apu.channel3.period.high, 0b10000000);
 }
+
+#[test]
+fn should_disable_channel_3_when_restting_bit_7_of_dac_enabled_register() {
+    let mut emulator = initialize_emulator();
+    emulator.apu.audio_master_control = 0b10000100;
+    emulator.apu.channel3.dac_enabled = true;
+    emulator.apu.channel3.enabled = true;
+    set_ch3_dac_enabled(&mut emulator, 0);
+    assert_eq!(emulator.apu.audio_master_control, 0b10000000);
+    assert_eq!(emulator.apu.channel3.enabled, false);
+}

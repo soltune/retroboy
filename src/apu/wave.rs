@@ -42,6 +42,11 @@ pub fn trigger(channel: &mut WaveChannel) {
     length::trigger(&mut channel.length, true);
 }
 
+pub fn disable(channel: &mut WaveChannel) {
+    channel.dac_enabled = false;
+    channel.enabled = false;
+}
+
 pub fn should_trigger(channel: &WaveChannel) -> bool {
    channel.dac_enabled && is_bit_set(channel.period.high, PERIOD_HIGH_TRIGGER_INDEX)
 }
