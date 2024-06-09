@@ -79,12 +79,12 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.apu.master_volume = 0xC1;
 
     emulator.apu.channel1.sweep.initial_settings = 0xDD;
-    emulator.apu.channel1.length.initial_value_and_duty = 0xB0;
+    emulator.apu.channel1.length.initial_settings = 0xB0;
     emulator.apu.channel1.envelope.initial_settings = 0xAA;
     emulator.apu.channel1.period.low = 0xB2;
     emulator.apu.channel1.period.high = 0xC2;
 
-    emulator.apu.channel2.length.initial_value_and_duty = 0xC0;
+    emulator.apu.channel2.length.initial_settings = 0xC0;
     emulator.apu.channel2.envelope.initial_settings = 0xC1;
     emulator.apu.channel2.period.low = 0x14;
     emulator.apu.channel2.period.high = 0x24;

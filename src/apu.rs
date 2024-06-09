@@ -63,7 +63,8 @@ fn step_div_apu(emulator: &mut Emulator) {
 
         if length_steps.contains(&current_divider_apu) {
             pulse::step_length(&mut emulator.apu.channel1);
-            pulse::step_length(&mut emulator.apu.channel2); 
+            pulse::step_length(&mut emulator.apu.channel2);
+            wave::step_length(&mut emulator.apu.channel3); 
         }
         
         if sweep_steps.contains(&current_divider_apu) {
@@ -134,8 +135,8 @@ pub fn set_ch2_envelope_settings(emulator: &mut Emulator, new_envelope_settings:
     }
 }
 
-pub fn set_ch3_dac_enabled(emulator: &mut Emulator, dac_enabled_register_value: u8) {
-    let enabled = is_bit_set(dac_enabled_register_value, CH3_DAC_ENABLED_INDEX);
+pub fn set_ch3_dac_enabled(emulator: &mut Emulator, new_dac_enabled_register_value: u8) {
+    let enabled = is_bit_set(new_dac_enabled_register_value, CH3_DAC_ENABLED_INDEX);
 
     emulator.apu.channel3.dac_enabled = enabled;
     

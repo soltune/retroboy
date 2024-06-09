@@ -28,12 +28,25 @@ pub fn initialize_wave_channel() -> WaveChannel {
 
 const MAX_WAVE_SAMPLE_STEPS: u8 = 32;
 const PERIOD_HIGH_TRIGGER_INDEX: u8 = 7;
+const PERIOD_HIGH_LENGTH_ENABLED_INDEX: u8 = 6;
 
 pub fn step(channel: &mut WaveChannel, last_instruction_clock_cycles: u8) {
     if channel.enabled {
         period::step(&mut channel.period, last_instruction_clock_cycles / 2, || {
             channel.wave_position = bounded_wrapping_add(channel.wave_position, MAX_WAVE_SAMPLE_STEPS);
         });
+    }
+}
+
+pub fn step_length(channel: &mut WaveChannel) {
+    if channel.enabled {
+        let length_timer_enabled = is_bit_set(channel.period.high, PERIOD_HIGH_LENGTH_ENABLED_INDEX);
+        if length_timer_enabled {
+            length::step(&mut channel.length);
+            if channel.length.timer == 0 {
+                disable(channel);
+            } 
+        }
     }
 }
 
