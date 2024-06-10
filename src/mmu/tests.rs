@@ -93,6 +93,11 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.apu.channel3.volume = 0x60;
     emulator.apu.channel3.period.high = 0x44;
 
+    emulator.apu.channel4.length.initial_settings = 0x1A;
+    emulator.apu.channel4.envelope.initial_settings = 0xD2;
+    emulator.apu.channel4.polynomial = 0xCE;
+    emulator.apu.channel4.control = 0xC0;
+
     emulator.memory.in_bios = false;
 
     emulator
@@ -572,4 +577,28 @@ fn reads_from_wave_pattern_ram() {
     let emulator = setup_emulator_with_test_memory();
     assert_eq!(read_byte(&emulator, 0xFF30), 0xB1);
     assert_eq!(read_byte(&emulator, 0xFF31), 0xD2);
+}
+
+#[test]
+fn reads_from_ch4_length() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xFF20), 0x1A);
+}
+
+#[test]
+fn reads_from_ch4_envelope() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xFF21), 0xD2);
+}
+
+#[test]
+fn reads_from_ch4_polynomial() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xFF22), 0xCE);
+}
+
+#[test]
+fn reads_from_ch4_control() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xFF23), 0xC0);
 }
