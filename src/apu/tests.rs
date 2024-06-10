@@ -641,3 +641,33 @@ fn should_step_channel_3_length_timer() {
     
     assert_eq!(emulator.apu.channel3.length.timer, 0b00000101);
 }
+
+#[test]
+fn should_not_decrement_period_divider_for_channel_4_if_only_four_instruction_cycles() {
+    let mut emulator = initialize_emulator();
+    emulator.apu.audio_master_control = 0b10001000;
+    emulator.apu.channel4.dac_enabled = true;
+    emulator.apu.channel4.enabled = true;
+    emulator.apu.channel4.period_divider = 742;
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    step(&mut emulator);
+    assert_eq!(emulator.apu.channel4.period_divider, 742);
+}
+
+#[test]
+fn should_decrement_period_divider_for_channel_4_after_sixteen_instruction_cycles() {
+    let mut emulator = initialize_emulator();
+    emulator.apu.audio_master_control = 0b10001000;
+    emulator.apu.channel4.dac_enabled = true;
+    emulator.apu.channel4.enabled = true;
+    emulator.apu.channel4.period_divider = 742;
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    step(&mut emulator);
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    step(&mut emulator);
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    step(&mut emulator);
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    step(&mut emulator);
+    assert_eq!(emulator.apu.channel4.period_divider, 741); 
+}

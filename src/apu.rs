@@ -52,11 +52,11 @@ fn step_div_apu(emulator: &mut Emulator) {
     if should_step_div_apu(emulator) {
         let current_divider_apu = emulator.apu.divider_apu;
 
-        let envelop_step = 7;
+        let envelope_step = 7;
         let length_steps = vec![0, 2, 4, 6];
         let sweep_steps = vec![2, 6];
 
-        if current_divider_apu == envelop_step {
+        if current_divider_apu == envelope_step {
             pulse::step_envelope(&mut emulator.apu.channel1);
             pulse::step_envelope(&mut emulator.apu.channel2); 
         }
@@ -86,6 +86,7 @@ pub fn step(emulator: &mut Emulator) {
         pulse::step(&mut emulator.apu.channel1, instruction_clock_cycles);
         pulse::step(&mut emulator.apu.channel2, instruction_clock_cycles);
         wave::step(&mut emulator.apu.channel3, instruction_clock_cycles);
+        noise::step(&mut emulator.apu.channel4, instruction_clock_cycles);
         step_div_apu(emulator);
     }    
 }
