@@ -698,10 +698,10 @@ fn should_reload_period_divider_for_channel_4_once_it_decrements_to_zero() {
 }
 
 #[test]
-fn should_calculate_next_lfsr_value_correctly() {
+fn should_calculate_next_lfsr_value_correctly_for_channel_4() {
     let mut emulator = initialize_emulator();
     initialize_noise_channel(&mut emulator);
-    
+
     emulator.apu.channel4.period_divider = 1;
     emulator.apu.channel4.polynomial = 0b00110110;
     emulator.apu.channel4.lfsr = 0b110010100101101;
@@ -709,4 +709,18 @@ fn should_calculate_next_lfsr_value_correctly() {
     step_apu_multiple_times(&mut emulator, 4);
     
     assert_eq!(emulator.apu.channel4.lfsr, 0b111001010010110);
+}
+
+#[test]
+fn should_calculate_next_lfsr_value_correctly_in_width_mode_for_channel_4() {
+    let mut emulator = initialize_emulator();
+    initialize_noise_channel(&mut emulator);
+
+    emulator.apu.channel4.period_divider = 1;
+    emulator.apu.channel4.polynomial = 0b00111110;
+    emulator.apu.channel4.lfsr = 0b110010100101101;
+
+    step_apu_multiple_times(&mut emulator, 4);
+    
+    assert_eq!(emulator.apu.channel4.lfsr, 0b111001011010110);
 }
