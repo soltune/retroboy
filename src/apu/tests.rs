@@ -671,3 +671,28 @@ fn should_decrement_period_divider_for_channel_4_after_sixteen_instruction_cycle
     step(&mut emulator);
     assert_eq!(emulator.apu.channel4.period_divider, 741); 
 }
+
+#[test]
+fn should_reload_period_divider_for_channel_4_once_it_decrements_to_zero() {
+    let mut emulator = initialize_emulator();
+    emulator.apu.audio_master_control = 0b10001000;
+    emulator.apu.channel4.dac_enabled = true;
+    emulator.apu.channel4.enabled = true;
+    emulator.apu.channel4.period_divider = 1;
+
+    // Base Divisor = 0b110 = 6 which maps to 96
+    // Shift Amount = 0b0011 = 3
+    // 96 << 3 = 768
+    emulator.apu.channel4.polynomial = 0b00110110;
+    
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    step(&mut emulator);
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    step(&mut emulator);
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    step(&mut emulator);
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    step(&mut emulator);
+    
+    assert_eq!(emulator.apu.channel4.period_divider, 768); 
+}

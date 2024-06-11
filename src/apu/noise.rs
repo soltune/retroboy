@@ -33,10 +33,34 @@ pub fn initialize_noise_channel() -> NoiseChannel {
 // divider every 16 T-cycles.
 const PERIOD_DIVIDER_RATE_IN_INSTRUCTION_CYCLES: u8 = 16;
 
+fn as_divisor(divisor_code: u8) -> u16 {
+    match divisor_code {
+        0 => 8,
+        1 => 16,
+        2 => 32,
+        3 => 48,
+        4 => 64,
+        5 => 80,
+        6 => 96,
+        7 => 112,
+        _ => panic!("Invalid divisor code.")
+    }
+}
+
+fn calculate_period_divider(channel: &NoiseChannel) -> u16 {
+    let shift_amount = (channel.polynomial & 0b11110000) >> 4;
+    let divisor_code = channel.polynomial & 0b111;
+    let divisor = as_divisor(divisor_code);
+    divisor << shift_amount
+}
+
 pub fn step(channel: &mut NoiseChannel, last_instruction_clock_cycles: u8) {
     channel.instruction_cycles += last_instruction_clock_cycles;
     if channel.instruction_cycles >= PERIOD_DIVIDER_RATE_IN_INSTRUCTION_CYCLES {
         channel.instruction_cycles = 0;
         channel.period_divider -= 1;
+        if channel.period_divider == 0 {
+            channel.period_divider = calculate_period_divider(channel);
+        }
     }
 }
