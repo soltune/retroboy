@@ -648,6 +648,12 @@ fn initialize_noise_channel(emulator: &mut Emulator) {
     emulator.apu.channel4.enabled = true; 
 }
 
+fn initialize_disabled_noise_channel(emulator: &mut Emulator) {
+    emulator.apu.audio_master_control = 0b10000000;
+    emulator.apu.channel4.dac_enabled = true;
+    emulator.apu.channel4.enabled = false;
+}
+
 fn step_apu_multiple_times(emulator: &mut Emulator, n: u8) {
     for _ in 0..n {
         emulator.cpu.clock.instruction_clock_cycles = 4;
@@ -723,4 +729,24 @@ fn should_calculate_next_lfsr_value_correctly_in_width_mode_for_channel_4() {
     step_apu_multiple_times(&mut emulator, 4);
     
     assert_eq!(emulator.apu.channel4.lfsr, 0b111001011010110);
+}
+
+#[test]
+fn should_trigger_channel_4() {
+    let mut emulator = initialize_emulator();
+    initialize_disabled_noise_channel(&mut emulator);
+
+    set_ch4_control(&mut emulator, 0b10000000);
+
+    assert_eq!(emulator.apu.channel4.enabled, true);
+}
+
+#[test]
+fn should_set_ch4_control() {
+    let mut emulator = initialize_emulator();
+    initialize_disabled_noise_channel(&mut emulator);
+
+    set_ch4_control(&mut emulator, 0b10000000);
+
+    assert_eq!(emulator.apu.channel4.control, 0b10000000);
 }

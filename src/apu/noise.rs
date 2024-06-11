@@ -1,4 +1,6 @@
+use crate::apu::envelope;
 use crate::apu::envelope::{initialize_envelope, Envelope};
+use crate::apu::length;
 use crate::apu::length::{initialize_length, Length};
 use crate::utils::is_bit_set;
 
@@ -35,6 +37,7 @@ pub fn initialize_noise_channel() -> NoiseChannel {
 const PERIOD_DIVIDER_RATE_IN_INSTRUCTION_CYCLES: u8 = 16;
 
 const WIDTH_MODE_INDEX: u8 = 3;
+const CONTROL_TRIGGER_INDEX: u8 = 7;
 
 fn calculate_period_divider(channel: &NoiseChannel) -> u16 {
     let shift_amount = (channel.polynomial & 0b11110000) >> 4;
@@ -75,4 +78,14 @@ pub fn step(channel: &mut NoiseChannel, last_instruction_clock_cycles: u8) {
             channel.lfsr = calculate_next_lfsr(channel);
         }
     }
+}
+
+pub fn trigger(channel: &mut NoiseChannel) {
+    channel.enabled = true;
+    envelope::trigger(&mut channel.envelope);
+    length::trigger(&mut channel.length, false);
+}
+
+pub fn should_trigger(channel: &NoiseChannel) -> bool {
+   channel.dac_enabled && is_bit_set(channel.control, CONTROL_TRIGGER_INDEX)
 }
