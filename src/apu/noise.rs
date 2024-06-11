@@ -55,8 +55,8 @@ fn calculate_next_lfsr(channel: &NoiseChannel) -> u16 {
     let width_mode = is_bit_set(channel.polynomial, WIDTH_MODE_INDEX);
 
     let first_lfsr_bit = channel.lfsr & 0b1;
-    let seconds_lfsr_bit = (channel.lfsr & 0b10) >> 1;
-    let xor_result = first_lfsr_bit ^ seconds_lfsr_bit;
+    let second_lfsr_bit = (channel.lfsr & 0b10) >> 1;
+    let xor_result = first_lfsr_bit ^ second_lfsr_bit;
 
     let mut next_lfsr = (channel.lfsr >> 1) | (xor_result << 14);
 
