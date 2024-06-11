@@ -1,5 +1,6 @@
 use crate::apu::envelope::{initialize_envelope, Envelope};
 use crate::apu::length::{initialize_length, Length};
+use crate::utils::is_bit_set;
 
 #[derive(Debug)]
 pub struct NoiseChannel {
@@ -33,6 +34,8 @@ pub fn initialize_noise_channel() -> NoiseChannel {
 // divider every 16 T-cycles.
 const PERIOD_DIVIDER_RATE_IN_INSTRUCTION_CYCLES: u8 = 16;
 
+const WIDTH_MODE_INDEX: u8 = 3;
+
 fn calculate_period_divider(channel: &NoiseChannel) -> u16 {
     let shift_amount = (channel.polynomial & 0b11110000) >> 4;
     let divisor_code = channel.polynomial & 0b111;
@@ -45,6 +48,23 @@ fn calculate_period_divider(channel: &NoiseChannel) -> u16 {
     divisor << shift_amount
 }
 
+fn calculate_next_lfsr(channel: &NoiseChannel) -> u16 {
+    let width_mode = is_bit_set(channel.polynomial, WIDTH_MODE_INDEX);
+
+    let first_lfsr_bit = channel.lfsr & 0b1;
+    let seconds_lfsr_bit = (channel.lfsr & 0b10) >> 1;
+    let xor_result = first_lfsr_bit ^ seconds_lfsr_bit;
+
+    let mut next_lfsr = (channel.lfsr >> 1) | (xor_result << 14);
+
+    if width_mode {
+        next_lfsr &= !(1 << 6);
+        next_lfsr |= xor_result << 6;
+    }
+
+    next_lfsr
+}
+
 pub fn step(channel: &mut NoiseChannel, last_instruction_clock_cycles: u8) {
     channel.instruction_cycles += last_instruction_clock_cycles;
     if channel.instruction_cycles >= PERIOD_DIVIDER_RATE_IN_INSTRUCTION_CYCLES {
@@ -52,6 +72,7 @@ pub fn step(channel: &mut NoiseChannel, last_instruction_clock_cycles: u8) {
         channel.period_divider -= 1;
         if channel.period_divider == 0 {
             channel.period_divider = calculate_period_divider(channel);
+            channel.lfsr = calculate_next_lfsr(channel);
         }
     }
 }
