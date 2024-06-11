@@ -157,6 +157,15 @@ pub fn set_ch3_dac_enabled(emulator: &mut Emulator, new_dac_enabled_register_val
     }
 }
 
+pub fn set_ch4_envelope_settings(emulator: &mut Emulator, new_envelope_settings: u8) {
+    emulator.apu.channel4.envelope.initial_settings = new_envelope_settings;
+
+    if should_disable_dac(&emulator.apu.channel4.envelope) {
+        noise::disable(&mut emulator.apu.channel4);
+        emulator.apu.audio_master_control = reset_bit(emulator.apu.audio_master_control, CH4_ENABLED_INDEX);
+    }
+}
+
 #[cfg(test)]
 mod tests;
 

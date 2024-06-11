@@ -86,6 +86,11 @@ pub fn trigger(channel: &mut NoiseChannel) {
     length::trigger(&mut channel.length, false);
 }
 
+pub fn disable(channel: &mut NoiseChannel) {
+    channel.dac_enabled = false;
+    channel.enabled = false;
+}
+
 pub fn should_trigger(channel: &NoiseChannel) -> bool {
    channel.dac_enabled && is_bit_set(channel.control, CONTROL_TRIGGER_INDEX)
 }

@@ -750,3 +750,15 @@ fn should_set_ch4_control() {
 
     assert_eq!(emulator.apu.channel4.control, 0b10000000);
 }
+
+#[test]
+fn should_disable_channel_4() {
+    let mut emulator = initialize_emulator();
+    initialize_noise_channel(&mut emulator);
+
+    set_ch4_envelope_settings(&mut emulator, 0b00000111);
+
+    assert_eq!(emulator.apu.audio_master_control, 0b10000000);
+    assert_eq!(emulator.apu.channel4.enabled, false);
+    assert_eq!(emulator.apu.channel4.dac_enabled, false);
+}

@@ -5,6 +5,7 @@ use crate::apu::set_ch2_period_high;
 use crate::apu::set_ch3_dac_enabled;
 use crate::apu::set_ch3_period_high;
 use crate::apu::set_ch4_control;
+use crate::apu::set_ch4_envelope_settings;
 use crate::emulator::Emulator;
 use crate::keys::read_joyp_byte;
 use crate::keys::write_joyp_byte;
@@ -210,7 +211,7 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
                 0x1D => emulator.apu.channel3.period.low = value,
                 0x1E => set_ch3_period_high(emulator, value),
                 0x20 => emulator.apu.channel4.length.initial_settings = value,
-                0x21 => emulator.apu.channel4.envelope.initial_settings = value,
+                0x21 => set_ch4_envelope_settings(emulator, value),
                 0x22 => emulator.apu.channel4.polynomial = value,
                 0x23 => set_ch4_control(emulator, value),
                 0x24 => emulator.apu.master_volume = value,
