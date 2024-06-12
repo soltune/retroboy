@@ -38,6 +38,7 @@ const PERIOD_DIVIDER_RATE_IN_INSTRUCTION_CYCLES: u8 = 16;
 
 const WIDTH_MODE_INDEX: u8 = 3;
 const CONTROL_TRIGGER_INDEX: u8 = 7;
+const CONTROL_LENGTH_ENABLED_INDEX: u8 = 6;
 
 fn calculate_period_divider(channel: &NoiseChannel) -> u16 {
     let shift_amount = (channel.polynomial & 0b11110000) >> 4;
@@ -76,6 +77,24 @@ pub fn step(channel: &mut NoiseChannel, last_instruction_clock_cycles: u8) {
         if channel.period_divider == 0 {
             channel.period_divider = calculate_period_divider(channel);
             channel.lfsr = calculate_next_lfsr(channel);
+        }
+    }
+}
+
+pub fn step_envelope(channel: &mut NoiseChannel) {
+    if channel.enabled {
+        envelope::step(&mut channel.envelope);
+    }
+}
+
+pub fn step_length(channel: &mut NoiseChannel) {
+    if channel.enabled {
+        let length_timer_enabled = is_bit_set(channel.control, CONTROL_LENGTH_ENABLED_INDEX);
+        if length_timer_enabled {
+            length::step(&mut channel.length);
+            if channel.length.timer == 0 {
+                disable(channel);
+            } 
         }
     }
 }

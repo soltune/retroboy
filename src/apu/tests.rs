@@ -1,6 +1,32 @@
 use crate::emulator::initialize_emulator;
 use super::*;
 
+fn prep_div_apu_for_next_step(emulator: &mut Emulator, step: u8) {
+    emulator.apu.divider_apu = step;
+    // DIV-APU only steps when fourth bit in divider falls from 1 to 0.
+    emulator.apu.last_divider_time = 0b10011111;
+    emulator.timers.divider = 0b10100000;
+}
+
+fn step_apu_multiple_times(emulator: &mut Emulator, n: u8) {
+    for _ in 0..n {
+        emulator.cpu.clock.instruction_clock_cycles = 4;
+        step(emulator);
+    }
+}
+
+fn initialize_noise_channel(emulator: &mut Emulator) {
+    emulator.apu.audio_master_control = 0b10001000;
+    emulator.apu.channel4.dac_enabled = true;
+    emulator.apu.channel4.enabled = true; 
+}
+
+fn initialize_disabled_noise_channel(emulator: &mut Emulator) {
+    emulator.apu.audio_master_control = 0b10000000;
+    emulator.apu.channel4.dac_enabled = true;
+    emulator.apu.channel4.enabled = false;
+}
+
 #[test]
 fn should_not_decrement_period_divider_when_apu_is_off() {
     let mut emulator = initialize_emulator();
@@ -147,9 +173,7 @@ fn should_wrap_div_apu_to_zero_when_increased_above_seven() {
     let mut emulator = initialize_emulator();
     emulator.apu.audio_master_control = 0b10000001;
     emulator.apu.channel1.enabled = true;
-    emulator.apu.last_divider_time = 0b10011111;
-    emulator.timers.divider = 0b10100000;
-    emulator.apu.divider_apu = 7;
+    prep_div_apu_for_next_step(&mut emulator, 7);
     step(&mut emulator);
     assert_eq!(emulator.apu.divider_apu, 0);
 }
@@ -249,9 +273,7 @@ fn should_update_channel_1_envelope_volume_and_reset_timer_when_timer_decrements
     let mut emulator = initialize_emulator();
 
     emulator.apu.audio_master_control = 0b10000001;
-    emulator.apu.divider_apu = 7;
-    emulator.apu.last_divider_time = 0b10011111;
-    emulator.timers.divider = 0b10100000;
+    prep_div_apu_for_next_step(&mut emulator, 7);
 
     emulator.apu.channel1.enabled = true;
     emulator.apu.channel1.dac_enabled = true;
@@ -277,9 +299,7 @@ fn should_decrement_channel_1_envelope_timer() {
     let mut emulator = initialize_emulator();
 
     emulator.apu.audio_master_control = 0b10000001;
-    emulator.apu.divider_apu = 7;
-    emulator.apu.last_divider_time = 0b10011111;
-    emulator.timers.divider = 0b10100000;
+    prep_div_apu_for_next_step(&mut emulator, 7);
 
     emulator.apu.channel1.enabled = true;
     emulator.apu.channel1.dac_enabled = true;
@@ -306,9 +326,7 @@ fn should_not_step_channel_1_envelope_if_divider_apu_is_on_wrong_step() {
     let mut emulator = initialize_emulator();
 
     emulator.apu.audio_master_control = 0b10000001;
-    emulator.apu.divider_apu = 4;
-    emulator.apu.last_divider_time = 0b10011111;
-    emulator.timers.divider = 0b10100000;
+    prep_div_apu_for_next_step(&mut emulator, 4);
 
     emulator.apu.channel1.enabled = true;
     emulator.apu.channel1.dac_enabled = true;
@@ -334,9 +352,7 @@ fn should_step_channel_1_length_timer() {
     let mut emulator = initialize_emulator();
 
     emulator.apu.audio_master_control = 0b10000001;
-    emulator.apu.divider_apu = 0;
-    emulator.apu.last_divider_time = 0b10011111;
-    emulator.timers.divider = 0b10100000;
+    prep_div_apu_for_next_step(&mut emulator, 0);
 
     emulator.apu.channel1.enabled = true;
     emulator.apu.channel1.dac_enabled = true;
@@ -361,9 +377,7 @@ fn should_not_step_channel_1_length_timer_if_divider_apu_is_on_wrong_step() {
     let mut emulator = initialize_emulator();
 
     emulator.apu.audio_master_control = 0b10000001;
-    emulator.apu.divider_apu = 1;
-    emulator.apu.last_divider_time = 0b10011111;
-    emulator.timers.divider = 0b10100000;
+    prep_div_apu_for_next_step(&mut emulator, 1);
 
     emulator.apu.channel1.enabled = true;
     emulator.apu.channel1.dac_enabled = true;
@@ -388,9 +402,7 @@ fn should_disable_channel_1_when_length_timer_reaches_zero() {
     let mut emulator = initialize_emulator();
 
     emulator.apu.audio_master_control = 0b10000001;
-    emulator.apu.divider_apu = 0;
-    emulator.apu.last_divider_time = 0b10011111;
-    emulator.timers.divider = 0b10100000;
+    prep_div_apu_for_next_step(&mut emulator, 0);
 
     emulator.apu.channel1.enabled = true;
     emulator.apu.channel1.dac_enabled = true;
@@ -431,9 +443,7 @@ fn should_decrement_channel_1_sweep_timer() {
     let mut emulator = initialize_emulator();
 
     emulator.apu.audio_master_control = 0b10000001;
-    emulator.apu.divider_apu = 2;
-    emulator.apu.last_divider_time = 0b10011111;
-    emulator.timers.divider = 0b10100000;
+    prep_div_apu_for_next_step(&mut emulator, 2);
 
     emulator.apu.channel1.enabled = true;
     emulator.apu.channel1.dac_enabled = true;
@@ -459,9 +469,7 @@ fn should_disable_channel_1_on_sweep_overflow() {
     let mut emulator = initialize_emulator();
 
     emulator.apu.audio_master_control = 0b10000001;
-    emulator.apu.divider_apu = 2;
-    emulator.apu.last_divider_time = 0b10011111;
-    emulator.timers.divider = 0b10100000;
+    prep_div_apu_for_next_step(&mut emulator, 2);
 
     emulator.apu.channel1.enabled = true;
     emulator.apu.channel1.dac_enabled = true;
@@ -488,9 +496,7 @@ fn should_reload_sweep_timer_and_frequency_when_timer_reaches_zero() {
     let mut emulator = initialize_emulator();
 
     emulator.apu.audio_master_control = 0b10000001;
-    emulator.apu.divider_apu = 2;
-    emulator.apu.last_divider_time = 0b10011111;
-    emulator.timers.divider = 0b10100000;
+    prep_div_apu_for_next_step(&mut emulator, 2);
 
     emulator.apu.channel1.enabled = true;
     emulator.apu.channel1.dac_enabled = true;
@@ -620,9 +626,7 @@ fn should_step_channel_3_length_timer() {
     let mut emulator = initialize_emulator();
 
     emulator.apu.audio_master_control = 0b10000100;
-    emulator.apu.divider_apu = 0;
-    emulator.apu.last_divider_time = 0b10011111;
-    emulator.timers.divider = 0b10100000;
+    prep_div_apu_for_next_step(&mut emulator, 0);
 
     emulator.apu.channel3.enabled = true;
     emulator.apu.channel3.dac_enabled = true;
@@ -640,25 +644,6 @@ fn should_step_channel_3_length_timer() {
     step(&mut emulator);
     
     assert_eq!(emulator.apu.channel3.length.timer, 0b00000101);
-}
-
-fn initialize_noise_channel(emulator: &mut Emulator) {
-    emulator.apu.audio_master_control = 0b10001000;
-    emulator.apu.channel4.dac_enabled = true;
-    emulator.apu.channel4.enabled = true; 
-}
-
-fn initialize_disabled_noise_channel(emulator: &mut Emulator) {
-    emulator.apu.audio_master_control = 0b10000000;
-    emulator.apu.channel4.dac_enabled = true;
-    emulator.apu.channel4.enabled = false;
-}
-
-fn step_apu_multiple_times(emulator: &mut Emulator, n: u8) {
-    for _ in 0..n {
-        emulator.cpu.clock.instruction_clock_cycles = 4;
-        step(emulator);
-    }
 }
 
 #[test]
@@ -761,4 +746,39 @@ fn should_disable_channel_4() {
     assert_eq!(emulator.apu.audio_master_control, 0b10000000);
     assert_eq!(emulator.apu.channel4.enabled, false);
     assert_eq!(emulator.apu.channel4.dac_enabled, false);
+}
+
+#[test]
+fn should_step_channel_4_length_timer() {
+    let mut emulator = initialize_emulator();
+    initialize_noise_channel(&mut emulator);
+    prep_div_apu_for_next_step(&mut emulator, 0);
+    
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    
+    emulator.apu.channel4.length.initial_settings = 0b01001110;
+    emulator.apu.channel4.length.timer = 0b00000110;
+    emulator.apu.channel4.control = 0b11000000;
+
+    step(&mut emulator);
+    
+    assert_eq!(emulator.apu.channel4.length.timer, 0b00000101);
+}
+
+#[test]
+fn should_step_channel_4_envelope_timer() {
+    let mut emulator = initialize_emulator();
+    initialize_noise_channel(&mut emulator);
+    prep_div_apu_for_next_step(&mut emulator, 7);
+    
+    emulator.cpu.clock.instruction_clock_cycles = 4;
+    
+    emulator.apu.channel4.envelope.initial_settings = 0b10100101;
+    emulator.apu.channel4.envelope.current_volume = 0b1010;
+    emulator.apu.channel4.envelope.timer = 0b101;
+
+    step(&mut emulator);
+    
+    assert_eq!(emulator.apu.channel4.envelope.current_volume, 0b1010);
+    assert_eq!(emulator.apu.channel4.envelope.timer, 0b100);
 }

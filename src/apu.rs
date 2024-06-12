@@ -59,13 +59,15 @@ fn step_div_apu(emulator: &mut Emulator) {
 
         if current_divider_apu == envelope_step {
             pulse::step_envelope(&mut emulator.apu.channel1);
-            pulse::step_envelope(&mut emulator.apu.channel2); 
+            pulse::step_envelope(&mut emulator.apu.channel2);
+            noise::step_envelope(&mut emulator.apu.channel4); 
         }
 
         if length_steps.contains(&current_divider_apu) {
             pulse::step_length(&mut emulator.apu.channel1);
             pulse::step_length(&mut emulator.apu.channel2);
-            wave::step_length(&mut emulator.apu.channel3); 
+            wave::step_length(&mut emulator.apu.channel3);
+            noise::step_length(&mut emulator.apu.channel4);
         }
         
         if sweep_steps.contains(&current_divider_apu) {
