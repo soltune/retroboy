@@ -5,3 +5,7 @@ pub fn bounded_wrapping_add(original_value: u8, max_value: u8) -> u8 {
     }
     new_value
 }
+
+pub fn as_dac_output(dac_input: u8) -> f32 {
+    (dac_input as f32 / 7.5) - 1.0
+}

@@ -6,7 +6,7 @@ use crate::apu::period;
 use crate::apu::period::{initalize_period, Period};
 use crate::apu::sweep;
 use crate::apu::sweep::{initialize_sweep, Sweep};
-use crate::apu::utils::bounded_wrapping_add;
+use crate::apu::utils::{as_dac_output, bounded_wrapping_add};
 use crate::utils::{get_bit, is_bit_set};
 use std::collections::HashMap;
 
@@ -73,11 +73,11 @@ pub fn dac_output(channel: &PulseChannel) -> f32 {
 
     let wave_duty = (channel.length.initial_settings & 0b11000000) >> 6;
     let waveform = waveforms[&wave_duty];
-    let amplitude = get_bit(waveform, channel.wave_duty_position) as f32;
-    let current_volume = channel.envelope.current_volume as f32;
+    let amplitude = get_bit(waveform, channel.wave_duty_position);
+    let current_volume = channel.envelope.current_volume;
     let dac_input = amplitude * current_volume;
-    
-    (dac_input / 7.5) - 1.0
+
+    as_dac_output(dac_input)
 }
 
 pub fn step_sweep(channel: &mut PulseChannel) {

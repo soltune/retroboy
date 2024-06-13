@@ -2,7 +2,9 @@ use crate::apu::period;
 use crate::apu::period::{initalize_period, Period};
 use crate::apu::length;
 use crate::apu::length::{initialize_length, Length};
-use crate::apu::utils::bounded_wrapping_add;
+use crate::apu::utils::{as_dac_output, bounded_wrapping_add};
+use crate::emulator::Emulator;
+use crate::mmu;
 use crate::utils::is_bit_set;
 
 #[derive(Debug)]
@@ -50,6 +52,16 @@ pub fn step_length(channel: &mut WaveChannel) {
     }
 }
 
+pub fn dac_output(emulator: &Emulator) -> f32 {
+    let address_offset = (emulator.apu.channel3.wave_position / 2) as u16;
+    let byte_offset = emulator.apu.channel3.wave_position % 2;
+    let base_wave_pattern_ram_address = 0xFF30 as u16;
+    let address = base_wave_pattern_ram_address + address_offset;
+    let byte = mmu::read_byte(&emulator, address);
+    let sample = if byte_offset == 0 { (byte & 0xF0) >> 4 } else { byte & 0xF };
+    as_dac_output(sample)
+}
+
 pub fn trigger(channel: &mut WaveChannel) {
     channel.enabled = true;
     length::trigger(&mut channel.length, true);
@@ -63,3 +75,6 @@ pub fn disable(channel: &mut WaveChannel) {
 pub fn should_trigger(channel: &WaveChannel) -> bool {
    channel.dac_enabled && is_bit_set(channel.period.high, PERIOD_HIGH_TRIGGER_INDEX)
 }
+
+#[cfg(test)]
+mod tests;
