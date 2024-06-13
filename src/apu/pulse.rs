@@ -7,7 +7,8 @@ use crate::apu::period::{initalize_period, Period};
 use crate::apu::sweep;
 use crate::apu::sweep::{initialize_sweep, Sweep};
 use crate::apu::utils::bounded_wrapping_add;
-use crate::utils::is_bit_set;
+use crate::utils::{get_bit, is_bit_set};
+use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct PulseChannel {
@@ -62,6 +63,23 @@ pub fn step_length(channel: &mut PulseChannel) {
     }
 }
 
+pub fn dac_output(channel: &PulseChannel) -> f32 {
+    let waveforms: HashMap<u8, u8> = HashMap::from([
+        (0b00, 0b00000001),
+        (0b01, 0b00000011),
+        (0b10, 0b00001111),
+        (0b11, 0b11111100)
+    ]);
+
+    let wave_duty = (channel.length.initial_settings & 0b11000000) >> 6;
+    let waveform = waveforms[&wave_duty];
+    let amplitude = get_bit(waveform, channel.wave_duty_position) as f32;
+    let current_volume = channel.envelope.current_volume as f32;
+    let dac_input = amplitude * current_volume;
+    
+    (dac_input / 7.5) - 1.0
+}
+
 pub fn step_sweep(channel: &mut PulseChannel) {
     if channel.enabled {
         sweep::step(channel);
@@ -85,3 +103,6 @@ pub fn disable(channel: &mut PulseChannel) {
 pub fn should_trigger(channel: &PulseChannel) -> bool {
    channel.dac_enabled && is_bit_set(channel.period.high, PERIOD_HIGH_TRIGGER_INDEX)
 }
+
+#[cfg(test)]
+mod tests;
