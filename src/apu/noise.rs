@@ -110,6 +110,7 @@ pub fn dac_output(channel: &NoiseChannel) -> f32 {
 
 pub fn trigger(channel: &mut NoiseChannel) {
     channel.enabled = true;
+    channel.lfsr = 0xFFFF;
     envelope::trigger(&mut channel.envelope);
     length::trigger(&mut channel.length, false);
 }

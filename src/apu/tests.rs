@@ -737,6 +737,16 @@ fn should_set_ch4_control() {
 }
 
 #[test]
+fn should_set_all_bits_of_lfsr_to_one_on_channel_4_trigger() {
+    let mut emulator = initialize_emulator();
+    initialize_disabled_noise_channel(&mut emulator);
+
+    set_ch4_control(&mut emulator, 0b10000000);
+
+    assert_eq!(emulator.apu.channel4.lfsr, 0xFFFF); 
+}
+
+#[test]
 fn should_disable_channel_4() {
     let mut emulator = initialize_emulator();
     initialize_noise_channel(&mut emulator);
