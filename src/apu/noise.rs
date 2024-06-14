@@ -4,6 +4,8 @@ use crate::apu::length;
 use crate::apu::length::{initialize_length, Length};
 use crate::utils::is_bit_set;
 
+use super::utils::as_dac_output;
+
 #[derive(Debug)]
 pub struct NoiseChannel {
     pub enabled: bool,
@@ -99,6 +101,13 @@ pub fn step_length(channel: &mut NoiseChannel) {
     }
 }
 
+pub fn dac_output(channel: &NoiseChannel) -> f32 {
+    let amplitude = (!channel.lfsr & 0x01) as u8;
+    let current_volume = channel.envelope.current_volume;
+    let dac_input = amplitude * current_volume;
+    as_dac_output(dac_input)
+}
+
 pub fn trigger(channel: &mut NoiseChannel) {
     channel.enabled = true;
     envelope::trigger(&mut channel.envelope);
@@ -113,3 +122,6 @@ pub fn disable(channel: &mut NoiseChannel) {
 pub fn should_trigger(channel: &NoiseChannel) -> bool {
    channel.dac_enabled && is_bit_set(channel.control, CONTROL_TRIGGER_INDEX)
 }
+
+#[cfg(test)]
+mod tests;
