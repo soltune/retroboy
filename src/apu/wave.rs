@@ -55,11 +55,20 @@ pub fn step_length(channel: &mut WaveChannel) {
 pub fn dac_output(emulator: &Emulator) -> f32 {
     let address_offset = (emulator.apu.channel3.wave_position / 2) as u16;
     let byte_offset = emulator.apu.channel3.wave_position % 2;
+
     let base_wave_pattern_ram_address = 0xFF30 as u16;
     let address = base_wave_pattern_ram_address + address_offset;
+    
     let byte = mmu::read_byte(&emulator, address);
     let sample = if byte_offset == 0 { (byte & 0xF0) >> 4 } else { byte & 0xF };
-    as_dac_output(sample)
+
+    let output_level = (emulator.apu.channel3.volume & 0b01100000) >> 5;
+    match output_level {
+        0b01 => as_dac_output(sample),
+        0b10 => as_dac_output(sample >> 1),
+        0b11 => as_dac_output(sample >> 2),
+        _ => 0.0
+    }
 }
 
 pub fn trigger(channel: &mut WaveChannel) {
