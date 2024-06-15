@@ -15,7 +15,7 @@ fn mix_left_samples(master_volume: u8) -> f32 {
         channel4_output)
 }
 
-fn mix_right_samples(master_volume: u8) -> f32{
+fn mix_right_samples(master_volume: u8) -> f32 {
     let sound_panning = 0b00001110;
     let channel1_output = 0.25 as f32;
     let channel2_output = 0.5 as f32;
