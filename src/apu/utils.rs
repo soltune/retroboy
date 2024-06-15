@@ -72,12 +72,12 @@ pub fn calculate_right_stereo_sample(sound_panning: u8,
     let channel3_panned_output = get_panned_output(sound_panning, CHANNEL3_RIGHT_PANNING_INDEX, channel3_output);
     let channel4_panned_output = get_panned_output(sound_panning, CHANNEL4_RIGHT_PANNING_INDEX, channel4_output);
  
-    let left_sample = mix_samples(channel1_panned_output, 
+    let right_sample = mix_samples(channel1_panned_output, 
         channel2_panned_output, 
         channel3_panned_output, 
         channel4_panned_output);
 
-    apply_volume_reduction(left_sample, right_master_volume)
+    apply_volume_reduction(right_sample, right_master_volume)
 }
 
 #[cfg(test)]
