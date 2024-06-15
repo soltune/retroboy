@@ -1,3 +1,5 @@
+use utils::{calculate_left_stereo_sample, calculate_right_stereo_sample};
+
 use crate::apu::envelope::should_disable_dac;
 use crate::apu::noise::{initialize_noise_channel, NoiseChannel};
 use crate::apu::wave::{initialize_wave_channel, WaveChannel};
@@ -16,7 +18,9 @@ pub struct ApuState {
     pub channel3: WaveChannel,
     pub channel4: NoiseChannel,
     pub divider_apu: u8,
-    pub last_divider_time: u8
+    pub last_divider_time: u8,
+    pub instruction_cycles: u8,
+    pub sample_queue: Vec<f32>,
 }
 
 pub fn initialize_apu() -> ApuState {
@@ -29,11 +33,12 @@ pub fn initialize_apu() -> ApuState {
         channel3: initialize_wave_channel(),
         channel4: initialize_noise_channel(),
         divider_apu: 0,
-        last_divider_time: 0
+        last_divider_time: 0,
+        instruction_cycles: 0,
+        sample_queue: Vec::new()
     }
 }
 
-// Work In Progress
 const CH1_ENABLED_INDEX: u8 = 0;
 const CH2_ENABLED_INDEX: u8 = 1;
 const CH3_ENABLED_INDEX: u8 = 2;
@@ -41,6 +46,10 @@ const CH4_ENABLED_INDEX: u8 = 3;
 const CH3_DAC_ENABLED_INDEX: u8 = 7;
 const APU_ENABLED_INDEX: u8 = 7;
 const MAX_DIV_APU_STEPS: u8 = 7;
+
+const CPU_RATE: u32 = 4194304;
+const SAMPLE_RATE: u32 = 48000;
+const ENQUEUE_RATE: u32 = CPU_RATE / SAMPLE_RATE;
 
 fn should_step_div_apu(emulator: &mut Emulator) -> bool {
     emulator.apu.last_divider_time > 0
@@ -83,14 +92,49 @@ fn apu_enabled(audio_master_control: u8) -> bool {
     is_bit_set(audio_master_control, APU_ENABLED_INDEX)
 }
 
+fn enqueue_audio_samples(emulator: &mut Emulator) {
+    if emulator.apu.instruction_cycles as u32 >= ENQUEUE_RATE {
+        let sound_panning = emulator.apu.sound_panning;
+
+        let channel1_output = pulse::dac_output(&emulator.apu.channel1);
+        let channel2_output = pulse::dac_output(&emulator.apu.channel2);
+        let channel3_output = wave::dac_output(&emulator);
+        let channel4_output = noise::dac_output(&emulator.apu.channel4);
+
+        let left_master_volume = (emulator.apu.master_volume & 0b01110000) >> 4;
+
+        let left_sample = calculate_left_stereo_sample(sound_panning,
+            left_master_volume,
+            channel1_output,
+            channel2_output,
+            channel3_output,
+            channel4_output);
+
+        emulator.apu.sample_queue.push(left_sample);
+
+        let right_master_volume = emulator.apu.master_volume & 0b111;
+
+        let right_sample = calculate_right_stereo_sample(sound_panning,
+            right_master_volume,
+            channel1_output,
+            channel2_output,
+            channel3_output,
+            channel4_output);
+
+        emulator.apu.sample_queue.push(right_sample);
+    }
+}
+
 pub fn step(emulator: &mut Emulator) {    
     if apu_enabled(emulator.apu.audio_master_control) {
         let instruction_clock_cycles = emulator.cpu.clock.instruction_clock_cycles;
+        emulator.apu.instruction_cycles += instruction_clock_cycles;
         pulse::step(&mut emulator.apu.channel1, instruction_clock_cycles);
         pulse::step(&mut emulator.apu.channel2, instruction_clock_cycles);
         wave::step(&mut emulator.apu.channel3, instruction_clock_cycles);
         noise::step(&mut emulator.apu.channel4, instruction_clock_cycles);
         step_div_apu(emulator);
+        enqueue_audio_samples(emulator);
     }    
 }
 
