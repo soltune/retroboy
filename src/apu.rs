@@ -20,7 +20,8 @@ pub struct ApuState {
     pub divider_apu: u8,
     pub last_divider_time: u8,
     pub instruction_cycles: u8,
-    pub sample_queue: Vec<f32>,
+    pub left_sample_queue: Vec<f32>,
+    pub right_sample_queue: Vec<f32>
 }
 
 pub fn initialize_apu() -> ApuState {
@@ -35,7 +36,8 @@ pub fn initialize_apu() -> ApuState {
         divider_apu: 0,
         last_divider_time: 0,
         instruction_cycles: 0,
-        sample_queue: Vec::new()
+        left_sample_queue: Vec::new(),
+        right_sample_queue: Vec::new()
     }
 }
 
@@ -112,7 +114,7 @@ fn enqueue_audio_samples(emulator: &mut Emulator) {
             channel3_output,
             channel4_output);
 
-        emulator.apu.sample_queue.push(left_sample);
+        emulator.apu.left_sample_queue.push(left_sample);
 
         let right_master_volume = emulator.apu.master_volume & 0b111;
 
@@ -123,7 +125,7 @@ fn enqueue_audio_samples(emulator: &mut Emulator) {
             channel3_output,
             channel4_output);
 
-        emulator.apu.sample_queue.push(right_sample);
+        emulator.apu.right_sample_queue.push(right_sample);
     }
 }
 
