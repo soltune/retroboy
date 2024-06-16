@@ -94,6 +94,8 @@ fn apu_enabled(audio_master_control: u8) -> bool {
 
 fn enqueue_audio_samples(emulator: &mut Emulator) {
     if emulator.apu.instruction_cycles as u32 >= ENQUEUE_RATE {
+        emulator.apu.instruction_cycles = 0;
+
         let sound_panning = emulator.apu.sound_panning;
 
         let channel1_output = pulse::dac_output(&emulator.apu.channel1);
