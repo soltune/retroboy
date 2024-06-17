@@ -23,6 +23,9 @@ extern "C" {
     pub fn log(s: &str);
 
     pub fn render(frame_buffer: &[u8]); 
+
+    #[wasm_bindgen(js_name = playAudioSamples)]
+    pub fn play_audio_samples(left_samples: &[f32], right_samples: &[f32]);
 }
 
 #[wasm_bindgen(js_name = initializeEmulator)]
@@ -60,6 +63,16 @@ pub fn reset_emulator() {
     })
 }
 
+fn flush_audio_queues(emulator: &mut Emulator) {
+    let left_samples_slice = emulator.apu.left_sample_queue.as_slice();
+    let right_samples_slice = emulator.apu.right_sample_queue.as_slice();
+
+    play_audio_samples(left_samples_slice, right_samples_slice);
+
+    emulator.apu.left_sample_queue.clear();
+    emulator.apu.right_sample_queue.clear();
+}
+
 #[wasm_bindgen(js_name = stepFrame)]
 pub fn step_frame() {
     EMULATOR.with(|emulator_cell| {
@@ -73,6 +86,8 @@ pub fn step_frame() {
                 frame_rendered = true;
             });
         }
+
+        flush_audio_queues(&mut emulator);
     })
 }
 

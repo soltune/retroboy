@@ -1,3 +1,4 @@
+use crate::apu;
 use crate::apu::{initialize_apu, ApuState};
 use crate::cpu::{self, at_end_of_boot_rom, initialize_cpu, interrupts, timers, CpuState};
 use crate::cpu::interrupts::InterruptRegisters;
@@ -78,4 +79,5 @@ pub fn step(emulator: &mut Emulator, render: impl FnMut(&Vec<u8>)) {
 
     cpu::opcodes::step(emulator);
     gpu::step(emulator, render);
+    apu::step(emulator);
 }
