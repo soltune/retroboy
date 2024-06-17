@@ -6,6 +6,7 @@ use crate::apu::wave::{initialize_wave_channel, WaveChannel};
 use crate::apu::pulse::{initialize_pulse_channel, PulseChannel};
 use crate::apu::utils::bounded_wrapping_add;
 use crate::emulator::Emulator;
+use crate::log;
 use crate::utils::{get_bit, is_bit_set, reset_bit, set_bit};
 
 #[derive(Debug)]
@@ -85,6 +86,19 @@ fn step_div_apu(emulator: &mut Emulator) {
             pulse::step_sweep(&mut emulator.apu.channel1);
         }
 
+        if !emulator.apu.channel1.enabled && is_bit_set(emulator.apu.audio_master_control, CH1_ENABLED_INDEX) {
+            emulator.apu.audio_master_control = reset_bit(emulator.apu.audio_master_control, CH1_ENABLED_INDEX);
+        }
+        if !emulator.apu.channel2.enabled && is_bit_set(emulator.apu.audio_master_control, CH2_ENABLED_INDEX) {
+            emulator.apu.audio_master_control = reset_bit(emulator.apu.audio_master_control, CH2_ENABLED_INDEX);
+        }
+        if !emulator.apu.channel3.enabled && is_bit_set(emulator.apu.audio_master_control, CH3_ENABLED_INDEX) {
+            emulator.apu.audio_master_control = reset_bit(emulator.apu.audio_master_control, CH3_ENABLED_INDEX);
+        }
+        if !emulator.apu.channel4.enabled && is_bit_set(emulator.apu.audio_master_control, CH4_ENABLED_INDEX) {
+            emulator.apu.audio_master_control = reset_bit(emulator.apu.audio_master_control, CH4_ENABLED_INDEX);
+        }
+
         emulator.apu.last_divider_time = emulator.timers.divider;
         emulator.apu.divider_apu = bounded_wrapping_add(emulator.apu.divider_apu, MAX_DIV_APU_STEPS)
     }
@@ -146,7 +160,7 @@ pub fn set_ch1_period_high(emulator: &mut Emulator, new_period_high_value: u8) {
     emulator.apu.channel1.period.high = new_period_high_value;
     
     if pulse::should_trigger(&emulator.apu.channel1) { 
-        pulse::trigger(&mut emulator.apu.channel1, true); 
+        pulse::trigger(&mut emulator.apu.channel1, true);
         emulator.apu.audio_master_control = set_bit(emulator.apu.audio_master_control, CH1_ENABLED_INDEX);
     }
 }
@@ -181,7 +195,11 @@ pub fn set_ch4_control(emulator: &mut Emulator, new_control_value: u8) {
 pub fn set_ch1_envelope_settings(emulator: &mut Emulator, new_envelope_settings: u8) {
     emulator.apu.channel1.envelope.initial_settings = new_envelope_settings;
 
-    if should_disable_dac(&emulator.apu.channel1.envelope) {
+    let should_disable = should_disable_dac(&emulator.apu.channel1.envelope);
+
+    emulator.apu.channel1.dac_enabled = !should_disable;
+
+    if should_disable {
         pulse::disable(&mut emulator.apu.channel1); 
         emulator.apu.audio_master_control = reset_bit(emulator.apu.audio_master_control, CH1_ENABLED_INDEX);
     }
@@ -190,18 +208,22 @@ pub fn set_ch1_envelope_settings(emulator: &mut Emulator, new_envelope_settings:
 pub fn set_ch2_envelope_settings(emulator: &mut Emulator, new_envelope_settings: u8) {
     emulator.apu.channel2.envelope.initial_settings = new_envelope_settings;
 
-    if should_disable_dac(&emulator.apu.channel2.envelope) {
+    let should_disable = should_disable_dac(&emulator.apu.channel2.envelope);
+
+    emulator.apu.channel2.dac_enabled = !should_disable;
+
+    if should_disable {
         pulse::disable(&mut emulator.apu.channel2); 
         emulator.apu.audio_master_control = reset_bit(emulator.apu.audio_master_control, CH2_ENABLED_INDEX);
     }
 }
 
 pub fn set_ch3_dac_enabled(emulator: &mut Emulator, new_dac_enabled_register_value: u8) {
-    let enabled = is_bit_set(new_dac_enabled_register_value, CH3_DAC_ENABLED_INDEX);
+    let should_disable = !is_bit_set(new_dac_enabled_register_value, CH3_DAC_ENABLED_INDEX);
 
-    emulator.apu.channel3.dac_enabled = enabled;
+    emulator.apu.channel3.dac_enabled = should_disable;
     
-    if !enabled {
+    if should_disable {
         wave::disable(&mut emulator.apu.channel3);
         emulator.apu.audio_master_control = reset_bit(emulator.apu.audio_master_control, CH3_ENABLED_INDEX);
     }
@@ -210,7 +232,11 @@ pub fn set_ch3_dac_enabled(emulator: &mut Emulator, new_dac_enabled_register_val
 pub fn set_ch4_envelope_settings(emulator: &mut Emulator, new_envelope_settings: u8) {
     emulator.apu.channel4.envelope.initial_settings = new_envelope_settings;
 
-    if should_disable_dac(&emulator.apu.channel4.envelope) {
+    let should_disable = should_disable_dac(&emulator.apu.channel4.envelope);
+
+    emulator.apu.channel4.dac_enabled = !should_disable;
+
+    if should_disable {
         noise::disable(&mut emulator.apu.channel4);
         emulator.apu.audio_master_control = reset_bit(emulator.apu.audio_master_control, CH4_ENABLED_INDEX);
     }
