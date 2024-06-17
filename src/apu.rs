@@ -221,7 +221,7 @@ pub fn set_ch2_envelope_settings(emulator: &mut Emulator, new_envelope_settings:
 pub fn set_ch3_dac_enabled(emulator: &mut Emulator, new_dac_enabled_register_value: u8) {
     let should_disable = !is_bit_set(new_dac_enabled_register_value, CH3_DAC_ENABLED_INDEX);
 
-    emulator.apu.channel3.dac_enabled = should_disable;
+    emulator.apu.channel3.dac_enabled = !should_disable;
     
     if should_disable {
         wave::disable(&mut emulator.apu.channel3);
