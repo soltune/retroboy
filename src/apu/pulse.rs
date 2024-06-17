@@ -64,20 +64,25 @@ pub fn step_length(channel: &mut PulseChannel) {
 }
 
 pub fn dac_output(channel: &PulseChannel) -> f32 {
-    let waveforms: HashMap<u8, u8> = HashMap::from([
-        (0b00, 0b00000001),
-        (0b01, 0b00000011),
-        (0b10, 0b00001111),
-        (0b11, 0b11111100)
-    ]);
-
-    let wave_duty = (channel.length.initial_settings & 0b11000000) >> 6;
-    let waveform = waveforms[&wave_duty];
-    let amplitude = get_bit(waveform, channel.wave_duty_position);
-    let current_volume = channel.envelope.current_volume;
-    let dac_input = amplitude * current_volume;
-
-    as_dac_output(dac_input)
+    if channel.enabled {
+        let waveforms: HashMap<u8, u8> = HashMap::from([
+            (0b00, 0b00000001),
+            (0b01, 0b00000011),
+            (0b10, 0b00001111),
+            (0b11, 0b11111100)
+        ]);
+    
+        let wave_duty = (channel.length.initial_settings & 0b11000000) >> 6;
+        let waveform = waveforms[&wave_duty];
+        let amplitude = get_bit(waveform, channel.wave_duty_position);
+        let current_volume = channel.envelope.current_volume;
+        let dac_input = amplitude * current_volume;
+    
+        as_dac_output(dac_input)
+    }
+    else {
+        0.0
+    }
 }
 
 pub fn step_sweep(channel: &mut PulseChannel) {

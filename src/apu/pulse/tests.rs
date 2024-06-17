@@ -52,3 +52,15 @@ fn should_calculate_dac_output_when_volume_is_at_ten() {
 
     assert_eq!(dac_output(&channel), 0.33333337);
 }
+
+#[test]
+fn should_produce_no_audio_output_if_channel_is_disabled() {
+    let mut channel = initialize_pulse_channel();
+
+    let wave_duty = 2;
+    let wave_duty_position = 2;
+    let current_volume = 10;
+    initialize_amplitude_variables(&mut channel, wave_duty, wave_duty_position, current_volume);
+
+    assert_eq!(dac_output(&channel), 0.0);
+}

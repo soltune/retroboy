@@ -102,10 +102,15 @@ pub fn step_length(channel: &mut NoiseChannel) {
 }
 
 pub fn dac_output(channel: &NoiseChannel) -> f32 {
-    let amplitude = (!channel.lfsr & 0x01) as u8;
-    let current_volume = channel.envelope.current_volume;
-    let dac_input = amplitude * current_volume;
-    as_dac_output(dac_input)
+    if channel.enabled {
+        let amplitude = (!channel.lfsr & 0x01) as u8;
+        let current_volume = channel.envelope.current_volume;
+        let dac_input = amplitude * current_volume;
+        as_dac_output(dac_input)
+    }
+    else {
+        0.0
+    }
 }
 
 pub fn trigger(channel: &mut NoiseChannel) {
