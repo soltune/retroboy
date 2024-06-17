@@ -6,7 +6,6 @@ use crate::apu::wave::{initialize_wave_channel, WaveChannel};
 use crate::apu::pulse::{initialize_pulse_channel, PulseChannel};
 use crate::apu::utils::bounded_wrapping_add;
 use crate::emulator::Emulator;
-use crate::log;
 use crate::utils::{get_bit, is_bit_set, reset_bit, set_bit};
 
 #[derive(Debug)]
