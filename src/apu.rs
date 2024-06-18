@@ -98,9 +98,10 @@ fn step_div_apu(emulator: &mut Emulator) {
             emulator.apu.audio_master_control = reset_bit(emulator.apu.audio_master_control, CH4_ENABLED_INDEX);
         }
 
-        emulator.apu.last_divider_time = emulator.timers.divider;
         emulator.apu.divider_apu = bounded_wrapping_add(emulator.apu.divider_apu, MAX_DIV_APU_STEPS)
     }
+
+    emulator.apu.last_divider_time = emulator.timers.divider;
 }
 
 fn apu_enabled(audio_master_control: u8) -> bool {
