@@ -484,8 +484,8 @@ fn reads_from_audio_master_control() {
 #[test]
 fn writes_to_audio_master_control() {
     let mut emulator = setup_emulator_with_test_memory();
-    write_byte(&mut emulator, 0xFF26, 0xDA);
-    assert_eq!(emulator.apu.audio_master_control, 0xD0);
+    write_byte(&mut emulator, 0xFF26, 0xF0);
+    assert_eq!(emulator.apu.audio_master_control, 0xF0);
 }
 
 #[test]
