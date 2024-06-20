@@ -157,88 +157,104 @@ pub fn step(emulator: &mut Emulator) {
 }
 
 pub fn set_ch1_period_high(emulator: &mut Emulator, new_period_high_value: u8) {
-    emulator.apu.channel1.period.high = new_period_high_value;
+    if apu_enabled(emulator.apu.audio_master_control) {
+        emulator.apu.channel1.period.high = new_period_high_value;
     
-    if pulse::should_trigger(&emulator.apu.channel1) { 
-        pulse::trigger(&mut emulator.apu.channel1, true);
-        emulator.apu.audio_master_control = set_bit(emulator.apu.audio_master_control, CH1_ENABLED_INDEX);
+        if pulse::should_trigger(&emulator.apu.channel1) { 
+            pulse::trigger(&mut emulator.apu.channel1, true);
+            emulator.apu.audio_master_control = set_bit(emulator.apu.audio_master_control, CH1_ENABLED_INDEX);
+        } 
     }
 }
 
 pub fn set_ch2_period_high(emulator: &mut Emulator, new_period_high_value: u8) {
-    emulator.apu.channel2.period.high = new_period_high_value;
+    if apu_enabled(emulator.apu.audio_master_control) {
+        emulator.apu.channel2.period.high = new_period_high_value;
     
-    if pulse::should_trigger(&emulator.apu.channel2) { 
-        pulse::trigger(&mut emulator.apu.channel2, false);
-        emulator.apu.audio_master_control = set_bit(emulator.apu.audio_master_control, CH2_ENABLED_INDEX);
+        if pulse::should_trigger(&emulator.apu.channel2) { 
+            pulse::trigger(&mut emulator.apu.channel2, false);
+            emulator.apu.audio_master_control = set_bit(emulator.apu.audio_master_control, CH2_ENABLED_INDEX);
+        }
     }
 }
 
 pub fn set_ch3_period_high(emulator: &mut Emulator, new_period_high_value: u8) {
-    emulator.apu.channel3.period.high = new_period_high_value;
+    if apu_enabled(emulator.apu.audio_master_control) {
+        emulator.apu.channel3.period.high = new_period_high_value;
 
-    if wave::should_trigger(&emulator.apu.channel3) {
-        wave::trigger(&mut emulator.apu.channel3);
-        emulator.apu.audio_master_control = set_bit(emulator.apu.audio_master_control, CH3_ENABLED_INDEX);
+        if wave::should_trigger(&emulator.apu.channel3) {
+            wave::trigger(&mut emulator.apu.channel3);
+            emulator.apu.audio_master_control = set_bit(emulator.apu.audio_master_control, CH3_ENABLED_INDEX);
+        }
     }
 }
 
 pub fn set_ch4_control(emulator: &mut Emulator, new_control_value: u8) {
-    emulator.apu.channel4.control = new_control_value;
+    if apu_enabled(emulator.apu.audio_master_control) {
+        emulator.apu.channel4.control = new_control_value;
 
-    if noise::should_trigger(&emulator.apu.channel4) {
-        noise::trigger(&mut emulator.apu.channel4);
-        emulator.apu.audio_master_control = set_bit(emulator.apu.audio_master_control, CH4_ENABLED_INDEX);
+        if noise::should_trigger(&emulator.apu.channel4) {
+            noise::trigger(&mut emulator.apu.channel4);
+            emulator.apu.audio_master_control = set_bit(emulator.apu.audio_master_control, CH4_ENABLED_INDEX);
+        }
     }
 }
 
 pub fn set_ch1_envelope_settings(emulator: &mut Emulator, new_envelope_settings: u8) {
-    emulator.apu.channel1.envelope.initial_settings = new_envelope_settings;
+    if apu_enabled(emulator.apu.audio_master_control) {
+        emulator.apu.channel1.envelope.initial_settings = new_envelope_settings;
 
-    let should_disable = should_disable_dac(&emulator.apu.channel1.envelope);
-
-    emulator.apu.channel1.dac_enabled = !should_disable;
-
-    if should_disable {
-        pulse::disable(&mut emulator.apu.channel1); 
-        emulator.apu.audio_master_control = reset_bit(emulator.apu.audio_master_control, CH1_ENABLED_INDEX);
+        let should_disable = should_disable_dac(&emulator.apu.channel1.envelope);
+    
+        emulator.apu.channel1.dac_enabled = !should_disable;
+    
+        if should_disable {
+            pulse::disable(&mut emulator.apu.channel1); 
+            emulator.apu.audio_master_control = reset_bit(emulator.apu.audio_master_control, CH1_ENABLED_INDEX);
+        }
     }
 }
 
 pub fn set_ch2_envelope_settings(emulator: &mut Emulator, new_envelope_settings: u8) {
-    emulator.apu.channel2.envelope.initial_settings = new_envelope_settings;
+    if apu_enabled(emulator.apu.audio_master_control) {
+        emulator.apu.channel2.envelope.initial_settings = new_envelope_settings;
 
-    let should_disable = should_disable_dac(&emulator.apu.channel2.envelope);
-
-    emulator.apu.channel2.dac_enabled = !should_disable;
-
-    if should_disable {
-        pulse::disable(&mut emulator.apu.channel2); 
-        emulator.apu.audio_master_control = reset_bit(emulator.apu.audio_master_control, CH2_ENABLED_INDEX);
+        let should_disable = should_disable_dac(&emulator.apu.channel2.envelope);
+    
+        emulator.apu.channel2.dac_enabled = !should_disable;
+    
+        if should_disable {
+            pulse::disable(&mut emulator.apu.channel2); 
+            emulator.apu.audio_master_control = reset_bit(emulator.apu.audio_master_control, CH2_ENABLED_INDEX);
+        }
     }
 }
 
 pub fn set_ch3_dac_enabled(emulator: &mut Emulator, new_dac_enabled_register_value: u8) {
-    let should_disable = !is_bit_set(new_dac_enabled_register_value, CH3_DAC_ENABLED_INDEX);
+    if apu_enabled(emulator.apu.audio_master_control) {
+        let should_disable = !is_bit_set(new_dac_enabled_register_value, CH3_DAC_ENABLED_INDEX);
 
-    emulator.apu.channel3.dac_enabled = !should_disable;
-    
-    if should_disable {
-        wave::disable(&mut emulator.apu.channel3);
-        emulator.apu.audio_master_control = reset_bit(emulator.apu.audio_master_control, CH3_ENABLED_INDEX);
+        emulator.apu.channel3.dac_enabled = !should_disable;
+        
+        if should_disable {
+            wave::disable(&mut emulator.apu.channel3);
+            emulator.apu.audio_master_control = reset_bit(emulator.apu.audio_master_control, CH3_ENABLED_INDEX);
+        }
     }
 }
 
 pub fn set_ch4_envelope_settings(emulator: &mut Emulator, new_envelope_settings: u8) {
-    emulator.apu.channel4.envelope.initial_settings = new_envelope_settings;
+    if apu_enabled(emulator.apu.audio_master_control) {
+        emulator.apu.channel4.envelope.initial_settings = new_envelope_settings;
 
-    let should_disable = should_disable_dac(&emulator.apu.channel4.envelope);
-
-    emulator.apu.channel4.dac_enabled = !should_disable;
-
-    if should_disable {
-        noise::disable(&mut emulator.apu.channel4);
-        emulator.apu.audio_master_control = reset_bit(emulator.apu.audio_master_control, CH4_ENABLED_INDEX);
+        let should_disable = should_disable_dac(&emulator.apu.channel4.envelope);
+    
+        emulator.apu.channel4.dac_enabled = !should_disable;
+    
+        if should_disable {
+            noise::disable(&mut emulator.apu.channel4);
+            emulator.apu.audio_master_control = reset_bit(emulator.apu.audio_master_control, CH4_ENABLED_INDEX);
+        }
     }
 }
 
@@ -249,6 +265,79 @@ pub fn set_audio_master_control(emulator: &mut Emulator, new_audio_master_contro
         emulator.apu = initialize_apu();
     }
 }
+
+pub fn set_ch1_sweep_settings(emulator: &mut Emulator, new_sweep_settings: u8) {
+    if apu_enabled(emulator.apu.audio_master_control) {
+        emulator.apu.channel1.sweep.initial_settings = new_sweep_settings;
+    }
+}
+
+pub fn set_ch1_length_settings(emulator: &mut Emulator, new_length_settings: u8) {
+    if apu_enabled(emulator.apu.audio_master_control) {
+        emulator.apu.channel1.length.initial_settings = new_length_settings;
+    }
+}
+
+pub fn set_ch1_period_low(emulator: &mut Emulator, new_period_low: u8) {
+    if apu_enabled(emulator.apu.audio_master_control) {
+        emulator.apu.channel1.period.low = new_period_low;
+    }
+}
+
+pub fn set_ch2_length_settings(emulator: &mut Emulator, new_length_settings: u8) {
+    if apu_enabled(emulator.apu.audio_master_control) {
+        emulator.apu.channel2.length.initial_settings = new_length_settings;
+    }
+}
+
+pub fn set_ch2_period_low(emulator: &mut Emulator, new_period_low: u8) {
+    if apu_enabled(emulator.apu.audio_master_control) {
+        emulator.apu.channel2.period.low = new_period_low;
+    }
+}
+
+pub fn set_ch3_length_settings(emulator: &mut Emulator, new_length_settings: u8) {
+    if apu_enabled(emulator.apu.audio_master_control) {
+        emulator.apu.channel3.length.initial_settings = new_length_settings;
+    }
+}
+
+pub fn set_ch3_period_low(emulator: &mut Emulator, new_period_low: u8) {
+    if apu_enabled(emulator.apu.audio_master_control) {
+        emulator.apu.channel3.period.low = new_period_low;
+    }
+}
+
+pub fn set_ch3_volume(emulator: &mut Emulator, new_volume: u8) {
+    if apu_enabled(emulator.apu.audio_master_control) {
+        emulator.apu.channel3.volume = new_volume;
+    }
+}
+
+pub fn set_ch4_length_settings(emulator: &mut Emulator, new_length_settings: u8) {
+    if apu_enabled(emulator.apu.audio_master_control) {
+        emulator.apu.channel4.length.initial_settings = new_length_settings;
+    }
+}
+
+pub fn set_ch4_polynomial(emulator: &mut Emulator, new_polynomial: u8) {
+    if apu_enabled(emulator.apu.audio_master_control) {
+        emulator.apu.channel4.polynomial = new_polynomial;
+    }
+}
+
+pub fn set_master_volume(emulator: &mut Emulator, new_master_volume: u8) {
+    if apu_enabled(emulator.apu.audio_master_control) {
+        emulator.apu.master_volume = new_master_volume;
+    }
+}
+
+pub fn set_sound_panning(emulator: &mut Emulator, new_sound_panning: u8) {
+    if apu_enabled(emulator.apu.audio_master_control) {
+        emulator.apu.sound_panning = new_sound_panning;
+    }
+}
+
 
 #[cfg(test)]
 mod tests;
