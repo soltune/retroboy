@@ -245,9 +245,7 @@ pub fn set_ch4_envelope_settings(emulator: &mut Emulator, new_envelope_settings:
 pub fn set_audio_master_control(emulator: &mut Emulator, new_audio_master_control: u8) {
     emulator.apu.audio_master_control = new_audio_master_control & 0b11110000;
 
-    let is_powered_off = !is_bit_set(emulator.apu.audio_master_control, APU_ENABLED_INDEX);
-
-    if is_powered_off {
+    if !apu_enabled(emulator.apu.audio_master_control) {
         emulator.apu = initialize_apu();
     }
 }
