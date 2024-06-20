@@ -54,10 +54,8 @@ const SAMPLE_RATE: u32 = 48000;
 const ENQUEUE_RATE: u32 = CPU_RATE / SAMPLE_RATE;
 
 fn should_step_div_apu(emulator: &mut Emulator) -> bool {
-    emulator.apu.last_divider_time > 0
-        && emulator.timers.divider > 0
-        && get_bit(emulator.apu.last_divider_time, 4) == 1
-        && get_bit(emulator.timers.divider, 4) == 0
+    get_bit(emulator.apu.last_divider_time, 4) == 1
+    && get_bit(emulator.timers.divider, 4) == 0
 }
 
 fn step_div_apu(emulator: &mut Emulator) {
@@ -100,8 +98,6 @@ fn step_div_apu(emulator: &mut Emulator) {
 
         emulator.apu.divider_apu = bounded_wrapping_add(emulator.apu.divider_apu, MAX_DIV_APU_STEPS)
     }
-
-    emulator.apu.last_divider_time = emulator.timers.divider;
 }
 
 fn apu_enabled(audio_master_control: u8) -> bool {
@@ -153,7 +149,9 @@ pub fn step(emulator: &mut Emulator) {
         noise::step(&mut emulator.apu.channel4, instruction_clock_cycles);
         step_div_apu(emulator);
         enqueue_audio_samples(emulator);
-    }    
+    }
+
+    emulator.apu.last_divider_time = emulator.timers.divider;
 }
 
 pub fn set_ch1_period_high(emulator: &mut Emulator, new_period_high_value: u8) {

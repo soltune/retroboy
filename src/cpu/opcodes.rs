@@ -853,10 +853,12 @@ pub fn step(emulator: &mut Emulator) {
     }
 
     timers::step(emulator);
-    interrupts::step(emulator);
+    let restart_occurred = interrupts::step(emulator);
 
     // Step timers again in case a restart occurred
-    timers::step(emulator);
+    if restart_occurred {
+        timers::step(emulator);
+    }
 }
 
 fn execute_cb_opcode(emulator: &mut Emulator) {
