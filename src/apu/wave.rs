@@ -78,6 +78,7 @@ pub fn dac_output(emulator: &Emulator) -> f32 {
 
 pub fn trigger(channel: &mut WaveChannel) {
     channel.enabled = true;
+    length::reload_timer_with_maximum(&mut channel.length, true);
 }
 
 pub fn enable_length_timer(channel: &mut WaveChannel) {

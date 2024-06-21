@@ -27,3 +27,9 @@ pub fn initialize_timer(length: &mut Length, channel_three: bool) {
     };
     length.timer = initial_timer_value;
 }
+
+pub fn reload_timer_with_maximum(length: &mut Length, channel_three: bool) {
+    if length.timer == 0 {
+        length.timer = if channel_three { 256 } else { 64 };
+    }
+}

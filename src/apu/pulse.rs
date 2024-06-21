@@ -93,6 +93,7 @@ pub fn step_sweep(channel: &mut PulseChannel) {
 
 pub fn trigger(channel: &mut PulseChannel, with_sweep: bool) {
     channel.enabled = true;
+    length::reload_timer_with_maximum(&mut channel.length, false);
     envelope::trigger(&mut channel.envelope);
     if with_sweep {
         sweep::trigger(channel);
