@@ -315,10 +315,8 @@ pub fn set_ch3_volume(emulator: &mut Emulator, new_volume: u8) {
 }
 
 pub fn set_ch4_length_settings(emulator: &mut Emulator, new_length_settings: u8) {
-    if apu_enabled(emulator.apu.audio_master_control) {
-        emulator.apu.channel4.length.initial_settings = new_length_settings;
-        length::initialize_timer(&mut emulator.apu.channel4.length, false);
-    }
+    emulator.apu.channel4.length.initial_settings = new_length_settings;
+    length::initialize_timer(&mut emulator.apu.channel4.length, false);
 }
 
 pub fn set_ch4_polynomial(emulator: &mut Emulator, new_polynomial: u8) {
