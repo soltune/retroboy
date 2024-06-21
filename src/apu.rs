@@ -155,44 +155,68 @@ pub fn step(emulator: &mut Emulator) {
 
 pub fn set_ch1_period_high(emulator: &mut Emulator, new_period_high_value: u8) {
     if apu_enabled(emulator.apu.audio_master_control) {
+        let original_period_high_value = emulator.apu.channel1.period.high;
+
         emulator.apu.channel1.period.high = new_period_high_value;
     
         if pulse::should_trigger(&emulator.apu.channel1) { 
             pulse::trigger(&mut emulator.apu.channel1, true);
             emulator.apu.audio_master_control = set_bit(emulator.apu.audio_master_control, CH1_ENABLED_INDEX);
+        }
+        
+        if pulse::should_enable_length_timer(&emulator.apu.channel1, original_period_high_value) {
+            pulse::enable_length_timer(&mut emulator.apu.channel1);
         } 
     }
 }
 
 pub fn set_ch2_period_high(emulator: &mut Emulator, new_period_high_value: u8) {
     if apu_enabled(emulator.apu.audio_master_control) {
+        let original_period_high_value = emulator.apu.channel2.period.high;
+
         emulator.apu.channel2.period.high = new_period_high_value;
     
         if pulse::should_trigger(&emulator.apu.channel2) { 
             pulse::trigger(&mut emulator.apu.channel2, false);
             emulator.apu.audio_master_control = set_bit(emulator.apu.audio_master_control, CH2_ENABLED_INDEX);
         }
+        
+        if pulse::should_enable_length_timer(&emulator.apu.channel2, original_period_high_value) {
+            pulse::enable_length_timer(&mut emulator.apu.channel2);
+        }
     }
 }
 
 pub fn set_ch3_period_high(emulator: &mut Emulator, new_period_high_value: u8) {
     if apu_enabled(emulator.apu.audio_master_control) {
+        let original_period_high_value = emulator.apu.channel3.period.high;
+
         emulator.apu.channel3.period.high = new_period_high_value;
 
         if wave::should_trigger(&emulator.apu.channel3) {
             wave::trigger(&mut emulator.apu.channel3);
             emulator.apu.audio_master_control = set_bit(emulator.apu.audio_master_control, CH3_ENABLED_INDEX);
         }
+        
+        if wave::should_enable_length_timer(&emulator.apu.channel3, original_period_high_value) {
+            wave::enable_length_timer(&mut emulator.apu.channel3);
+        }
     }
 }
 
 pub fn set_ch4_control(emulator: &mut Emulator, new_control_value: u8) {
     if apu_enabled(emulator.apu.audio_master_control) {
+        let original_control_value = emulator.apu.channel4.control;
+
         emulator.apu.channel4.control = new_control_value;
 
         if noise::should_trigger(&emulator.apu.channel4) {
             noise::trigger(&mut emulator.apu.channel4);
             emulator.apu.audio_master_control = set_bit(emulator.apu.audio_master_control, CH4_ENABLED_INDEX);
+        }
+        
+        if noise::should_enable_length_timer(&emulator.apu.channel4, original_control_value) {
+            noise::enable_length_timer(&mut emulator.apu.channel4);
         }
     }
 }

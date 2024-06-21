@@ -117,6 +117,9 @@ pub fn trigger(channel: &mut NoiseChannel) {
     channel.enabled = true;
     channel.lfsr = 0xFFFF;
     envelope::trigger(&mut channel.envelope);
+}
+
+pub fn enable_length_timer(channel: &mut NoiseChannel) {
     length::initialize_timer(&mut channel.length, false);
 }
 
@@ -126,6 +129,11 @@ pub fn disable(channel: &mut NoiseChannel) {
 
 pub fn should_trigger(channel: &NoiseChannel) -> bool {
    channel.dac_enabled && is_bit_set(channel.control, CONTROL_TRIGGER_INDEX)
+}
+
+pub fn should_enable_length_timer(channel: &NoiseChannel, old_control: u8) -> bool {
+    !is_bit_set(old_control, CONTROL_LENGTH_ENABLED_INDEX)
+    && is_bit_set(channel.control, CONTROL_LENGTH_ENABLED_INDEX)
 }
 
 #[cfg(test)]

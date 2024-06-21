@@ -78,6 +78,9 @@ pub fn dac_output(emulator: &Emulator) -> f32 {
 
 pub fn trigger(channel: &mut WaveChannel) {
     channel.enabled = true;
+}
+
+pub fn enable_length_timer(channel: &mut WaveChannel) {
     length::initialize_timer(&mut channel.length, true);
 }
 
@@ -87,6 +90,11 @@ pub fn disable(channel: &mut WaveChannel) {
 
 pub fn should_trigger(channel: &WaveChannel) -> bool {
    channel.dac_enabled && is_bit_set(channel.period.high, PERIOD_HIGH_TRIGGER_INDEX)
+}
+
+pub fn should_enable_length_timer(channel: &WaveChannel, old_period_high: u8) -> bool {
+    !is_bit_set(old_period_high, PERIOD_HIGH_LENGTH_ENABLED_INDEX)
+    && is_bit_set(channel.period.high, PERIOD_HIGH_LENGTH_ENABLED_INDEX)
 }
 
 #[cfg(test)]

@@ -94,10 +94,13 @@ pub fn step_sweep(channel: &mut PulseChannel) {
 pub fn trigger(channel: &mut PulseChannel, with_sweep: bool) {
     channel.enabled = true;
     envelope::trigger(&mut channel.envelope);
-    length::initialize_timer(&mut channel.length, false);
     if with_sweep {
         sweep::trigger(channel);
     }
+}
+
+pub fn enable_length_timer(channel: &mut PulseChannel) {
+    length::initialize_timer(&mut channel.length, false);
 }
 
 pub fn disable(channel: &mut PulseChannel) {
@@ -106,6 +109,11 @@ pub fn disable(channel: &mut PulseChannel) {
 
 pub fn should_trigger(channel: &PulseChannel) -> bool {
    channel.dac_enabled && is_bit_set(channel.period.high, PERIOD_HIGH_TRIGGER_INDEX)
+}
+
+pub fn should_enable_length_timer(channel: &PulseChannel, old_period_high: u8) -> bool {
+    !is_bit_set(old_period_high, PERIOD_HIGH_LENGTH_ENABLED_INDEX)
+    && is_bit_set(channel.period.high, PERIOD_HIGH_LENGTH_ENABLED_INDEX)
 }
 
 #[cfg(test)]
