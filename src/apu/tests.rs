@@ -421,7 +421,6 @@ fn should_disable_channel_1_when_length_timer_reaches_zero() {
     
     assert_eq!(emulator.apu.channel1.length.timer, 0);
     assert_eq!(emulator.apu.channel1.enabled, false);
-    assert_eq!(emulator.apu.channel1.dac_enabled, false);
 }
 
 #[test]
@@ -488,7 +487,6 @@ fn should_disable_channel_1_on_sweep_overflow() {
     step(&mut emulator);
     
     assert_eq!(emulator.apu.channel1.enabled, false);
-    assert_eq!(emulator.apu.channel1.dac_enabled, false);
 }
 
 #[test]

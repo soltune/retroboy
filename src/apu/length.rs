@@ -17,7 +17,7 @@ pub fn step(length: &mut Length) {
     }
 }
 
-pub fn trigger(length: &mut Length, channel_three: bool) {
+pub fn initialize_timer(length: &mut Length, channel_three: bool) {
     let initial_timer_value = if channel_three {
         256 - length.initial_settings as u16
     }

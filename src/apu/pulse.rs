@@ -94,14 +94,13 @@ pub fn step_sweep(channel: &mut PulseChannel) {
 pub fn trigger(channel: &mut PulseChannel, with_sweep: bool) {
     channel.enabled = true;
     envelope::trigger(&mut channel.envelope);
-    length::trigger(&mut channel.length, false);
+    length::initialize_timer(&mut channel.length, false);
     if with_sweep {
         sweep::trigger(channel);
     }
 }
 
 pub fn disable(channel: &mut PulseChannel) {
-    channel.dac_enabled = false;
     channel.enabled = false;
 }
 

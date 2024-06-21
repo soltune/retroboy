@@ -78,11 +78,10 @@ pub fn dac_output(emulator: &Emulator) -> f32 {
 
 pub fn trigger(channel: &mut WaveChannel) {
     channel.enabled = true;
-    length::trigger(&mut channel.length, true);
+    length::initialize_timer(&mut channel.length, true);
 }
 
 pub fn disable(channel: &mut WaveChannel) {
-    channel.dac_enabled = false;
     channel.enabled = false;
 }
 

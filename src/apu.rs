@@ -1,5 +1,4 @@
 use utils::{calculate_left_stereo_sample, calculate_right_stereo_sample};
-
 use crate::apu::envelope::should_disable_dac;
 use crate::apu::noise::{initialize_noise_channel, NoiseChannel};
 use crate::apu::wave::{initialize_wave_channel, WaveChannel};
@@ -273,6 +272,7 @@ pub fn set_ch1_sweep_settings(emulator: &mut Emulator, new_sweep_settings: u8) {
 pub fn set_ch1_length_settings(emulator: &mut Emulator, new_length_settings: u8) {
     if apu_enabled(emulator.apu.audio_master_control) {
         emulator.apu.channel1.length.initial_settings = new_length_settings;
+        length::initialize_timer(&mut emulator.apu.channel1.length, false);
     }
 }
 
@@ -285,6 +285,7 @@ pub fn set_ch1_period_low(emulator: &mut Emulator, new_period_low: u8) {
 pub fn set_ch2_length_settings(emulator: &mut Emulator, new_length_settings: u8) {
     if apu_enabled(emulator.apu.audio_master_control) {
         emulator.apu.channel2.length.initial_settings = new_length_settings;
+        length::initialize_timer(&mut emulator.apu.channel2.length, false);
     }
 }
 
@@ -297,6 +298,7 @@ pub fn set_ch2_period_low(emulator: &mut Emulator, new_period_low: u8) {
 pub fn set_ch3_length_settings(emulator: &mut Emulator, new_length_settings: u8) {
     if apu_enabled(emulator.apu.audio_master_control) {
         emulator.apu.channel3.length.initial_settings = new_length_settings;
+        length::initialize_timer(&mut emulator.apu.channel3.length, true);
     }
 }
 
@@ -315,6 +317,7 @@ pub fn set_ch3_volume(emulator: &mut Emulator, new_volume: u8) {
 pub fn set_ch4_length_settings(emulator: &mut Emulator, new_length_settings: u8) {
     if apu_enabled(emulator.apu.audio_master_control) {
         emulator.apu.channel4.length.initial_settings = new_length_settings;
+        length::initialize_timer(&mut emulator.apu.channel4.length, false);
     }
 }
 
