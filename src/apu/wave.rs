@@ -28,7 +28,7 @@ pub fn initialize_wave_channel() -> WaveChannel {
     }
 }
 
-const MAX_WAVE_SAMPLE_STEPS: u8 = 32;
+const MAX_WAVE_SAMPLE_STEPS: u8 = 31;
 const PERIOD_HIGH_TRIGGER_INDEX: u8 = 7;
 const PERIOD_HIGH_LENGTH_ENABLED_INDEX: u8 = 6;
 
