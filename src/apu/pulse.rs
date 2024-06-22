@@ -52,14 +52,12 @@ pub fn step_envelope(channel: &mut PulseChannel) {
 }
 
 pub fn step_length(channel: &mut PulseChannel) {
-    if channel.enabled {
-        let length_timer_enabled = is_bit_set(channel.period.high, PERIOD_HIGH_LENGTH_ENABLED_INDEX);
-        if length_timer_enabled {
-            length::step(&mut channel.length);
-            if channel.length.timer == 0 {
-                disable(channel);
-            } 
-        }
+    let length_timer_enabled = is_bit_set(channel.period.high, PERIOD_HIGH_LENGTH_ENABLED_INDEX);
+    if length_timer_enabled {
+        length::step(&mut channel.length);
+        if channel.length.timer == 0 {
+            disable(channel);
+        } 
     }
 }
 
@@ -100,21 +98,12 @@ pub fn trigger(channel: &mut PulseChannel, with_sweep: bool) {
     }
 }
 
-pub fn enable_length_timer(channel: &mut PulseChannel) {
-    length::initialize_timer(&mut channel.length, false);
-}
-
 pub fn disable(channel: &mut PulseChannel) {
     channel.enabled = false;
 }
 
 pub fn should_trigger(channel: &PulseChannel) -> bool {
    channel.dac_enabled && is_bit_set(channel.period.high, PERIOD_HIGH_TRIGGER_INDEX)
-}
-
-pub fn should_enable_length_timer(channel: &PulseChannel, old_period_high: u8) -> bool {
-    !is_bit_set(old_period_high, PERIOD_HIGH_LENGTH_ENABLED_INDEX)
-    && is_bit_set(channel.period.high, PERIOD_HIGH_LENGTH_ENABLED_INDEX)
 }
 
 #[cfg(test)]

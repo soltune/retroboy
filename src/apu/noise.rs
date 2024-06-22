@@ -90,14 +90,12 @@ pub fn step_envelope(channel: &mut NoiseChannel) {
 }
 
 pub fn step_length(channel: &mut NoiseChannel) {
-    if channel.enabled {
-        let length_timer_enabled = is_bit_set(channel.control, CONTROL_LENGTH_ENABLED_INDEX);
-        if length_timer_enabled {
-            length::step(&mut channel.length);
-            if channel.length.timer == 0 {
-                disable(channel);
-            } 
-        }
+    let length_timer_enabled = is_bit_set(channel.control, CONTROL_LENGTH_ENABLED_INDEX);
+    if length_timer_enabled {
+        length::step(&mut channel.length);
+        if channel.length.timer == 0 {
+            disable(channel);
+        } 
     }
 }
 
@@ -120,21 +118,12 @@ pub fn trigger(channel: &mut NoiseChannel) {
     envelope::trigger(&mut channel.envelope);
 }
 
-pub fn enable_length_timer(channel: &mut NoiseChannel) {
-    length::initialize_timer(&mut channel.length, false);
-}
-
 pub fn disable(channel: &mut NoiseChannel) {
     channel.enabled = false;
 }
 
 pub fn should_trigger(channel: &NoiseChannel) -> bool {
    channel.dac_enabled && is_bit_set(channel.control, CONTROL_TRIGGER_INDEX)
-}
-
-pub fn should_enable_length_timer(channel: &NoiseChannel, old_control: u8) -> bool {
-    !is_bit_set(old_control, CONTROL_LENGTH_ENABLED_INDEX)
-    && is_bit_set(channel.control, CONTROL_LENGTH_ENABLED_INDEX)
 }
 
 #[cfg(test)]

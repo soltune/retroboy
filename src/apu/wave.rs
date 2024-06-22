@@ -41,14 +41,12 @@ pub fn step(channel: &mut WaveChannel, last_instruction_clock_cycles: u8) {
 }
 
 pub fn step_length(channel: &mut WaveChannel) {
-    if channel.enabled {
-        let length_timer_enabled = is_bit_set(channel.period.high, PERIOD_HIGH_LENGTH_ENABLED_INDEX);
-        if length_timer_enabled {
-            length::step(&mut channel.length);
-            if channel.length.timer == 0 {
-                disable(channel);
-            } 
-        }
+    let length_timer_enabled = is_bit_set(channel.period.high, PERIOD_HIGH_LENGTH_ENABLED_INDEX);
+    if length_timer_enabled {
+        length::step(&mut channel.length);
+        if channel.length.timer == 0 {
+            disable(channel);
+        } 
     }
 }
 
@@ -81,21 +79,12 @@ pub fn trigger(channel: &mut WaveChannel) {
     length::reload_timer_with_maximum(&mut channel.length, true);
 }
 
-pub fn enable_length_timer(channel: &mut WaveChannel) {
-    length::initialize_timer(&mut channel.length, true);
-}
-
 pub fn disable(channel: &mut WaveChannel) {
     channel.enabled = false;
 }
 
 pub fn should_trigger(channel: &WaveChannel) -> bool {
    channel.dac_enabled && is_bit_set(channel.period.high, PERIOD_HIGH_TRIGGER_INDEX)
-}
-
-pub fn should_enable_length_timer(channel: &WaveChannel, old_period_high: u8) -> bool {
-    !is_bit_set(old_period_high, PERIOD_HIGH_LENGTH_ENABLED_INDEX)
-    && is_bit_set(channel.period.high, PERIOD_HIGH_LENGTH_ENABLED_INDEX)
 }
 
 #[cfg(test)]

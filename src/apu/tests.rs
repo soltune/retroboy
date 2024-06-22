@@ -429,12 +429,11 @@ fn should_initialize_length_timer_when_channel_1_is_triggered() {
     emulator.apu.audio_master_control = 0b10000000;
     emulator.apu.channel1.dac_enabled = true;
     emulator.apu.channel1.enabled = false;
-    emulator.apu.channel1.length.initial_settings = 0b01101010;
     set_ch1_period_high(&mut emulator, 0b11000000);
     assert_eq!(emulator.apu.audio_master_control, 0b10000001);
     assert_eq!(emulator.apu.channel1.enabled, true);
     assert_eq!(emulator.apu.channel1.period.high, 0b11000000);
-    assert_eq!(emulator.apu.channel1.length.timer, 0b00010110);
+    assert_eq!(emulator.apu.channel1.length.timer, 0b01000000);
 }
 
 #[test]
@@ -611,12 +610,11 @@ fn should_initialize_length_timer_when_channel_3_is_triggered() {
     emulator.apu.audio_master_control = 0b10000000;
     emulator.apu.channel3.dac_enabled = true;
     emulator.apu.channel3.enabled = false;
-    emulator.apu.channel3.length.initial_settings = 0b01101010;
     set_ch3_period_high(&mut emulator, 0b11000000);
     assert_eq!(emulator.apu.audio_master_control, 0b10000100);
     assert_eq!(emulator.apu.channel3.enabled, true);
     assert_eq!(emulator.apu.channel3.period.high, 0b11000000);
-    assert_eq!(emulator.apu.channel3.length.timer, 0b10010110);
+    assert_eq!(emulator.apu.channel3.length.timer, 0b100000000);
 }
 
 #[test]
