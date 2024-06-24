@@ -12,6 +12,12 @@ pub fn as_dac_output(dac_input: u8) -> f32 {
     (dac_input as f32 / 7.5) - 1.0
 }
 
+const LENGTH_ENABLED_INDEX: u8 = 6;
+
+pub fn length_enabled(register_value_with_length: u8) -> bool {
+    is_bit_set(register_value_with_length, LENGTH_ENABLED_INDEX) 
+}
+
 const CHANNEL4_LEFT_PANNING_INDEX: u8 = 7;
 const CHANNEL3_LEFT_PANNING_INDEX: u8 = 6;
 const CHANNEL2_LEFT_PANNING_INDEX: u8 = 5;

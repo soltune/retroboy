@@ -6,7 +6,7 @@ use crate::apu::period;
 use crate::apu::period::{initalize_period, Period};
 use crate::apu::sweep;
 use crate::apu::sweep::{initialize_sweep, Sweep};
-use crate::apu::utils::{as_dac_output, bounded_wrapping_add};
+use crate::apu::utils::{as_dac_output, bounded_wrapping_add, length_enabled};
 use crate::utils::{get_bit, is_bit_set};
 use std::collections::HashMap;
 
@@ -35,7 +35,6 @@ pub fn initialize_pulse_channel() -> PulseChannel {
 
 const MAX_WAVEFORM_STEPS: u8 = 7;
 const PERIOD_HIGH_TRIGGER_INDEX: u8 = 7;
-const PERIOD_HIGH_LENGTH_ENABLED_INDEX: u8 = 6;
 
 pub fn step(channel: &mut PulseChannel, last_instruction_clock_cycles: u8) {
     if channel.enabled {
@@ -51,8 +50,13 @@ pub fn step_envelope(channel: &mut PulseChannel) {
     }
 }
 
+pub fn should_clock_length_on_enable(channel: &PulseChannel, original_period_high_value: u8) -> bool {
+    let new_period_high_value = channel.period.high;
+    !length_enabled(original_period_high_value) && length_enabled(new_period_high_value)
+}
+
 pub fn step_length(channel: &mut PulseChannel) {
-    let length_timer_enabled = is_bit_set(channel.period.high, PERIOD_HIGH_LENGTH_ENABLED_INDEX);
+    let length_timer_enabled = length_enabled(channel.period.high);
     if length_timer_enabled {
         length::step(&mut channel.length);
         if channel.length.timer == 0 {

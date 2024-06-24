@@ -3,8 +3,7 @@ use crate::apu::envelope::{initialize_envelope, Envelope};
 use crate::apu::length;
 use crate::apu::length::{initialize_length, Length};
 use crate::utils::is_bit_set;
-
-use super::utils::as_dac_output;
+use crate::apu::utils::{as_dac_output, length_enabled};
 
 #[derive(Debug)]
 pub struct NoiseChannel {
@@ -40,7 +39,6 @@ const PERIOD_DIVIDER_RATE_IN_INSTRUCTION_CYCLES: u8 = 16;
 
 const WIDTH_MODE_INDEX: u8 = 3;
 const CONTROL_TRIGGER_INDEX: u8 = 7;
-const CONTROL_LENGTH_ENABLED_INDEX: u8 = 6;
 
 fn calculate_period_divider(channel: &NoiseChannel) -> u16 {
     let shift_amount = (channel.polynomial & 0b11110000) >> 4;
@@ -89,8 +87,13 @@ pub fn step_envelope(channel: &mut NoiseChannel) {
     }
 }
 
+pub fn should_clock_length_on_enable(channel: &NoiseChannel, original_control_value: u8) -> bool {
+    let new_control_value = channel.control;
+    !length_enabled(original_control_value) && length_enabled(new_control_value)
+}
+
 pub fn step_length(channel: &mut NoiseChannel) {
-    let length_timer_enabled = is_bit_set(channel.control, CONTROL_LENGTH_ENABLED_INDEX);
+    let length_timer_enabled = length_enabled(channel.control);
     if length_timer_enabled {
         length::step(&mut channel.length);
         if channel.length.timer == 0 {
