@@ -106,8 +106,15 @@ pub fn dac_output(channel: &NoiseChannel) -> f32 {
     if channel.enabled {
         let amplitude = (!channel.lfsr & 0x01) as u8;
         let current_volume = channel.envelope.current_volume;
+
         let dac_input = amplitude * current_volume;
-        as_dac_output(dac_input)
+
+        if current_volume > 0 {
+            as_dac_output(dac_input)
+        }
+        else {
+            0.0
+        }
     }
     else {
         0.0

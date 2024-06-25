@@ -79,8 +79,13 @@ pub fn dac_output(channel: &PulseChannel) -> f32 {
         let amplitude = get_bit(waveform, channel.wave_duty_position);
         let current_volume = channel.envelope.current_volume;
         let dac_input = amplitude * current_volume;
-    
-        as_dac_output(dac_input)
+
+        if current_volume > 0 {
+            as_dac_output(dac_input)
+        }
+        else {
+            0.0
+        }
     }
     else {
         0.0
