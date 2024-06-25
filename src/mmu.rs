@@ -108,7 +108,7 @@ pub fn read_byte(emulator: &Emulator, address: u16) -> u8 {
                 0x23 => emulator.apu.channel4.control | 0b10111111,
                 0x24 => emulator.apu.master_volume,
                 0x25 => emulator.apu.sound_panning,
-                0x26 => emulator.apu.audio_master_control | 0b01110000,
+                0x26 => apu::get_audio_master_control(&emulator),
                 0x30..=0x3F => memory.wave_pattern_ram[(address & 0xF) as usize],
                 0x40 => emulator.gpu.registers.lcdc,
                 0x41 => emulator.gpu.registers.stat,

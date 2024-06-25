@@ -74,7 +74,7 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.keys.column = 0x10;
     emulator.keys.select_buttons = 0x04;
 
-    emulator.apu.audio_master_control = 0xB1;
+    emulator.apu.enabled = true;
     emulator.apu.sound_panning = 0xF2;
     emulator.apu.master_volume = 0xC1;
 
@@ -89,6 +89,7 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.apu.channel2.period.low = 0x14;
     emulator.apu.channel2.period.high = 0x24;
 
+    emulator.apu.channel3.enabled = true;
     emulator.apu.channel3.dac_enabled = true;
     emulator.apu.channel3.volume = 0x60;
     emulator.apu.channel3.period.high = 0x44;
@@ -478,14 +479,14 @@ fn reads_from_different_ram_bank() {
 #[test]
 fn reads_from_audio_master_control() {
     let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF26), 0xF1);
+    assert_eq!(read_byte(&emulator, 0xFF26), 0xF4);
 }
 
 #[test]
 fn writes_to_audio_master_control() {
     let mut emulator = setup_emulator_with_test_memory();
-    write_byte(&mut emulator, 0xFF26, 0xF0);
-    assert_eq!(emulator.apu.audio_master_control, 0xF0);
+    write_byte(&mut emulator, 0xFF26, 0x0);
+    assert_eq!(emulator.apu.enabled, false);
 }
 
 #[test]
