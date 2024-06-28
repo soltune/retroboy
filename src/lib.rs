@@ -63,31 +63,21 @@ pub fn reset_emulator() {
     })
 }
 
-fn flush_audio_queues(emulator: &mut Emulator) {
-    let left_samples_slice = emulator.apu.left_sample_queue.as_slice();
-    let right_samples_slice = emulator.apu.right_sample_queue.as_slice();
-
-    play_audio_samples(left_samples_slice, right_samples_slice);
-
-    emulator.apu.left_sample_queue.clear();
-    emulator.apu.right_sample_queue.clear();
-}
-
-#[wasm_bindgen(js_name = stepFrame)]
-pub fn step_frame() {
+#[wasm_bindgen(js_name = stepUntilNextAudioBuffer)]
+pub fn step_until_next_audio_buffer() {
     EMULATOR.with(|emulator_cell| {
         let mut emulator = emulator_cell.borrow_mut();
 
-        let mut frame_rendered = false;
-
-        while !frame_rendered {
-            emulator::step(&mut emulator, |buffer: &Vec<u8>| {
-                render(buffer.as_slice());
-                frame_rendered = true;
-            });
+        while !apu::audio_buffers_full(&mut emulator) {
+            emulator::step(&mut emulator);
         }
 
-        flush_audio_queues(&mut emulator);
+        let left_samples_slice = apu::get_left_sample_queue(&emulator);
+        let right_samples_slice = apu::get_right_sample_queue(&emulator);
+    
+        play_audio_samples(left_samples_slice, right_samples_slice);
+    
+        apu::clear_audio_buffers(&mut emulator);
     })
 }
 

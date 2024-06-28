@@ -3,6 +3,9 @@ use super::*;
 
 fn prep_div_apu_for_next_step(emulator: &mut Emulator, step: u8) {
     emulator.apu.divider_apu = step;
+    emulator.apu.channel1.period.divider = 1;
+    emulator.apu.channel1.period.low = 26;
+    emulator.apu.channel1.period.high = 197;
     // DIV-APU only steps when fourth bit in divider falls from 1 to 0.
     emulator.apu.last_divider_time = 0b10011111;
     emulator.timers.divider = 0b10100000;
@@ -80,19 +83,6 @@ fn should_decrement_period_divider_for_channel_2() {
 }
 
 #[test]
-fn should_decrement_period_divider_twice_with_eight_instruction_cycles() {
-    let mut emulator = initialize_emulator();
-    emulator.apu.enabled = true;
-    emulator.apu.channel1.enabled = true;
-    emulator.apu.channel1.period.divider = 742;
-    emulator.apu.channel1.period.low = 26;
-    emulator.apu.channel1.period.high = 197;
-    emulator.cpu.clock.instruction_clock_cycles = 8;
-    step(&mut emulator);
-    assert_eq!(emulator.apu.channel1.period.divider, 740); 
-}
-
-#[test]
 fn should_reload_period_divider_once_it_reaches_zero() {
     let mut emulator = initialize_emulator();
     emulator.apu.enabled = true;
@@ -100,7 +90,6 @@ fn should_reload_period_divider_once_it_reaches_zero() {
     emulator.apu.channel1.period.divider = 1;
     emulator.apu.channel1.period.low = 26;
     emulator.apu.channel1.period.high = 197;
-    emulator.cpu.clock.instruction_clock_cycles = 4;
     step(&mut emulator);
     assert_eq!(emulator.apu.channel1.period.divider, 742);
 }
@@ -113,8 +102,9 @@ fn should_properly_wrap_period_divider_value_when_decrementing_it() {
     emulator.apu.channel1.period.divider = 1;
     emulator.apu.channel1.period.low = 26;
     emulator.apu.channel1.period.high = 197;
-    emulator.cpu.clock.instruction_clock_cycles = 8;
-    step(&mut emulator);
+    for _ in 1..=2 {
+        step(&mut emulator);
+    }
     assert_eq!(emulator.apu.channel1.period.divider, 741);  
 }
 
@@ -127,7 +117,6 @@ fn should_increment_wave_duty_position_when_period_divider_reaches_zero() {
     emulator.apu.channel1.period.low = 26;
     emulator.apu.channel1.period.high = 197;
     emulator.apu.channel1.wave_duty_position = 0;
-    emulator.cpu.clock.instruction_clock_cycles = 4;
     step(&mut emulator);
     assert_eq!(emulator.apu.channel1.wave_duty_position, 1);
 }
@@ -141,7 +130,6 @@ fn should_reset_wave_duty_position_to_zero_when_increased_above_seven() {
     emulator.apu.channel1.period.low = 26;
     emulator.apu.channel1.period.high = 197;
     emulator.apu.channel1.wave_duty_position = 7;
-    emulator.cpu.clock.instruction_clock_cycles = 4;
     step(&mut emulator);
     assert_eq!(emulator.apu.channel1.wave_duty_position, 0);
 }
@@ -151,6 +139,9 @@ fn should_increment_divider_apu_every_time_bit_four_of_divider_timer_goes_from_o
     let mut emulator = initialize_emulator();
     emulator.apu.enabled = true;
     emulator.apu.channel1.enabled = true;
+    emulator.apu.channel1.period.divider = 1;
+    emulator.apu.channel1.period.low = 26;
+    emulator.apu.channel1.period.high = 197;
     emulator.apu.last_divider_time = 0b10011111;
     emulator.timers.divider = 0b10100000;
     step(&mut emulator);
@@ -162,6 +153,9 @@ fn should_not_increment_divider_apu_if_bit_four_of_divider_timer_remains_unchang
     let mut emulator = initialize_emulator();
     emulator.apu.enabled = true;
     emulator.apu.channel1.enabled = true;
+    emulator.apu.channel1.period.divider = 1;
+    emulator.apu.channel1.period.low = 26;
+    emulator.apu.channel1.period.high = 197;
     emulator.apu.last_divider_time = 0b10010000;
     emulator.timers.divider = 0b10010001;
     step(&mut emulator);
@@ -282,8 +276,6 @@ fn should_update_channel_1_envelope_volume_and_reset_timer_when_timer_decrements
     emulator.apu.channel1.period.low = 26;
     emulator.apu.channel1.period.high = 197;
     
-    emulator.cpu.clock.instruction_clock_cycles = 4;
-    
     emulator.apu.channel1.envelope.initial_settings = 0b10100101;
     emulator.apu.channel1.envelope.current_volume = 0b1010;
     emulator.apu.channel1.envelope.timer = 0b1;
@@ -307,8 +299,6 @@ fn should_decrement_channel_1_envelope_timer() {
     emulator.apu.channel1.period.divider = 742;
     emulator.apu.channel1.period.low = 26;
     emulator.apu.channel1.period.high = 197;
-    
-    emulator.cpu.clock.instruction_clock_cycles = 4;
     
     emulator.apu.channel1.envelope.initial_settings = 0b10100101;
     emulator.apu.channel1.envelope.current_volume = 0b1010;
@@ -335,8 +325,6 @@ fn should_not_step_channel_1_envelope_if_divider_apu_is_on_wrong_step() {
     emulator.apu.channel1.period.low = 26;
     emulator.apu.channel1.period.high = 197;
     
-    emulator.cpu.clock.instruction_clock_cycles = 4;
-    
     emulator.apu.channel1.envelope.initial_settings = 0b10100101;
     emulator.apu.channel1.envelope.current_volume = 0b1010;
     emulator.apu.channel1.envelope.timer = 0b101;
@@ -361,8 +349,6 @@ fn should_step_channel_1_length_timer() {
     emulator.apu.channel1.period.low = 26;
     emulator.apu.channel1.period.high = 197;
     
-    emulator.cpu.clock.instruction_clock_cycles = 4;
-    
     emulator.apu.channel1.length.initial_settings = 0b01001110;
     emulator.apu.channel1.length.timer = 0b00000110;
     emulator.apu.channel1.period.high = 0b11000110;
@@ -386,8 +372,6 @@ fn should_not_step_channel_1_length_timer_if_divider_apu_is_on_wrong_step() {
     emulator.apu.channel1.period.low = 26;
     emulator.apu.channel1.period.high = 197;
     
-    emulator.cpu.clock.instruction_clock_cycles = 4;
-    
     emulator.apu.channel1.length.initial_settings = 0b01001110;
     emulator.apu.channel1.length.timer = 0b00000110;
     emulator.apu.channel1.period.high = 0b11000110;
@@ -410,8 +394,6 @@ fn should_disable_channel_1_when_length_timer_reaches_zero() {
     emulator.apu.channel1.period.divider = 742;
     emulator.apu.channel1.period.low = 26;
     emulator.apu.channel1.period.high = 197;
-    
-    emulator.cpu.clock.instruction_clock_cycles = 4;
     
     emulator.apu.channel1.length.initial_settings = 0b01001110;
     emulator.apu.channel1.length.timer = 0b1;
@@ -450,8 +432,6 @@ fn should_decrement_channel_1_sweep_timer() {
     emulator.apu.channel1.period.low = 0b00011010;
     emulator.apu.channel1.period.high = 0b10000101;
     
-    emulator.cpu.clock.instruction_clock_cycles = 4;
-
     emulator.apu.channel1.sweep.initial_settings = 0b00100010;
     emulator.apu.channel1.sweep.enabled = true;
     emulator.apu.channel1.sweep.timer = 0b10;
@@ -476,8 +456,6 @@ fn should_disable_channel_1_on_sweep_overflow() {
     emulator.apu.channel1.period.low = 0b11111110;
     emulator.apu.channel1.period.high = 0b10000111;
     
-    emulator.cpu.clock.instruction_clock_cycles = 4;
-
     emulator.apu.channel1.sweep.initial_settings = 0b00100010;
     emulator.apu.channel1.sweep.enabled = true;
     emulator.apu.channel1.sweep.timer = 0b01;
@@ -502,8 +480,6 @@ fn should_reload_sweep_timer_and_frequency_when_timer_reaches_zero() {
     emulator.apu.channel1.period.low = 0b00011010;
     emulator.apu.channel1.period.high = 0b10000101;
     
-    emulator.cpu.clock.instruction_clock_cycles = 4;
-
     emulator.apu.channel1.sweep.initial_settings = 0b00100010;
     emulator.apu.channel1.sweep.enabled = true;
     emulator.apu.channel1.sweep.timer = 0b01;
@@ -528,8 +504,6 @@ fn should_properly_initialize_sweep_timer_and_shadow_frequency_on_trigger() {
     emulator.apu.channel1.period.divider = 742;
     emulator.apu.channel1.period.low = 0b00011010;
     
-    emulator.cpu.clock.instruction_clock_cycles = 4;
-
     emulator.apu.channel1.sweep.initial_settings = 0b00100010;
 
     set_ch1_period_high(&mut emulator, 0b10100010);
@@ -548,7 +522,6 @@ fn should_decrement_period_divider_for_channel_3() {
     emulator.apu.channel3.period.divider = 742;
     emulator.apu.channel3.period.low = 26;
     emulator.apu.channel3.period.high = 197;
-    emulator.cpu.clock.instruction_clock_cycles = 4;
     step(&mut emulator);
     assert_eq!(emulator.apu.channel3.period.divider, 740);
 }
@@ -562,7 +535,6 @@ fn should_reload_period_divider_once_it_reaches_zero_for_channel_3() {
     emulator.apu.channel3.period.divider = 2;
     emulator.apu.channel3.period.low = 26;
     emulator.apu.channel3.period.high = 197;
-    emulator.cpu.clock.instruction_clock_cycles = 4;
     step(&mut emulator);
     assert_eq!(emulator.apu.channel3.period.divider, 742);
 }
@@ -576,7 +548,6 @@ fn should_increment_wave_position_when_period_divider_reaches_zero_for_channel_3
     emulator.apu.channel3.period.divider = 2;
     emulator.apu.channel3.period.low = 26;
     emulator.apu.channel3.period.high = 197;
-    emulator.cpu.clock.instruction_clock_cycles = 4;
     step(&mut emulator);
     assert_eq!(emulator.apu.channel3.wave_position, 1);
 }
@@ -631,8 +602,6 @@ fn should_step_channel_3_length_timer() {
     emulator.apu.channel3.period.low = 26;
     emulator.apu.channel3.period.high = 197;
     
-    emulator.cpu.clock.instruction_clock_cycles = 4;
-    
     emulator.apu.channel3.length.initial_settings = 0b01001110;
     emulator.apu.channel3.length.timer = 0b00000110;
     emulator.apu.channel3.period.high = 0b11000110;
@@ -649,7 +618,6 @@ fn should_not_decrement_period_divider_for_channel_4_if_only_four_instruction_cy
 
     emulator.apu.channel4.period_divider = 742;
 
-    emulator.cpu.clock.instruction_clock_cycles = 4;
     step(&mut emulator);
     
     assert_eq!(emulator.apu.channel4.period_divider, 742);
@@ -760,8 +728,6 @@ fn should_step_channel_4_length_timer() {
     initialize_noise_channel(&mut emulator);
     prep_div_apu_for_next_step(&mut emulator, 0);
     
-    emulator.cpu.clock.instruction_clock_cycles = 4;
-    
     emulator.apu.channel4.length.initial_settings = 0b01001110;
     emulator.apu.channel4.length.timer = 0b00000110;
     emulator.apu.channel4.control = 0b11000000;
@@ -777,7 +743,6 @@ fn should_step_channel_4_envelope_timer() {
     initialize_noise_channel(&mut emulator);
     prep_div_apu_for_next_step(&mut emulator, 7);
     
-    emulator.cpu.clock.instruction_clock_cycles = 4;
     
     emulator.apu.channel4.envelope.initial_settings = 0b10100101;
     emulator.apu.channel4.envelope.current_volume = 0b1010;

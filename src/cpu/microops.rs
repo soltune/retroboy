@@ -1,31 +1,39 @@
 use crate::mmu;
 use crate::cpu::{Register, RegisterPair, CpuState};
 use crate::emulator::Emulator;
+use crate::emulator;
+use crate::utils::T_CYCLE_INCREMENT;
+
+fn step_one_machine_cycle(emulator: &mut Emulator) {
+    emulator.cpu.clock.total_clock_cycles = emulator.cpu.clock.total_clock_cycles.wrapping_add(T_CYCLE_INCREMENT as u32);
+    emulator.cpu.clock.instruction_clock_cycles = emulator.cpu.clock.instruction_clock_cycles.wrapping_add(T_CYCLE_INCREMENT);
+    emulator::sync(emulator);
+}
 
 pub fn read_byte_from_memory(emulator: &mut Emulator, address: u16) -> u8 {
     let byte = mmu::read_byte(emulator, address);
-    emulator.cpu.clock.total_clock_cycles = emulator.cpu.clock.total_clock_cycles.wrapping_add(4);
-    emulator.cpu.clock.instruction_clock_cycles = emulator.cpu.clock.instruction_clock_cycles.wrapping_add(4);
+    step_one_machine_cycle(emulator);
     byte
 }
 
 pub fn read_word_from_memory(emulator: &mut Emulator, address: u16) -> u16 {
     let word = mmu::read_word(emulator, address);
-    emulator.cpu.clock.total_clock_cycles = emulator.cpu.clock.total_clock_cycles.wrapping_add(8);
-    emulator.cpu.clock.instruction_clock_cycles = emulator.cpu.clock.instruction_clock_cycles.wrapping_add(8);
+    for _ in 1..=2 {
+        step_one_machine_cycle(emulator);
+    }
     word
 }
 
 pub fn store_byte_in_memory(emulator: &mut Emulator, address: u16, byte: u8) {
     mmu::write_byte(emulator, address, byte);
-    emulator.cpu.clock.total_clock_cycles = emulator.cpu.clock.total_clock_cycles.wrapping_add(4);
-    emulator.cpu.clock.instruction_clock_cycles = emulator.cpu.clock.instruction_clock_cycles.wrapping_add(4);
+    step_one_machine_cycle(emulator);
 }
 
 pub fn store_word_in_memory(emulator: &mut Emulator, address: u16, word: u16) {
     mmu::write_word(emulator, address, word);
-    emulator.cpu.clock.total_clock_cycles = emulator.cpu.clock.total_clock_cycles.wrapping_add(8);
-    emulator.cpu.clock.instruction_clock_cycles = emulator.cpu.clock.instruction_clock_cycles.wrapping_add(8);
+    for _ in 1..=2 {
+        step_one_machine_cycle(emulator);
+    }
 }
 
 pub fn read_from_register(cpu_state: &CpuState, register: &Register) -> u8 {
@@ -117,7 +125,6 @@ pub fn is_c_flag_set(cpu_state: &CpuState) -> bool {
     (value & 0x10) == 0x10
 }
 
-pub fn run_extra_machine_cycle(cpu_state: &mut CpuState) {
-    cpu_state.clock.total_clock_cycles = cpu_state.clock.total_clock_cycles.wrapping_add(4);
-    cpu_state.clock.instruction_clock_cycles = cpu_state.clock.instruction_clock_cycles.wrapping_add(4);
+pub fn run_extra_machine_cycle(emulator: &mut Emulator) {
+    step_one_machine_cycle(emulator);
 }

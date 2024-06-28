@@ -33,7 +33,7 @@ pub fn push_word_to_stack(emulator: &mut Emulator, word: u16) {
     microops::store_byte_in_memory(emulator, emulator.cpu.registers.stack_pointer, (word >> 8) as u8);
     emulator.cpu.registers.stack_pointer = emulator.cpu.registers.stack_pointer - 1;
     microops::store_byte_in_memory(emulator, emulator.cpu.registers.stack_pointer, (word & 0xFF) as u8);
-    microops::run_extra_machine_cycle(&mut emulator.cpu);
+    microops::run_extra_machine_cycle(emulator);
 }
 
 pub fn push_register_pair_to_stack(emulator: &mut Emulator, register_pair: RegisterPair) {

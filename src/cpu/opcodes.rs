@@ -5,7 +5,6 @@ use crate::cpu::bitops;
 use crate::cpu::interrupts;
 use crate::cpu::jumps;
 use crate::cpu::loads;
-use crate::cpu::timers;
 use crate::emulator::Emulator;
 
 fn update_interrupt_flag_after_delay(cpu: &mut CpuState) {
@@ -46,7 +45,7 @@ pub fn step(emulator: &mut Emulator) {
             loads::load_source_register_in_memory(emulator, Register::A, address);
         },
         0x03 =>
-            alu::increment_register_pair(&mut emulator.cpu, REGISTER_BC),
+            alu::increment_register_pair(emulator, REGISTER_BC),
         0x04 =>
             alu::increment_register(&mut emulator.cpu, Register::B),
         0x05 =>
@@ -63,14 +62,14 @@ pub fn step(emulator: &mut Emulator) {
         },
         0x09 => {
             let word = microops::read_from_register_pair(&mut emulator.cpu, &REGISTER_BC);
-            alu::add_value_to_register_pair(&mut emulator.cpu, REGISTER_HL, word);
+            alu::add_value_to_register_pair(emulator, REGISTER_HL, word);
         },
         0x0A => {
             let address = microops::read_from_register_pair(&mut emulator.cpu, &REGISTER_BC);
             loads::load_memory_byte_in_destination_register(emulator, address, Register::A);
         },
         0x0B =>
-            alu::decrement_register_pair(&mut emulator.cpu, REGISTER_BC),
+            alu::decrement_register_pair(emulator, REGISTER_BC),
         0x0C =>
             alu::increment_register(&mut emulator.cpu, Register::C),
         0x0D =>
@@ -90,7 +89,7 @@ pub fn step(emulator: &mut Emulator) {
             loads::load_source_register_in_memory(emulator, Register::A, address);
         },
         0x13 =>
-            alu::increment_register_pair(&mut emulator.cpu, REGISTER_DE),
+            alu::increment_register_pair(emulator, REGISTER_DE),
         0x14 =>
             alu::increment_register(&mut emulator.cpu, Register::D),
         0x15 =>
@@ -108,14 +107,14 @@ pub fn step(emulator: &mut Emulator) {
         },
         0x19 => {
             let word = microops::read_from_register_pair(&mut emulator.cpu, &REGISTER_DE);
-            alu::add_value_to_register_pair(&mut emulator.cpu, REGISTER_HL, word);
+            alu::add_value_to_register_pair(emulator, REGISTER_HL, word);
         },
         0x1A => {
             let address = microops::read_from_register_pair(&mut emulator.cpu,&REGISTER_DE);
             loads::load_memory_byte_in_destination_register(emulator, address, Register::A)
         },
         0x1B =>
-            alu::decrement_register_pair(&mut emulator.cpu, REGISTER_DE),
+            alu::decrement_register_pair(emulator, REGISTER_DE),
         0x1C =>
             alu::increment_register(&mut emulator.cpu, Register::E),
         0x1D =>
@@ -139,7 +138,7 @@ pub fn step(emulator: &mut Emulator) {
             microops::store_in_register_pair(&mut emulator.cpu, REGISTER_HL, address);    
         },
         0x23 =>
-            alu::increment_register_pair(&mut emulator.cpu, REGISTER_HL),
+            alu::increment_register_pair(emulator, REGISTER_HL),
         0x24 =>
             alu::increment_register(&mut emulator.cpu, Register::H),
         0x25 =>
@@ -152,7 +151,7 @@ pub fn step(emulator: &mut Emulator) {
             jumps::conditional_relative_jump(emulator, microops::is_z_flag_set(&emulator.cpu)),
         0x29 => {
             let word = microops::read_from_register_pair(&mut emulator.cpu, &REGISTER_HL);
-            alu::add_value_to_register_pair(&mut emulator.cpu, REGISTER_HL, word);
+            alu::add_value_to_register_pair(emulator, REGISTER_HL, word);
         },
         0x2A => {
             let mut address = microops::read_from_register_pair(&mut emulator.cpu, &REGISTER_HL);
@@ -161,7 +160,7 @@ pub fn step(emulator: &mut Emulator) {
             microops::store_in_register_pair(&mut emulator.cpu, REGISTER_HL, address);  
         },
         0x2B =>
-            alu::decrement_register_pair(&mut emulator.cpu, REGISTER_HL),
+            alu::decrement_register_pair(emulator, REGISTER_HL),
         0x2C =>
             alu::increment_register(&mut emulator.cpu, Register::L),
         0x2D =>
@@ -187,7 +186,7 @@ pub fn step(emulator: &mut Emulator) {
         },
         0x33 => {
             emulator.cpu.registers.stack_pointer = emulator.cpu.registers.stack_pointer.wrapping_add(1);
-            microops::run_extra_machine_cycle(&mut emulator.cpu);
+            microops::run_extra_machine_cycle(emulator);
         },
         0x34 =>
             alu::increment_memory_byte(emulator),
@@ -204,7 +203,7 @@ pub fn step(emulator: &mut Emulator) {
             jumps::conditional_relative_jump(emulator, microops::is_c_flag_set(&emulator.cpu)),
         0x39 => {
             let stack_pointer = emulator.cpu.registers.stack_pointer;
-            alu::add_value_to_register_pair(&mut emulator.cpu, REGISTER_HL, stack_pointer)
+            alu::add_value_to_register_pair(emulator, REGISTER_HL, stack_pointer)
         }
         0x3A => {
             let mut address = microops::read_from_register_pair(&mut emulator.cpu, &REGISTER_HL);
@@ -214,7 +213,7 @@ pub fn step(emulator: &mut Emulator) {
         },
         0x3B => {
             emulator.cpu.registers.stack_pointer = emulator.cpu.registers.stack_pointer.wrapping_sub(1);
-            microops::run_extra_machine_cycle(&mut emulator.cpu);
+            microops::run_extra_machine_cycle(emulator);
         },
         0x3C =>
             alu::increment_register(&mut emulator.cpu, Register::A),
@@ -765,7 +764,7 @@ pub fn step(emulator: &mut Emulator) {
 
             emulator.cpu.registers.stack_pointer = sum;
 
-            microops::run_extra_machine_cycle(&mut emulator.cpu);
+            microops::run_extra_machine_cycle(emulator);
         },
         0xE9 => {
             let address = microops::read_from_register_pair(&mut emulator.cpu, &REGISTER_HL);
@@ -824,12 +823,12 @@ pub fn step(emulator: &mut Emulator) {
             microops::set_flag_h(&mut emulator.cpu, (sum & 0xF) < (stack_pointer & 0xF));
             microops::set_flag_c(&mut emulator.cpu, (sum & 0xFF) < (stack_pointer & 0xFF));
 
-            microops::run_extra_machine_cycle(&mut emulator.cpu);
+            microops::run_extra_machine_cycle(emulator);
         },
         0xF9 => {
             let word = microops::read_from_register_pair(&mut emulator.cpu, &REGISTER_HL);
             emulator.cpu.registers.stack_pointer = word;
-            microops::run_extra_machine_cycle(&mut emulator.cpu);
+            microops::run_extra_machine_cycle(emulator);
         },
         0xFA => {
             let address = read_next_instruction_word(emulator);
@@ -852,13 +851,8 @@ pub fn step(emulator: &mut Emulator) {
             (),
     }
 
-    timers::step(emulator);
-    let restart_occurred = interrupts::step(emulator);
+    interrupts::step(emulator);
 
-    // Step timers again in case a restart occurred
-    if restart_occurred {
-        timers::step(emulator);
-    }
 }
 
 fn execute_cb_opcode(emulator: &mut Emulator) {

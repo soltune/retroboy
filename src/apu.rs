@@ -5,7 +5,7 @@ use crate::apu::wave::{initialize_wave_channel, WaveChannel};
 use crate::apu::pulse::{initialize_pulse_channel, PulseChannel};
 use crate::apu::utils::bounded_wrapping_add;
 use crate::emulator::Emulator;
-use crate::utils::{get_bit, is_bit_set};
+use crate::utils::{get_bit, is_bit_set, T_CYCLE_INCREMENT};
 
 #[derive(Debug)]
 pub struct ApuState {
@@ -47,6 +47,7 @@ const MAX_DIV_APU_STEPS: u8 = 7;
 const CPU_RATE: u32 = 4194304;
 const SAMPLE_RATE: u32 = 48000;
 const ENQUEUE_RATE: u32 = CPU_RATE / SAMPLE_RATE;
+const MAX_AUDIO_BUFFER_SIZE: usize = 512;
 
 fn should_step_div_apu(emulator: &mut Emulator) -> bool {
     get_bit(emulator.apu.last_divider_time, 4) == 1
@@ -80,6 +81,24 @@ fn step_div_apu(emulator: &mut Emulator) {
 
         emulator.apu.divider_apu = bounded_wrapping_add(emulator.apu.divider_apu, MAX_DIV_APU_STEPS)
     }
+}
+
+pub fn audio_buffers_full(emulator: &mut Emulator) -> bool {
+    emulator.apu.left_sample_queue.len() >= MAX_AUDIO_BUFFER_SIZE
+    && emulator.apu.right_sample_queue.len() >= MAX_AUDIO_BUFFER_SIZE
+}
+
+pub fn clear_audio_buffers(emulator: &mut Emulator) {
+    emulator.apu.left_sample_queue.clear();
+    emulator.apu.right_sample_queue.clear();
+}
+
+pub fn get_left_sample_queue(emulator: &Emulator) -> &[f32] {
+    &emulator.apu.left_sample_queue.as_slice()
+}
+
+pub fn get_right_sample_queue(emulator: &Emulator) -> &[f32] {
+    &emulator.apu.right_sample_queue.as_slice()
 }
 
 fn enqueue_audio_samples(emulator: &mut Emulator) {
@@ -117,18 +136,19 @@ fn enqueue_audio_samples(emulator: &mut Emulator) {
     }
 }
 
-pub fn step(emulator: &mut Emulator) {    
+pub fn step(emulator: &mut Emulator) {
+    let instruction_clock_cycles = T_CYCLE_INCREMENT;
+    emulator.apu.instruction_cycles += instruction_clock_cycles;
+    
     if emulator.apu.enabled {
-        let instruction_clock_cycles = emulator.cpu.clock.instruction_clock_cycles;
-        emulator.apu.instruction_cycles += instruction_clock_cycles;
         pulse::step(&mut emulator.apu.channel1, instruction_clock_cycles);
         pulse::step(&mut emulator.apu.channel2, instruction_clock_cycles);
         wave::step(&mut emulator.apu.channel3, instruction_clock_cycles);
         noise::step(&mut emulator.apu.channel4, instruction_clock_cycles);
         step_div_apu(emulator);
-        enqueue_audio_samples(emulator);
     }
 
+    enqueue_audio_samples(emulator);
     emulator.apu.last_divider_time = emulator.timers.divider;
 }
 

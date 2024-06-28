@@ -5,6 +5,7 @@ use crate::cpu::interrupts::InterruptRegisters;
 use crate::cpu::timers::TimerRegisters;
 use crate::gpu::{self, initialize_gpu, GpuState};
 use crate::keys::{initialize_keys, KeyState};
+use crate::render;
 use crate::mmu;
 use crate::mmu::{Memory, initialize_memory};
 use std::cell::RefMut;
@@ -72,12 +73,18 @@ fn transfer_to_game_rom(memory: &mut Memory) {
     memory.in_bios = false;
 }
 
-pub fn step(emulator: &mut Emulator, render: impl FnMut(&Vec<u8>)) {
+pub fn sync(emulator: &mut Emulator) {
+    timers::step(emulator);
+    gpu::step(emulator, |buffer: &Vec<u8>| {
+        render(buffer.as_slice());
+    });
+    apu::step(emulator);
+}
+
+pub fn step(emulator: &mut Emulator) {
     if at_end_of_boot_rom(&mut emulator.cpu) {
         transfer_to_game_rom(&mut emulator.memory);
     }
 
     cpu::opcodes::step(emulator);
-    gpu::step(emulator, render);
-    apu::step(emulator);
 }
