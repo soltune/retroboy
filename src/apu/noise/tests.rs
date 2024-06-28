@@ -26,3 +26,13 @@ fn should_calculate_dac_output_when_amplitude_is_one() {
 
     assert_eq!(dac_output(&channel), 0.33333337);
 }
+
+#[test]
+fn should_produce_no_audio_output_if_channel_is_disabled() {
+    let mut channel = initialize_noise_channel();
+
+    channel.lfsr = 0;
+    channel.envelope.current_volume = 0xA;
+
+    assert_eq!(dac_output(&channel), 0.0);
+}

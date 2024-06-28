@@ -76,7 +76,7 @@ pub fn skip_bios(emulator: &mut Emulator) {
     emulator.interrupts.flags = 0xE1;
 }
 
-pub fn step(emulator: &mut Emulator) {
+pub fn step(emulator: &mut Emulator) -> bool {
     if emulator.cpu.interrupts.enabled && interrupts_fired(emulator) {
         let maybe_fired_interrupt = get_fired_interrupt(emulator);
         match maybe_fired_interrupt {
@@ -85,8 +85,12 @@ pub fn step(emulator: &mut Emulator) {
                 turn_off_interrupt_flag(emulator, &interrupt_type);
                 let isr_address = get_interrupt_isr(&interrupt_type);
                 jumps::restart(emulator, isr_address as u16);
+                true
             },
-            None => ()
+            None => false
         }
+    }
+    else {
+        false
     }
 }

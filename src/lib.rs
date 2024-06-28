@@ -23,6 +23,9 @@ extern "C" {
     pub fn log(s: &str);
 
     pub fn render(frame_buffer: &[u8]); 
+
+    #[wasm_bindgen(js_name = playAudioSamples)]
+    pub fn play_audio_samples(left_samples: &[f32], right_samples: &[f32]);
 }
 
 #[wasm_bindgen(js_name = initializeEmulator)]
@@ -60,19 +63,21 @@ pub fn reset_emulator() {
     })
 }
 
-#[wasm_bindgen(js_name = stepFrame)]
-pub fn step_frame() {
+#[wasm_bindgen(js_name = stepUntilNextAudioBuffer)]
+pub fn step_until_next_audio_buffer() {
     EMULATOR.with(|emulator_cell| {
         let mut emulator = emulator_cell.borrow_mut();
 
-        let mut frame_rendered = false;
-
-        while !frame_rendered {
-            emulator::step(&mut emulator, |buffer: &Vec<u8>| {
-                render(buffer.as_slice());
-                frame_rendered = true;
-            });
+        while !apu::audio_buffers_full(&mut emulator) {
+            emulator::step(&mut emulator);
         }
+
+        let left_samples_slice = apu::get_left_sample_queue(&emulator);
+        let right_samples_slice = apu::get_right_sample_queue(&emulator);
+    
+        play_audio_samples(left_samples_slice, right_samples_slice);
+    
+        apu::clear_audio_buffers(&mut emulator);
     })
 }
 

@@ -1,5 +1,6 @@
 use crate::cpu::interrupts::InterruptRegisters;
 use crate::emulator::Emulator;
+use crate::utils::T_CYCLE_INCREMENT;
 
 const BASE_SPEED_RATE: u8 = 4;
 const DIVIDER_RATE: u8 = 16;
@@ -60,7 +61,7 @@ pub fn skip_bios(emulator: &mut Emulator) {
 
 pub fn step(emulator: &mut Emulator) {
     let timer_registers = &mut emulator.timers;
-    let instruction_cycles = emulator.cpu.clock.instruction_clock_cycles;
+    let instruction_cycles = T_CYCLE_INCREMENT;
     let machine_cycles = instruction_cycles / 4;
     
     timer_registers.m_cycles_clock += machine_cycles;

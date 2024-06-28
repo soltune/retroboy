@@ -16,17 +16,17 @@ pub fn add_value_to_register(cpu_state: &mut CpuState, register: Register, value
     microops::set_flag_c(cpu_state, (value as u16 + byte as u16) > 0xFF);
 }
 
-pub fn add_value_to_register_pair(cpu_state: &mut CpuState, register_pair: RegisterPair, value: u16) {
-    let word = microops::read_from_register_pair(cpu_state, &register_pair);
+pub fn add_value_to_register_pair(emulator: &mut Emulator, register_pair: RegisterPair, value: u16) {
+    let word = microops::read_from_register_pair(&mut emulator.cpu, &register_pair);
     let sum = word.wrapping_add(value);
 
-    microops::store_in_register_pair(cpu_state, register_pair, sum);
+    microops::store_in_register_pair(&mut emulator.cpu, register_pair, sum);
 
-    microops::set_flag_n(cpu_state, false);
-    microops::set_flag_h(cpu_state, (value & 0xFFF) + (word & 0xFFF) > 0xFFF);
-    microops::set_flag_c(cpu_state, (value as u32 + word as u32) > 0xFFFF);
+    microops::set_flag_n(&mut emulator.cpu, false);
+    microops::set_flag_h(&mut emulator.cpu, (value & 0xFFF) + (word & 0xFFF) > 0xFFF);
+    microops::set_flag_c(&mut emulator.cpu, (value as u32 + word as u32) > 0xFFFF);
 
-    microops::run_extra_machine_cycle(cpu_state);
+    microops::run_extra_machine_cycle(emulator);
 }
 
 pub fn add_value_and_carry_to_register(cpu_state: &mut CpuState, register: Register, value: u8) {
@@ -159,18 +159,18 @@ pub fn decrement_memory_byte(emulator: &mut Emulator) {
     microops::set_flag_h(&mut emulator.cpu, (byte & 0xF) < 1);
 }
 
-pub fn increment_register_pair(cpu_state: &mut CpuState, register_pair: RegisterPair) {
-    let word = microops::read_from_register_pair(cpu_state, &register_pair);
+pub fn increment_register_pair(emulator: &mut Emulator, register_pair: RegisterPair) {
+    let word = microops::read_from_register_pair(&mut emulator.cpu, &register_pair);
     let sum = word.wrapping_add(1);
-    microops::store_in_register_pair(cpu_state, register_pair, sum);
-    microops::run_extra_machine_cycle(cpu_state);
+    microops::store_in_register_pair(&mut emulator.cpu, register_pair, sum);
+    microops::run_extra_machine_cycle(emulator);
 }
 
-pub fn decrement_register_pair(cpu_state: &mut CpuState, register_pair: RegisterPair) {
-    let word = microops::read_from_register_pair(cpu_state, &register_pair);
+pub fn decrement_register_pair(emulator: &mut Emulator, register_pair: RegisterPair) {
+    let word = microops::read_from_register_pair(&mut emulator.cpu, &register_pair);
     let sum = word.wrapping_sub(1);
-    microops::store_in_register_pair(cpu_state, register_pair, sum);
-    microops::run_extra_machine_cycle(cpu_state);
+    microops::store_in_register_pair(&mut emulator.cpu, register_pair, sum);
+    microops::run_extra_machine_cycle(emulator);
 }
 
 pub fn bcd_adjust(cpu_state: &mut CpuState) {

@@ -70,3 +70,18 @@ fn should_shift_sample_right_once_if_channel_is_set_to_half_of_volume() {
 
     assert_eq!(dac_output(&emulator), -0.73333335); 
 }
+
+#[test]
+fn should_produce_no_audio_output_if_channel_is_disabled() {
+    let mut emulator = initialize_emulator();
+
+    emulator.memory.wave_pattern_ram[0] = 0xAC;
+    emulator.memory.wave_pattern_ram[1] = 0xC0;
+    emulator.memory.wave_pattern_ram[2] = 0x04;
+    emulator.memory.wave_pattern_ram[3] = 0xDC;
+
+    emulator.apu.channel3.wave_position = 5;
+    emulator.apu.channel3.volume = 0b01000000;
+
+    assert_eq!(dac_output(&emulator), 0.0); 
+}

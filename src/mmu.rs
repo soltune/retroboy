@@ -1,14 +1,6 @@
-use crate::apu::set_ch1_period_high;
-use crate::apu::set_ch1_envelope_settings;
-use crate::apu::set_ch2_envelope_settings;
-use crate::apu::set_ch2_period_high;
-use crate::apu::set_ch3_dac_enabled;
-use crate::apu::set_ch3_period_high;
-use crate::apu::set_ch4_control;
-use crate::apu::set_ch4_envelope_settings;
+use crate::apu;
 use crate::emulator::Emulator;
-use crate::keys::read_joyp_byte;
-use crate::keys::write_joyp_byte;
+use crate::keys;
 
 #[derive(Debug)]
 #[derive(PartialEq)]
@@ -100,26 +92,23 @@ pub fn read_byte(emulator: &Emulator, address: u16) -> u8 {
             0xF00 if address == 0xFFFF => emulator.interrupts.enabled,
             0xF00 if address >= 0xFF80 => memory.zero_page_ram[(address & 0x7F) as usize],
             _ => match address & 0xFF {
-                0x00 => read_joyp_byte(&emulator.keys),
-                0x10 => emulator.apu.channel1.sweep.initial_settings,
-                0x11 => emulator.apu.channel1.length.initial_settings,
+                0x00 => keys::read_joyp_byte(&emulator.keys),
+                0x10 => emulator.apu.channel1.sweep.initial_settings | 0b10000000,
+                0x11 => emulator.apu.channel1.length.initial_settings | 0b00111111,
                 0x12 => emulator.apu.channel1.envelope.initial_settings,
-                0x13 => emulator.apu.channel1.period.low,
-                0x14 => emulator.apu.channel1.period.high,
-                0x16 => emulator.apu.channel2.length.initial_settings,
+                0x14 => emulator.apu.channel1.period.high | 0b10111111,
+                0x16 => emulator.apu.channel2.length.initial_settings | 0b00111111,
                 0x17 => emulator.apu.channel2.envelope.initial_settings,
-                0x18 => emulator.apu.channel2.period.low,
-                0x19 => emulator.apu.channel2.period.high,
-                0x1A => if emulator.apu.channel3.dac_enabled { 0b10000000 } else { 0 },
-                0x1C => emulator.apu.channel3.volume,
-                0x1E => emulator.apu.channel3.period.high,
-                0x20 => emulator.apu.channel4.length.initial_settings,
+                0x19 => emulator.apu.channel2.period.high | 0b10111111,
+                0x1A => if emulator.apu.channel3.dac_enabled { 0b11111111 } else { 0b01111111 },
+                0x1C => emulator.apu.channel3.volume | 0b10011111,
+                0x1E => emulator.apu.channel3.period.high | 0b10111111,
                 0x21 => emulator.apu.channel4.envelope.initial_settings,
                 0x22 => emulator.apu.channel4.polynomial,
-                0x23 => emulator.apu.channel4.control,
+                0x23 => emulator.apu.channel4.control | 0b10111111,
                 0x24 => emulator.apu.master_volume,
                 0x25 => emulator.apu.sound_panning,
-                0x26 => emulator.apu.audio_master_control,
+                0x26 => apu::get_audio_master_control(&emulator),
                 0x30..=0x3F => memory.wave_pattern_ram[(address & 0xF) as usize],
                 0x40 => emulator.gpu.registers.lcdc,
                 0x41 => emulator.gpu.registers.stat,
@@ -138,7 +127,7 @@ pub fn read_byte(emulator: &Emulator, address: u16) -> u8 {
                 0x05 => emulator.timers.counter,
                 0x06 => emulator.timers.modulo,
                 0x07 => emulator.timers.control,
-                _ => 0x00
+                _ => 0xFF
             }
         },
         _ => 0x00,
@@ -196,27 +185,28 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
             0xF00 if address == 0xFFFF => emulator.interrupts.enabled = value,
             0xF00 if address >= 0xFF80 => memory.zero_page_ram[(address & 0x7F) as usize] = value,
             _ => match address & 0xFF {
-                0x00 => write_joyp_byte(&mut emulator.keys, value),
-                0x10 => emulator.apu.channel1.sweep.initial_settings = value,
-                0x11 => emulator.apu.channel1.length.initial_settings = value,
-                0x12 => set_ch1_envelope_settings(emulator, value),
-                0x13 => emulator.apu.channel1.period.low = value,
-                0x14 => set_ch1_period_high(emulator, value),
-                0x16 => emulator.apu.channel2.length.initial_settings = value,
-                0x17 => set_ch2_envelope_settings(emulator, value),
-                0x18 => emulator.apu.channel2.period.low = value,
-                0x19 => set_ch2_period_high(emulator, value),
-                0x1A => set_ch3_dac_enabled(emulator, value),
-                0x1C => emulator.apu.channel3.volume = value,
-                0x1D => emulator.apu.channel3.period.low = value,
-                0x1E => set_ch3_period_high(emulator, value),
-                0x20 => emulator.apu.channel4.length.initial_settings = value,
-                0x21 => set_ch4_envelope_settings(emulator, value),
-                0x22 => emulator.apu.channel4.polynomial = value,
-                0x23 => set_ch4_control(emulator, value),
-                0x24 => emulator.apu.master_volume = value,
-                0x25 => emulator.apu.sound_panning = value,
-                0x26 => emulator.apu.audio_master_control = value,
+                0x00 => keys::write_joyp_byte(&mut emulator.keys, value),
+                0x10 => apu::set_ch1_sweep_settings(emulator, value),
+                0x11 => apu::set_ch1_length_settings(emulator, value),
+                0x12 => apu::set_ch1_envelope_settings(emulator, value),
+                0x13 => apu::set_ch1_period_low(emulator, value),
+                0x14 => apu::set_ch1_period_high(emulator, value),
+                0x16 => apu::set_ch2_length_settings(emulator, value),
+                0x17 => apu::set_ch2_envelope_settings(emulator, value),
+                0x18 => apu::set_ch2_period_low(emulator, value),
+                0x19 => apu::set_ch2_period_high(emulator, value),
+                0x1A => apu::set_ch3_dac_enabled(emulator, value),
+                0x1B => apu::set_ch3_length_settings(emulator, value),
+                0x1C => apu::set_ch3_volume(emulator, value),
+                0x1D => apu::set_ch3_period_low(emulator, value),
+                0x1E => apu::set_ch3_period_high(emulator, value),
+                0x20 => apu::set_ch4_length_settings(emulator, value),
+                0x21 => apu::set_ch4_envelope_settings(emulator, value),
+                0x22 => apu::set_ch4_polynomial(emulator, value),
+                0x23 => apu::set_ch4_control(emulator, value),
+                0x24 => apu::set_master_volume(emulator, value),
+                0x25 => apu::set_sound_panning(emulator, value),
+                0x26 => apu::set_audio_master_control(emulator, value),
                 0x30..=0x3F => memory.wave_pattern_ram[(address & 0xF) as usize] = value,
                 0x40 => emulator.gpu.registers.lcdc = value,
                 0x41 => emulator.gpu.registers.stat = value,

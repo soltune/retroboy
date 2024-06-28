@@ -74,7 +74,7 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.keys.column = 0x10;
     emulator.keys.select_buttons = 0x04;
 
-    emulator.apu.audio_master_control = 0xB1;
+    emulator.apu.enabled = true;
     emulator.apu.sound_panning = 0xF2;
     emulator.apu.master_volume = 0xC1;
 
@@ -89,6 +89,7 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.apu.channel2.period.low = 0x14;
     emulator.apu.channel2.period.high = 0x24;
 
+    emulator.apu.channel3.enabled = true;
     emulator.apu.channel3.dac_enabled = true;
     emulator.apu.channel3.volume = 0x60;
     emulator.apu.channel3.period.high = 0x44;
@@ -165,9 +166,9 @@ fn reads_from_object_attribute_memory() {
 }
 
 #[test]
-fn reads_zero_values_outside_of_object_attribute_memory() {
+fn reads_empty_values_outside_of_object_attribute_memory() {
     let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFEEE), 0x00);
+    assert_eq!(read_byte(&emulator, 0xFEEE), 0xFF);
 }
 
 #[test]
@@ -478,14 +479,14 @@ fn reads_from_different_ram_bank() {
 #[test]
 fn reads_from_audio_master_control() {
     let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF26), 0xB1);
+    assert_eq!(read_byte(&emulator, 0xFF26), 0xF4);
 }
 
 #[test]
 fn writes_to_audio_master_control() {
     let mut emulator = setup_emulator_with_test_memory();
-    write_byte(&mut emulator, 0xFF26, 0xDA);
-    assert_eq!(emulator.apu.audio_master_control, 0xDA);
+    write_byte(&mut emulator, 0xFF26, 0x0);
+    assert_eq!(emulator.apu.enabled, false);
 }
 
 #[test]
@@ -509,7 +510,7 @@ fn reads_from_ch1_sweep() {
 #[test]
 fn reads_from_ch1_length_and_duty() {
     let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF11), 0xB0);
+    assert_eq!(read_byte(&emulator, 0xFF11), 0xBF);
 }
 
 #[test]
@@ -521,19 +522,19 @@ fn reads_from_ch1_volume() {
 #[test]
 fn reads_from_ch1_period_low() {
     let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF13), 0xB2);
+    assert_eq!(read_byte(&emulator, 0xFF13), 0xFF);
 }
 
 #[test]
 fn reads_from_ch1_period_high() {
     let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF14), 0xC2);
+    assert_eq!(read_byte(&emulator, 0xFF14), 0xFF);
 }
 
 #[test]
 fn reads_from_ch2_length_and_duty() {
     let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF16), 0xC0);
+    assert_eq!(read_byte(&emulator, 0xFF16), 0xFF);
 }
 
 #[test]
@@ -545,31 +546,31 @@ fn reads_from_ch2_volume() {
 #[test]
 fn reads_from_ch2_period_low() {
     let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF18), 0x14);
+    assert_eq!(read_byte(&emulator, 0xFF18), 0xFF);
 }
 
 #[test]
 fn reads_from_ch2_period_high() {
     let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF19), 0x24);
+    assert_eq!(read_byte(&emulator, 0xFF19), 0xBF);
 }
 
 #[test]
 fn reads_from_ch3_dac_enabled() {
     let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF1A), 0x80);
+    assert_eq!(read_byte(&emulator, 0xFF1A), 0xFF);
 }
 
 #[test]
 fn reads_from_ch3_output() {
     let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF1C), 0x60);
+    assert_eq!(read_byte(&emulator, 0xFF1C), 0xFF);
 }
 
 #[test]
 fn reads_from_ch3_period_high() {
     let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF1E), 0x44);
+    assert_eq!(read_byte(&emulator, 0xFF1E), 0xFF);
 }
 
 #[test]
@@ -582,7 +583,7 @@ fn reads_from_wave_pattern_ram() {
 #[test]
 fn reads_from_ch4_length() {
     let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF20), 0x1A);
+    assert_eq!(read_byte(&emulator, 0xFF20), 0xFF);
 }
 
 #[test]
@@ -600,5 +601,5 @@ fn reads_from_ch4_polynomial() {
 #[test]
 fn reads_from_ch4_control() {
     let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF23), 0xC0);
+    assert_eq!(read_byte(&emulator, 0xFF23), 0xFF);
 }

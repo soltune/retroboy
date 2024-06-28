@@ -17,7 +17,7 @@ pub fn step(length: &mut Length) {
     }
 }
 
-pub fn trigger(length: &mut Length, channel_three: bool) {
+pub fn initialize_timer(length: &mut Length, channel_three: bool) {
     let initial_timer_value = if channel_three {
         256 - length.initial_settings as u16
     }
@@ -26,4 +26,10 @@ pub fn trigger(length: &mut Length, channel_three: bool) {
         64 - initial_length
     };
     length.timer = initial_timer_value;
+}
+
+pub fn reload_timer_with_maximum(length: &mut Length, channel_three: bool) {
+    if length.timer == 0 {
+        length.timer = if channel_three { 256 } else { 64 };
+    }
 }

@@ -2,7 +2,7 @@ use crate::emulator::Emulator;
 use crate::gpu::constants::{GB_SCREEN_HEIGHT, GB_SCREEN_WIDTH, BYTES_PER_COLOR};
 use crate::gpu::scanline::write_scanline;
 use crate::gpu::sprites::{collect_scanline_sprites, Sprite};
-use crate::utils::is_bit_set;
+use crate::utils::{is_bit_set, T_CYCLE_INCREMENT};
 
 #[derive(Debug)]
 pub struct GpuRegisters {
@@ -123,7 +123,7 @@ pub fn skip_bios(gpu_state: &mut GpuState) {
 }
 
 pub fn step(emulator: &mut Emulator, mut render: impl FnMut(&Vec<u8>)) {
-    emulator.gpu.mode_clock += emulator.cpu.clock.instruction_clock_cycles as u16;
+    emulator.gpu.mode_clock += T_CYCLE_INCREMENT as u16;
 
     match emulator.gpu.mode {
         OAM_MODE => {
