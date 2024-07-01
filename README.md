@@ -22,7 +22,7 @@ This emulator is still a work in progress and not all features are supported.
 | ----------------- | --------- |
 | CPU               | ✅        |
 | Basic Graphics    | ✅        |
-| Audio             | ❌        |
+| Audio             | ✅        |
 | Color Support     | ❌        |
 | GameShark Support | ❌        |
 
