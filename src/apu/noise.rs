@@ -35,7 +35,7 @@ pub fn initialize_noise_channel() -> NoiseChannel {
 // Divider for noise channel clocked at 266,144 Hz. Four times slower
 // than pulse channel. Therefore, we should only decrement the period
 // divider every 16 T-cycles.
-const PERIOD_DIVIDER_RATE_IN_INSTRUCTION_CYCLES: u8 = 16;
+const PERIOD_DIVIDER_RATE_IN_T_CYCLES: u8 = 16;
 
 const WIDTH_MODE_INDEX: u8 = 3;
 const CONTROL_TRIGGER_INDEX: u8 = 7;
@@ -71,7 +71,7 @@ fn calculate_next_lfsr(channel: &NoiseChannel) -> u16 {
 
 pub fn step(channel: &mut NoiseChannel, last_instruction_clock_cycles: u8) {
     channel.instruction_cycles += last_instruction_clock_cycles;
-    if channel.instruction_cycles >= PERIOD_DIVIDER_RATE_IN_INSTRUCTION_CYCLES {
+    if channel.instruction_cycles >= PERIOD_DIVIDER_RATE_IN_T_CYCLES {
         channel.instruction_cycles = 0;
         channel.period_divider -= 1;
         if channel.period_divider == 0 {
@@ -89,7 +89,8 @@ pub fn step_envelope(channel: &mut NoiseChannel) {
 
 pub fn should_clock_length_on_enable(channel: &NoiseChannel, original_control_value: u8) -> bool {
     let new_control_value = channel.control;
-    !length_enabled(original_control_value) && length_enabled(new_control_value)
+    (!length_enabled(original_control_value) || length::at_max_length(&channel.length))
+    && length_enabled(new_control_value)
 }
 
 pub fn step_length(channel: &mut NoiseChannel) {
@@ -124,7 +125,7 @@ pub fn dac_output(channel: &NoiseChannel) -> f32 {
 pub fn trigger(channel: &mut NoiseChannel) {
     channel.enabled = true;
     channel.lfsr = 0xFFFF;
-    length::reload_timer_with_maximum(&mut channel.length, false);
+    length::reload_timer_with_maximum(&mut channel.length);
     envelope::trigger(&mut channel.envelope);
 }
 

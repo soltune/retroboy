@@ -319,7 +319,7 @@ pub fn set_ch1_sweep_settings(emulator: &mut Emulator, new_sweep_settings: u8) {
 pub fn set_ch1_length_settings(emulator: &mut Emulator, new_length_settings: u8) {
     if emulator.apu.enabled {
         emulator.apu.channel1.length.initial_settings = new_length_settings;
-        length::initialize_timer(&mut emulator.apu.channel1.length, false);
+        length::initialize_timer(&mut emulator.apu.channel1.length);
     }
 }
 
@@ -332,7 +332,7 @@ pub fn set_ch1_period_low(emulator: &mut Emulator, new_period_low: u8) {
 pub fn set_ch2_length_settings(emulator: &mut Emulator, new_length_settings: u8) {
     if emulator.apu.enabled{
         emulator.apu.channel2.length.initial_settings = new_length_settings;
-        length::initialize_timer(&mut emulator.apu.channel2.length, false);
+        length::initialize_timer(&mut emulator.apu.channel2.length);
     }
 }
 
@@ -345,7 +345,7 @@ pub fn set_ch2_period_low(emulator: &mut Emulator, new_period_low: u8) {
 pub fn set_ch3_length_settings(emulator: &mut Emulator, new_length_settings: u8) {
     if emulator.apu.enabled{
         emulator.apu.channel3.length.initial_settings = new_length_settings;
-        length::initialize_timer(&mut emulator.apu.channel3.length, true);
+        length::initialize_wave_channel_timer(&mut emulator.apu.channel3.length);
     }
 }
 
@@ -363,7 +363,7 @@ pub fn set_ch3_volume(emulator: &mut Emulator, new_volume: u8) {
 
 pub fn set_ch4_length_settings(emulator: &mut Emulator, new_length_settings: u8) {
     emulator.apu.channel4.length.initial_settings = new_length_settings;
-    length::initialize_timer(&mut emulator.apu.channel4.length, false);
+    length::initialize_timer(&mut emulator.apu.channel4.length);
 }
 
 pub fn set_ch4_polynomial(emulator: &mut Emulator, new_polynomial: u8) {
