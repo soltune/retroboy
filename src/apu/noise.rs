@@ -89,8 +89,11 @@ pub fn step_envelope(channel: &mut NoiseChannel) {
 
 pub fn should_clock_length_on_enable(channel: &NoiseChannel, original_control_value: u8) -> bool {
     let new_control_value = channel.control;
-    (!length_enabled(original_control_value) || length::at_max_length(&channel.length))
-    && length_enabled(new_control_value)
+    !length_enabled(original_control_value) && length_enabled(new_control_value)
+}
+
+pub fn should_clock_length_on_trigger(channel: &NoiseChannel) -> bool {
+    length::at_max_length(&channel.length) && length_enabled(channel.control)
 }
 
 pub fn step_length(channel: &mut NoiseChannel) {
@@ -123,7 +126,9 @@ pub fn dac_output(channel: &NoiseChannel) -> f32 {
 }
 
 pub fn trigger(channel: &mut NoiseChannel) {
-    channel.enabled = true;
+    if channel.dac_enabled {
+        channel.enabled = true;
+    }
     channel.lfsr = 0xFFFF;
     length::reload_timer_with_maximum(&mut channel.length);
     envelope::trigger(&mut channel.envelope);
@@ -134,7 +139,7 @@ pub fn disable(channel: &mut NoiseChannel) {
 }
 
 pub fn should_trigger(channel: &NoiseChannel) -> bool {
-   channel.dac_enabled && is_bit_set(channel.control, CONTROL_TRIGGER_INDEX)
+    is_bit_set(channel.control, CONTROL_TRIGGER_INDEX)
 }
 
 #[cfg(test)]

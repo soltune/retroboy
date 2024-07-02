@@ -52,8 +52,11 @@ pub fn step_envelope(channel: &mut PulseChannel) {
 
 pub fn should_clock_length_on_enable(channel: &PulseChannel, original_period_high_value: u8) -> bool {
     let new_period_high_value = channel.period.high;
-    (!length_enabled(original_period_high_value) || length::at_max_length(&channel.length))
-    && length_enabled(new_period_high_value)
+    !length_enabled(original_period_high_value) && length_enabled(new_period_high_value)
+}
+
+pub fn should_clock_length_on_trigger(channel: &PulseChannel) -> bool {
+    length::at_max_length(&channel.length) && length_enabled(channel.period.high)
 }
 
 pub fn step_length(channel: &mut PulseChannel) {
@@ -100,7 +103,9 @@ pub fn step_sweep(channel: &mut PulseChannel) {
 }
 
 pub fn trigger(channel: &mut PulseChannel, with_sweep: bool) {
-    channel.enabled = true;
+    if channel.dac_enabled {
+        channel.enabled = true;
+    }
     length::reload_timer_with_maximum(&mut channel.length);
     envelope::trigger(&mut channel.envelope);
     if with_sweep {
@@ -113,7 +118,7 @@ pub fn disable(channel: &mut PulseChannel) {
 }
 
 pub fn should_trigger(channel: &PulseChannel) -> bool {
-   channel.dac_enabled && is_bit_set(channel.period.high, PERIOD_HIGH_TRIGGER_INDEX)
+   is_bit_set(channel.period.high, PERIOD_HIGH_TRIGGER_INDEX)
 }
 
 #[cfg(test)]

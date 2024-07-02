@@ -41,9 +41,11 @@ pub fn step(channel: &mut WaveChannel, last_instruction_clock_cycles: u8) {
 
 pub fn should_clock_length_on_enable(channel: &WaveChannel, original_period_high_value: u8) -> bool {
     let new_period_high_value = channel.period.high;
-    (!length_enabled(original_period_high_value)
-        || length::at_max_wave_channel_length(&channel.length))
-    && length_enabled(new_period_high_value)
+    !length_enabled(original_period_high_value) && length_enabled(new_period_high_value)
+}
+
+pub fn should_clock_length_on_trigger(channel: &WaveChannel) -> bool {
+    length::at_max_wave_channel_length(&channel.length) && length_enabled(channel.period.high)
 }
 
 pub fn step_length(channel: &mut WaveChannel) {
@@ -81,7 +83,9 @@ pub fn dac_output(emulator: &Emulator) -> f32 {
 }
 
 pub fn trigger(channel: &mut WaveChannel) {
-    channel.enabled = true;
+    if channel.dac_enabled {
+        channel.enabled = true;
+    }
     length::reload_wave_channel_timer_with_maximum(&mut channel.length);
 }
 
@@ -90,7 +94,7 @@ pub fn disable(channel: &mut WaveChannel) {
 }
 
 pub fn should_trigger(channel: &WaveChannel) -> bool {
-   channel.dac_enabled && is_bit_set(channel.period.high, PERIOD_HIGH_TRIGGER_INDEX)
+   is_bit_set(channel.period.high, PERIOD_HIGH_TRIGGER_INDEX)
 }
 
 #[cfg(test)]
