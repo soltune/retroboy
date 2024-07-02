@@ -57,6 +57,22 @@ pub fn load_sweep_timer(channel: &mut PulseChannel, sweep_period: u8) {
     } 
 }
 
+pub fn update_initial_settings(channel: &mut PulseChannel, new_initial_settings: u8) {
+    let original_sweep_period = initial_sweep_period(&channel.sweep);
+    let original_sweep_shift = initial_sweep_shift(&channel.sweep);
+
+    let original_sweep_settings = channel.sweep.initial_settings;
+    channel.sweep.initial_settings = new_initial_settings;
+
+    let original_is_decrementing = is_bit_set(original_sweep_settings, SWEEP_DIRECTION_INDEX);
+    let new_is_decrementing = is_bit_set(channel.sweep.initial_settings, SWEEP_DIRECTION_INDEX);
+    let exiting_negate_mode = original_is_decrementing && !new_is_decrementing;
+
+    if exiting_negate_mode && (original_sweep_period > 0 || original_sweep_shift > 0) {
+        disable(channel);
+    }
+}
+
 pub fn step(channel: &mut PulseChannel) {
     if channel.sweep.timer > 0 {
         channel.sweep.timer -= 1;

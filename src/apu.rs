@@ -332,7 +332,7 @@ pub fn set_audio_master_control(emulator: &mut Emulator, new_audio_master_contro
 
 pub fn set_ch1_sweep_settings(emulator: &mut Emulator, new_sweep_settings: u8) {
     if emulator.apu.enabled {
-        emulator.apu.channel1.sweep.initial_settings = new_sweep_settings;
+        sweep::update_initial_settings(&mut emulator.apu.channel1, new_sweep_settings);
     }
 }
 
