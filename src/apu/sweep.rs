@@ -92,9 +92,8 @@ pub fn trigger(channel: &mut PulseChannel) {
     load_sweep_timer(channel, sweep_period);
 
     let sweep_shift = initial_sweep_shift(&channel.sweep);
-    if sweep_period > 0 || sweep_shift > 0 {
-        channel.sweep.enabled = true;
-    }
+
+    channel.sweep.enabled = sweep_period > 0 || sweep_shift > 0;
     
     if sweep_shift > 0 {
         calculate_frequency(channel);
