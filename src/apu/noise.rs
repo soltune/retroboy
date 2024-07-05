@@ -32,6 +32,13 @@ pub fn initialize_noise_channel() -> NoiseChannel {
     }
 }
 
+pub fn reset_noise_channel(original_noise_channel: &NoiseChannel) -> NoiseChannel {
+    let mut new_noise_channel = initialize_noise_channel();
+    // On reset (when APU is powered down), maintain length timers, as this is expected behavior for DMG
+    new_noise_channel.length = length::reset_initial_settings(&original_noise_channel.length);
+    new_noise_channel
+}
+
 // Divider for noise channel clocked at 266,144 Hz. Four times slower
 // than pulse channel. Therefore, we should only decrement the period
 // divider every 16 T-cycles.

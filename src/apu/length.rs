@@ -14,6 +14,13 @@ pub fn initialize_length() -> Length {
     }
 }
 
+pub fn reset_initial_settings(original_length: &Length) -> Length {
+    Length {
+        initial_settings: 0,
+        timer: original_length.timer
+    }
+}
+
 pub fn step(length: &mut Length) {
     if length.timer > 0 {
         length.timer -= 1;

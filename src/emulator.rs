@@ -65,6 +65,7 @@ pub fn load_bios(emulator: &mut RefMut<Emulator>, bios: &[u8]) {
 pub fn skip_bios(emulator: &mut RefMut<Emulator>) {
     cpu::skip_bios(&mut emulator.cpu);
     gpu::skip_bios(&mut emulator.gpu);
+    apu::skip_bios(&mut emulator.apu);
     timers::skip_bios(emulator);
     interrupts::skip_bios(emulator);
 }

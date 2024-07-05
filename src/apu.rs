@@ -1,8 +1,8 @@
 use utils::{calculate_left_stereo_sample, calculate_right_stereo_sample};
 use crate::apu::envelope::should_disable_dac;
-use crate::apu::noise::{initialize_noise_channel, NoiseChannel};
-use crate::apu::wave::{initialize_wave_channel, WaveChannel};
-use crate::apu::pulse::{initialize_pulse_channel, PulseChannel};
+use crate::apu::noise::{initialize_noise_channel, reset_noise_channel, NoiseChannel};
+use crate::apu::wave::{initialize_wave_channel, reset_wave_channel, WaveChannel};
+use crate::apu::pulse::{initialize_pulse_channel, reset_pulse_channel, PulseChannel};
 use crate::apu::utils::bounded_wrapping_add;
 use crate::emulator::Emulator;
 use crate::utils::{get_bit, is_bit_set, T_CYCLE_INCREMENT};
@@ -38,6 +38,15 @@ pub fn initialize_apu() -> ApuState {
         left_sample_queue: Vec::new(),
         right_sample_queue: Vec::new()
     }
+}
+
+pub fn reset_apu(original_apu_state: &ApuState) -> ApuState {
+    let mut new_apu_state = initialize_apu();
+    new_apu_state.channel1 = reset_pulse_channel(&original_apu_state.channel1);
+    new_apu_state.channel2 = reset_pulse_channel(&original_apu_state.channel2);
+    new_apu_state.channel3 = reset_wave_channel(&original_apu_state.channel3);
+    new_apu_state.channel4 = reset_noise_channel(&original_apu_state.channel4);
+    new_apu_state
 }
 
 const CH3_DAC_ENABLED_INDEX: u8 = 7;
@@ -150,6 +159,11 @@ pub fn step(emulator: &mut Emulator) {
 
     enqueue_audio_samples(emulator);
     emulator.apu.last_divider_time = emulator.timers.divider;
+}
+
+pub fn skip_bios(apu_state: &mut ApuState) {
+    apu_state.enabled = true;
+    apu_state.channel1.enabled = true;
 }
 
 fn in_length_period_first_half(current_divider_apu: u8) -> bool {
@@ -326,7 +340,7 @@ pub fn set_audio_master_control(emulator: &mut Emulator, new_audio_master_contro
     emulator.apu.enabled = is_bit_set(new_audio_master_control, APU_ENABLED_INDEX);
 
     if !emulator.apu.enabled {
-        emulator.apu = initialize_apu();
+        emulator.apu = reset_apu(&emulator.apu);
     }
 }
 
@@ -337,10 +351,14 @@ pub fn set_ch1_sweep_settings(emulator: &mut Emulator, new_sweep_settings: u8) {
 }
 
 pub fn set_ch1_length_settings(emulator: &mut Emulator, new_length_settings: u8) {
-    if emulator.apu.enabled {
-        emulator.apu.channel1.length.initial_settings = new_length_settings;
-        length::initialize_timer(&mut emulator.apu.channel1.length);
+    emulator.apu.channel1.length.initial_settings = if emulator.apu.enabled {
+        new_length_settings
     }
+    else {
+        new_length_settings & 0x3F
+    };
+
+    length::initialize_timer(&mut emulator.apu.channel1.length);
 }
 
 pub fn set_ch1_period_low(emulator: &mut Emulator, new_period_low: u8) {
@@ -350,10 +368,14 @@ pub fn set_ch1_period_low(emulator: &mut Emulator, new_period_low: u8) {
 }
 
 pub fn set_ch2_length_settings(emulator: &mut Emulator, new_length_settings: u8) {
-    if emulator.apu.enabled{
-        emulator.apu.channel2.length.initial_settings = new_length_settings;
-        length::initialize_timer(&mut emulator.apu.channel2.length);
+    emulator.apu.channel2.length.initial_settings = if emulator.apu.enabled {
+        new_length_settings
     }
+    else {
+        new_length_settings & 0x3F
+    };
+
+    length::initialize_timer(&mut emulator.apu.channel2.length);
 }
 
 pub fn set_ch2_period_low(emulator: &mut Emulator, new_period_low: u8) {
@@ -363,10 +385,8 @@ pub fn set_ch2_period_low(emulator: &mut Emulator, new_period_low: u8) {
 }
 
 pub fn set_ch3_length_settings(emulator: &mut Emulator, new_length_settings: u8) {
-    if emulator.apu.enabled{
-        emulator.apu.channel3.length.initial_settings = new_length_settings;
-        length::initialize_wave_channel_timer(&mut emulator.apu.channel3.length);
-    }
+    emulator.apu.channel3.length.initial_settings = new_length_settings;
+    length::initialize_wave_channel_timer(&mut emulator.apu.channel3.length);
 }
 
 pub fn set_ch3_period_low(emulator: &mut Emulator, new_period_low: u8) {

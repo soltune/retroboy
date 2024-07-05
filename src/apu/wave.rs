@@ -28,6 +28,13 @@ pub fn initialize_wave_channel() -> WaveChannel {
     }
 }
 
+pub fn reset_wave_channel(original_wave_channel: &WaveChannel) -> WaveChannel {
+    let mut new_wave_channel = initialize_wave_channel();
+    // On reset (when APU is powered down), maintain length timers, as this is expected behavior for DMG
+    new_wave_channel.length = length::reset_initial_settings(&original_wave_channel.length);
+    new_wave_channel
+}
+
 const MAX_WAVE_SAMPLE_STEPS: u8 = 31;
 const PERIOD_HIGH_TRIGGER_INDEX: u8 = 7;
 

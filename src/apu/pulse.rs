@@ -33,6 +33,13 @@ pub fn initialize_pulse_channel() -> PulseChannel {
     } 
 }
 
+pub fn reset_pulse_channel(original_pulse_channel: &PulseChannel) -> PulseChannel {
+    let mut new_pulse_channel = initialize_pulse_channel();
+    // On reset (when APU is powered down), maintain length timers, as this is expected behavior for DMG
+    new_pulse_channel.length = length::reset_initial_settings(&original_pulse_channel.length);
+    new_pulse_channel
+}
+
 const MAX_WAVEFORM_STEPS: u8 = 7;
 const PERIOD_HIGH_TRIGGER_INDEX: u8 = 7;
 
