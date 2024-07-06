@@ -136,6 +136,7 @@ pub fn trigger(channel: &mut NoiseChannel) {
     if channel.dac_enabled {
         channel.enabled = true;
     }
+    channel.period_divider = calculate_period_divider(channel);
     channel.lfsr = 0xFFFF;
     length::reload_timer_with_maximum(&mut channel.length);
     envelope::trigger(&mut channel.envelope);

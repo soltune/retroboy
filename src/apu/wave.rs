@@ -93,6 +93,7 @@ pub fn trigger(channel: &mut WaveChannel) {
     if channel.dac_enabled {
         channel.enabled = true;
     }
+    period::trigger(&mut channel.period);
     length::reload_wave_channel_timer_with_maximum(&mut channel.length);
 }
 

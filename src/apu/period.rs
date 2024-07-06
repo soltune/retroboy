@@ -33,3 +33,7 @@ pub fn calculate_period_value(period: &Period) -> u16 {
 pub fn calculate_period_divider(period: &Period) -> u16 {
     2048 - calculate_period_value(period)
 }
+
+pub fn trigger(period: &mut Period) {
+    period.divider = calculate_period_divider(&period);
+}

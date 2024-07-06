@@ -113,6 +113,7 @@ pub fn trigger(channel: &mut PulseChannel, with_sweep: bool) {
     if channel.dac_enabled {
         channel.enabled = true;
     }
+    period::trigger(&mut channel.period);
     length::reload_timer_with_maximum(&mut channel.length);
     envelope::trigger(&mut channel.envelope);
     if with_sweep {
