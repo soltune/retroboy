@@ -48,9 +48,6 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.memory.zero_page_ram[0x21] = 0x44;
     emulator.memory.zero_page_ram[0x5B] = 0x5F;
 
-    emulator.memory.wave_pattern_ram[0x0] = 0xB1;
-    emulator.memory.wave_pattern_ram[0x1] = 0xD2;
-
     emulator.interrupts.enabled = 0x1F;
     emulator.interrupts.flags = 0xA;
 
@@ -77,6 +74,7 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.apu.enabled = true;
     emulator.apu.sound_panning = 0xF2;
     emulator.apu.master_volume = 0xC1;
+    emulator.apu.instruction_cycles = 84;
 
     emulator.apu.channel1.sweep.initial_settings = 0xDD;
     emulator.apu.channel1.length.initial_settings = 0xB0;
@@ -92,7 +90,11 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.apu.channel3.enabled = true;
     emulator.apu.channel3.dac_enabled = true;
     emulator.apu.channel3.volume = 0x60;
+    emulator.apu.channel3.period.low = 0xFF;
     emulator.apu.channel3.period.high = 0x44;
+    emulator.apu.channel3.period.divider = 0x301;
+    emulator.apu.channel3.wave_pattern_ram[0x0] = 0xB1;
+    emulator.apu.channel3.wave_pattern_ram[0x1] = 0xD2;
 
     emulator.apu.channel4.length.initial_settings = 0x1A;
     emulator.apu.channel4.envelope.initial_settings = 0xD2;
@@ -577,7 +579,7 @@ fn reads_from_ch3_period_high() {
 fn reads_from_wave_pattern_ram() {
     let emulator = setup_emulator_with_test_memory();
     assert_eq!(read_byte(&emulator, 0xFF30), 0xB1);
-    assert_eq!(read_byte(&emulator, 0xFF31), 0xD2);
+    assert_eq!(read_byte(&emulator, 0xFF31), 0xB1);
 }
 
 #[test]

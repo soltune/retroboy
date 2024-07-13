@@ -4,7 +4,6 @@ use crate::apu::length;
 use crate::apu::length::{initialize_length, Length};
 use crate::apu::utils::{as_dac_output, bounded_wrapping_add, length_enabled};
 use crate::emulator::Emulator;
-use crate::mmu;
 use crate::utils::is_bit_set;
 
 #[derive(Debug)]
@@ -14,7 +13,8 @@ pub struct WaveChannel {
     pub length: Length,
     pub volume: u8,
     pub period: Period,
-    pub wave_position: u8
+    pub wave_position: u8,
+    pub wave_pattern_ram: [u8; 0x10],
 }
 
 pub fn initialize_wave_channel() -> WaveChannel {
@@ -24,7 +24,8 @@ pub fn initialize_wave_channel() -> WaveChannel {
         length: initialize_length(),
         volume: 0,
         period: initalize_period(),
-        wave_position: 0
+        wave_position: 1,
+        wave_pattern_ram: [0; 0x10],
     }
 }
 
@@ -32,6 +33,11 @@ pub fn reset_wave_channel(original_wave_channel: &WaveChannel) -> WaveChannel {
     let mut new_wave_channel = initialize_wave_channel();
     // On reset (when APU is powered down), maintain length timers, as this is expected behavior for DMG
     new_wave_channel.length = length::reset_initial_settings(&original_wave_channel.length);
+    
+    // APU powering down should also not affect wave RAM.
+    new_wave_channel.wave_pattern_ram = original_wave_channel.wave_pattern_ram;
+    new_wave_channel.wave_position = original_wave_channel.wave_position;
+
     new_wave_channel
 }
 
@@ -65,15 +71,20 @@ pub fn step_length(channel: &mut WaveChannel) {
     }
 }
 
+pub fn read_from_wave_ram(channel: &WaveChannel, localized_address: u8) -> u8 {
+    channel.wave_pattern_ram[localized_address as usize]
+}
+
+pub fn write_to_wave_ram(channel: &mut WaveChannel, localized_address: u8, new_value: u8) {
+    channel.wave_pattern_ram[localized_address as usize] = new_value;
+}
+
 pub fn dac_output(emulator: &Emulator) -> f32 {
     if emulator.apu.channel3.enabled {
-        let address_offset = (emulator.apu.channel3.wave_position / 2) as u16;
+        let localized_address = emulator.apu.channel3.wave_position / 2;
         let byte_offset = emulator.apu.channel3.wave_position % 2;
     
-        let base_wave_pattern_ram_address = 0xFF30 as u16;
-        let address = base_wave_pattern_ram_address + address_offset;
-        
-        let byte = mmu::read_byte(&emulator, address);
+        let byte = read_from_wave_ram(&emulator.apu.channel3, localized_address);
         let sample = if byte_offset == 0 { (byte & 0xF0) >> 4 } else { byte & 0xF };
     
         let output_level = (emulator.apu.channel3.volume & 0b01100000) >> 5;
@@ -93,12 +104,16 @@ pub fn trigger(channel: &mut WaveChannel) {
     if channel.dac_enabled {
         channel.enabled = true;
     }
+
     period::trigger(&mut channel.period);
+    period::apply_wave_channel_trigger_delay(&mut channel.period);
+
     length::reload_wave_channel_timer_with_maximum(&mut channel.length);
 }
 
 pub fn disable(channel: &mut WaveChannel) {
     channel.enabled = false;
+    channel.wave_position = 1;
 }
 
 pub fn should_trigger(channel: &WaveChannel) -> bool {

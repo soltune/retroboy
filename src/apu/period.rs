@@ -13,6 +13,8 @@ pub fn initalize_period() -> Period {
     }
 }
 
+const WAVE_CHANNEL_PERIOD_DELAY: u16 = 5;
+
 pub fn step(period: &mut Period, mut divider_increment: u8, mut handle_divider_reload: impl FnMut()) {
     while divider_increment > 0 {
         period.divider -= 1;
@@ -36,4 +38,8 @@ pub fn calculate_period_divider(period: &Period) -> u16 {
 
 pub fn trigger(period: &mut Period) {
     period.divider = calculate_period_divider(&period);
+}
+
+pub fn apply_wave_channel_trigger_delay(period: &mut Period) {
+    period.divider += WAVE_CHANNEL_PERIOD_DELAY;
 }

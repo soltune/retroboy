@@ -545,6 +545,7 @@ fn should_increment_wave_position_when_period_divider_reaches_zero_for_channel_3
     emulator.apu.enabled = true;
     emulator.apu.channel3.enabled = true;
     emulator.apu.channel3.dac_enabled = true;
+    emulator.apu.channel3.wave_position = 0;
     emulator.apu.channel3.period.divider = 2;
     emulator.apu.channel3.period.low = 26;
     emulator.apu.channel3.period.high = 197;
