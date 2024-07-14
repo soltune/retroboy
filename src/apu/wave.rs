@@ -114,8 +114,9 @@ fn corrupt_wave_ram_bug(channel: &mut WaveChannel) {
     }
     else {
         let copy_base_position = offset & !3;
-        for copy_position in copy_base_position..copy_base_position + 3 {
-            channel.wave_pattern_ram[0] = channel.wave_pattern_ram[copy_position];
+        for copy_offset in 0..=3 {
+            let copy_position = copy_base_position + copy_offset;
+            channel.wave_pattern_ram[copy_offset] = channel.wave_pattern_ram[copy_position];
         }
     } 
 }
