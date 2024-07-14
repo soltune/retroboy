@@ -336,17 +336,12 @@ pub fn get_audio_master_control(emulator: &Emulator) -> u8 {
         | ch1_enabled
 }
 
-fn wave_form_just_read(emulator: &Emulator) -> bool {
-    let max_period_divider = period::calculate_period_divider(&emulator.apu.channel3.period);
-    emulator.apu.channel3.period.divider == max_period_divider
-}
-
 pub fn get_wave_ram_byte(emulator: &Emulator, localized_address: u8) -> u8 {
     let mut address = localized_address;
 
     if emulator.apu.channel3.enabled {
         address = emulator.apu.channel3.wave_position / 2;
-        if wave_form_just_read(emulator) {
+        if wave::wave_form_just_read(&emulator.apu.channel3) {
             wave::read_from_wave_ram(&emulator.apu.channel3, address)
         }
         else {
@@ -363,7 +358,7 @@ pub fn set_wave_ram_byte(emulator: &mut Emulator, localized_address: u8, new_val
 
     if emulator.apu.channel3.enabled {
         address = emulator.apu.channel3.wave_position / 2;
-        if wave_form_just_read(emulator) {
+        if wave::wave_form_just_read(&emulator.apu.channel3) {
             wave::write_to_wave_ram(&mut emulator.apu.channel3, address, new_value);
         }
     }

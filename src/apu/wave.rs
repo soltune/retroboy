@@ -100,20 +100,44 @@ pub fn dac_output(emulator: &Emulator) -> f32 {
     }
 }
 
+pub fn wave_form_just_read(channel: &WaveChannel) -> bool {
+    let max_period_divider = period::calculate_period_divider(&channel.period);
+    channel.period.divider == max_period_divider
+}
+
+fn corrupt_wave_ram_bug(channel: &mut WaveChannel) {
+    // DMG has a bug that will corrupt wave RAM if the channel is re-triggered
+    // right before it reads from wave RAM.
+    let offset = (((channel.wave_position + 1) >> 1) & 0xF) as usize;
+    if offset < 4 {
+        channel.wave_pattern_ram[0] = channel.wave_pattern_ram[offset];
+    }
+    else {
+        let copy_base_position = offset & !3;
+        for copy_position in copy_base_position..copy_base_position + 3 {
+            channel.wave_pattern_ram[0] = channel.wave_pattern_ram[copy_position];
+        }
+    } 
+}
+
 pub fn trigger(channel: &mut WaveChannel) {
+    if channel.enabled && wave_form_just_read(channel) {
+        corrupt_wave_ram_bug(channel);
+    }
+
+    channel.wave_position = 1;
+
     if channel.dac_enabled {
         channel.enabled = true;
     }
 
     period::trigger(&mut channel.period);
     period::apply_wave_channel_trigger_delay(&mut channel.period);
-
     length::reload_wave_channel_timer_with_maximum(&mut channel.length);
 }
 
 pub fn disable(channel: &mut WaveChannel) {
     channel.enabled = false;
-    channel.wave_position = 1;
 }
 
 pub fn should_trigger(channel: &WaveChannel) -> bool {
