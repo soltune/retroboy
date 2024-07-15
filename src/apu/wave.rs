@@ -117,7 +117,7 @@ fn corrupt_wave_ram_bug(channel: &mut WaveChannel) {
 }
 
 pub fn trigger(channel: &mut WaveChannel) {
-    if channel.enabled && channel.period.reloaded {
+    if channel.enabled && channel.period.divider == 1 {
         corrupt_wave_ram_bug(channel);
     }
 
