@@ -100,11 +100,6 @@ pub fn dac_output(emulator: &Emulator) -> f32 {
     }
 }
 
-pub fn wave_form_just_read(channel: &WaveChannel) -> bool {
-    let max_period_divider = period::calculate_period_divider(&channel.period);
-    channel.period.divider == max_period_divider
-}
-
 fn corrupt_wave_ram_bug(channel: &mut WaveChannel) {
     // DMG has a bug that will corrupt wave RAM if the channel is re-triggered
     // right before it reads from wave RAM.
@@ -122,11 +117,11 @@ fn corrupt_wave_ram_bug(channel: &mut WaveChannel) {
 }
 
 pub fn trigger(channel: &mut WaveChannel) {
-    if channel.enabled && wave_form_just_read(channel) {
+    if channel.enabled && channel.period.reloaded {
         corrupt_wave_ram_bug(channel);
     }
 
-    channel.wave_position = 1;
+    channel.wave_position = 0;
 
     if channel.dac_enabled {
         channel.enabled = true;

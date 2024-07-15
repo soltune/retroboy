@@ -341,7 +341,7 @@ pub fn get_wave_ram_byte(emulator: &Emulator, localized_address: u8) -> u8 {
 
     if emulator.apu.channel3.enabled {
         address = emulator.apu.channel3.wave_position / 2;
-        if wave::wave_form_just_read(&emulator.apu.channel3) {
+        if emulator.apu.channel3.period.reloaded {
             wave::read_from_wave_ram(&emulator.apu.channel3, address)
         }
         else {
@@ -358,7 +358,7 @@ pub fn set_wave_ram_byte(emulator: &mut Emulator, localized_address: u8, new_val
 
     if emulator.apu.channel3.enabled {
         address = emulator.apu.channel3.wave_position / 2;
-        if wave::wave_form_just_read(&emulator.apu.channel3) {
+        if emulator.apu.channel3.period.reloaded {
             wave::write_to_wave_ram(&mut emulator.apu.channel3, address, new_value);
         }
     }

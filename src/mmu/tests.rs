@@ -93,6 +93,7 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.apu.channel3.period.low = 0xFF;
     emulator.apu.channel3.period.high = 0x44;
     emulator.apu.channel3.period.divider = 0x301;
+    emulator.apu.channel3.period.reloaded = true;
     emulator.apu.channel3.wave_pattern_ram[0x0] = 0xB1;
     emulator.apu.channel3.wave_pattern_ram[0x1] = 0xD2;
 
