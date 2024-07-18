@@ -60,6 +60,6 @@ For convenience, here is a list of the resources I used:
 
 ## Future Plans
 
-Eventually, I plan to test this emulator using Blargg's [CPU instruction timing tests](https://github.com/retrio/gb-test-roms/tree/master/instr_timing) as well as the [Mooneye test ROM collection](https://github.com/Gekkio/mooneye-test-suite).
+Eventually, I plan to test this emulator using [Mooneye test ROM collection](https://github.com/Gekkio/mooneye-test-suite).
 
 This emulator can reliably run Tetris and Tic-Tac-Toe, however I need to test it with other games as well.
