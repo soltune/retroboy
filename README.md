@@ -6,7 +6,9 @@ This emulator passes the following test suites from Blargg's test ROM collection
 
 1. [CPU instruction tests](https://github.com/retrio/gb-test-roms/tree/master/cpu_instrs)
 2. [CPU instruction timing tests](https://github.com/retrio/gb-test-roms/tree/master/instr_timing)
-3. [APU tests (DMG)](https://github.com/retrio/gb-test-roms/tree/master/dmg_sound)
+3. [Memory timing tests](https://github.com/retrio/gb-test-roms/tree/master/mem_timing)
+4. [Memory timing tests 2](https://github.com/retrio/gb-test-roms/tree/master/mem_timing-2)
+5. [APU tests (DMG)](https://github.com/retrio/gb-test-roms/tree/master/dmg_sound)
 
 ## How to Use
 
