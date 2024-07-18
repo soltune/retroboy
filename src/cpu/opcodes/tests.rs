@@ -551,7 +551,7 @@ fn loads_stack_pointer_plus_immediate_byte_into_stack_pointer_with_half_carry() 
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.stack_pointer, 0xB220);
     assert_eq!(emulator.cpu.registers.f, 0x20);
-    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 16);
 }
 
 #[test]
@@ -561,7 +561,7 @@ fn loads_stack_pointer_plus_immediate_byte_into_stack_pointer_with_carry() {
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.stack_pointer, 0xB310);
     assert_eq!(emulator.cpu.registers.f, 0x30);
-    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 16);
 }
 
 #[test]
@@ -1006,7 +1006,7 @@ fn jumps_to_address_nn() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xC3, 0xAA, 0x54]);
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.program_counter, 0x54AA);
-    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 16);
 }
 
 #[test]
@@ -1060,7 +1060,7 @@ fn jumps_to_current_address_plus_n() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x18, 0x05]);
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.program_counter, 0x07);
-    assert_eq!(emulator.cpu.clock.total_clock_cycles, 8);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 12);
 }
 
 #[test]

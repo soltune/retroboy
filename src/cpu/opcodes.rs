@@ -104,6 +104,7 @@ pub fn step(emulator: &mut Emulator) {
             let byte = read_next_instruction_byte(emulator) as i8;
             let original_program_counter = emulator.cpu.registers.program_counter;
             emulator.cpu.registers.program_counter = original_program_counter.wrapping_add_signed(byte.into());
+            microops::run_extra_machine_cycle(emulator);
         },
         0x19 => {
             let word = microops::read_from_register_pair(&mut emulator.cpu, &REGISTER_DE);
@@ -663,6 +664,7 @@ pub fn step(emulator: &mut Emulator) {
             jumps::conditional_jump_using_immediate_word(emulator, !microops::is_z_flag_set(&emulator.cpu)),
         0xC3 => {
             emulator.cpu.registers.program_counter = read_next_instruction_word(emulator);
+            microops::run_extra_machine_cycle(emulator);
         },
         0xC4 =>
             jumps::conditional_call_using_immediate_word(emulator, !microops::is_z_flag_set(&emulator.cpu)),
@@ -764,6 +766,7 @@ pub fn step(emulator: &mut Emulator) {
 
             emulator.cpu.registers.stack_pointer = sum;
 
+            microops::run_extra_machine_cycle(emulator);
             microops::run_extra_machine_cycle(emulator);
         },
         0xE9 => {
