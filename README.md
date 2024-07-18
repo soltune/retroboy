@@ -2,7 +2,11 @@
 
 This repo holds the core logic for WebBoy: a Game Boy emulator written in Rust. The code can be compiled down to WebAssembly so it can be played on the web.
 
-This emulator passes all [CPU instruction tests](https://github.com/retrio/gb-test-roms/tree/master/cpu_instrs) and [APU tests](https://github.com/retrio/gb-test-roms/tree/master/dmg_sound) from Blargg's test ROM collection.
+This emulator passes the following test suites from Blargg's test ROM collection:
+
+1. [CPU instruction tests](https://github.com/retrio/gb-test-roms/tree/master/cpu_instrs)
+2. [CPU instruction timing tests](https://github.com/retrio/gb-test-roms/tree/master/instr_timing)
+3. [APU tests (DMG)](https://github.com/retrio/gb-test-roms/tree/master/dmg_sound)
 
 ## How to Use
 
