@@ -17,7 +17,6 @@ pub struct GpuRegisters {
     pub stat: u8,
     pub obp0: u8,
     pub obp1: u8,
-    pub dma: u8
 }
 
 #[derive(Debug)]
@@ -66,7 +65,6 @@ pub fn initialize_gpu() -> GpuState {
             stat: 0,
             obp0: 0,
             obp1: 0,
-            dma: 0
         },
         frame_buffer: vec![0xFF; (GB_SCREEN_WIDTH * GB_SCREEN_HEIGHT * BYTES_PER_COLOR) as usize],
         sprite_buffer: Vec::new()
@@ -116,7 +114,6 @@ fn compare_ly_and_lyc(emulator: &mut Emulator) {
 pub fn skip_bios(gpu_state: &mut GpuState) {
     // Initialize the GPU to a state that it would be after running the BIOS.
     // This code assumes the DMG boot ROM has run.
-    gpu_state.registers.dma = 0xFF;
     gpu_state.registers.palette = 0xFC;
     gpu_state.registers.lcdc = 0x91;
     gpu_state.registers.stat = 0x85;

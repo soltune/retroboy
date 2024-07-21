@@ -3,6 +3,8 @@ use crate::apu::{initialize_apu, ApuState};
 use crate::cpu::{self, at_end_of_boot_rom, initialize_cpu, interrupts, timers, CpuState};
 use crate::cpu::interrupts::InterruptRegisters;
 use crate::cpu::timers::TimerRegisters;
+use crate::dma;
+use crate::dma::{initialize_dma, DmaState};
 use crate::gpu::{self, initialize_gpu, GpuState};
 use crate::keys::{initialize_keys, KeyState};
 use crate::render;
@@ -19,7 +21,8 @@ pub struct Emulator {
     pub memory: Memory,
     pub gpu: GpuState,
     pub keys: KeyState,
-    pub apu: ApuState
+    pub apu: ApuState,
+    pub dma: DmaState
 }
 
 pub fn initialize_emulator() -> Emulator {
@@ -41,7 +44,8 @@ pub fn initialize_emulator() -> Emulator {
         memory: initialize_memory(),
         gpu: initialize_gpu(),
         keys: initialize_keys(),
-        apu: initialize_apu()
+        apu: initialize_apu(),
+        dma: initialize_dma()
     }
 }
 
@@ -76,6 +80,7 @@ fn transfer_to_game_rom(memory: &mut Memory) {
 
 pub fn sync(emulator: &mut Emulator) {
     timers::step(emulator);
+    dma::step(emulator);
     gpu::step(emulator, |buffer: &Vec<u8>| {
         render(buffer.as_slice());
     });
