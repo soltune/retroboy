@@ -6,6 +6,7 @@ pub struct DmaState {
     pub source: u16,
     pub destination: u16,
     pub offset: u8,
+    pub delay: u8,
     pub in_progress: bool
 }
 
@@ -16,15 +17,18 @@ pub fn initialize_dma() -> DmaState {
         source: 0x0,
         destination: 0x0,
         offset: 0x0,
+        delay: 0,
         in_progress: false
     }
 }
 
 pub fn start_dma(emulator: &mut Emulator, source: u8) {
+    emulator.dma.source = (source as u16) << 8;
+
     if !emulator.dma.in_progress {
-        emulator.dma.source = (source as u16) << 8;
         emulator.dma.destination = 0xFE00;
         emulator.dma.offset = 0x0;
+        emulator.dma.delay = 2;
         emulator.dma.in_progress = true;
     }
 }
@@ -40,12 +44,17 @@ fn transfer_byte(emulator: &mut Emulator) {
 
 pub fn step(emulator: &mut Emulator) {
     if emulator.dma.in_progress {
-        transfer_byte(emulator);
-
-        emulator.dma.offset += 1;
-
-        if emulator.dma.offset == DMA_TRANSFER_BYTES {
-            emulator.dma.in_progress = false;
+        if emulator.dma.delay > 0 {
+            emulator.dma.delay -= 1;
+        }
+        else {
+            transfer_byte(emulator);
+    
+            emulator.dma.offset += 1;
+    
+            if emulator.dma.offset == DMA_TRANSFER_BYTES {
+                emulator.dma.in_progress = false;
+            } 
         }
     }
 }

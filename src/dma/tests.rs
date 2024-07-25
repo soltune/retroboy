@@ -13,11 +13,11 @@ fn should_start_dma_transfer() {
 }
 
 #[test]
-fn should_not_start_dma_transfer_if_one_is_already_in_progress() {
+fn should_allow_modifications_to_dma_register_if_transfer_is_already_in_progress() {
     let mut emulator = initialize_emulator();
     emulator.dma.in_progress = true;
     start_dma(&mut emulator, 0x12);
-    assert_eq!(emulator.dma.source, 0x0);
+    assert_eq!(emulator.dma.source, 0x1200);
     assert_eq!(emulator.dma.destination, 0x0);
     assert_eq!(emulator.dma.offset, 0x0);
     assert_eq!(emulator.dma.in_progress, true);
