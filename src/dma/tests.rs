@@ -7,7 +7,6 @@ fn should_start_dma_transfer() {
     let mut emulator = initialize_emulator();
     start_dma(&mut emulator, 0x12);
     assert_eq!(emulator.dma.source, 0x1200);
-    assert_eq!(emulator.dma.destination, 0xFE00);
     assert_eq!(emulator.dma.offset, 0x0);
     assert_eq!(emulator.dma.in_progress, true);
 }
@@ -18,7 +17,6 @@ fn should_allow_modifications_to_dma_register_if_transfer_is_already_in_progress
     emulator.dma.in_progress = true;
     start_dma(&mut emulator, 0x12);
     assert_eq!(emulator.dma.source, 0x1200);
-    assert_eq!(emulator.dma.destination, 0x0);
     assert_eq!(emulator.dma.offset, 0x0);
     assert_eq!(emulator.dma.in_progress, true);
 }
@@ -32,7 +30,6 @@ fn should_transfer_byte_from_source_to_destination() {
     mmu::load_rom_buffer(&mut emulator.memory, test_instructions);
 
     emulator.dma.source = 0x1200;
-    emulator.dma.destination = 0xFE00;
     emulator.dma.offset = 0x0;
     emulator.dma.in_progress = true;
     emulator.memory.rom[0x1200] = 0x12;
@@ -41,7 +38,6 @@ fn should_transfer_byte_from_source_to_destination() {
     
     assert_eq!(emulator.memory.object_attribute_memory[0], 0x12);
     assert_eq!(emulator.dma.source, 0x1200);
-    assert_eq!(emulator.dma.destination, 0xFE00);
     assert_eq!(emulator.dma.offset, 1);
     assert_eq!(emulator.dma.in_progress, true);
 }
@@ -55,7 +51,6 @@ fn should_stop_dma_transfer_after_transferring_160_bytes() {
     mmu::load_rom_buffer(&mut emulator.memory, test_instructions);
 
     emulator.dma.source = 0x1200;
-    emulator.dma.destination = 0xFE00;
     emulator.dma.offset = 0x0;
     emulator.dma.in_progress = true;
     emulator.memory.rom[0x129F] = 0x12;
@@ -74,7 +69,6 @@ fn should_do_nothing_if_no_dma_transfer_is_in_progress() {
     let mut emulator = initialize_emulator();
     step(&mut emulator);
     assert_eq!(emulator.dma.source, 0x0);
-    assert_eq!(emulator.dma.destination, 0x0);
     assert_eq!(emulator.dma.offset, 0x0);
     assert_eq!(emulator.dma.in_progress, false);
 }

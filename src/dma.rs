@@ -4,7 +4,6 @@ use crate::mmu;
 #[derive(Debug)]
 pub struct DmaState {
     pub source: u16,
-    pub destination: u16,
     pub offset: u8,
     pub delay: u8,
     pub in_progress: bool
@@ -15,7 +14,6 @@ pub const DMA_TRANSFER_BYTES: u8 = 160;
 pub fn initialize_dma() -> DmaState {
     DmaState {
         source: 0x0,
-        destination: 0x0,
         offset: 0x0,
         delay: 0,
         in_progress: false
@@ -26,7 +24,6 @@ pub fn start_dma(emulator: &mut Emulator, source: u8) {
     emulator.dma.source = (source as u16) << 8;
 
     if !emulator.dma.in_progress {
-        emulator.dma.destination = 0xFE00;
         emulator.dma.offset = 0x0;
         emulator.dma.delay = 2;
         emulator.dma.in_progress = true;
