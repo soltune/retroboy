@@ -10,29 +10,14 @@ fn step_one_machine_cycle(emulator: &mut Emulator) {
     emulator::sync(emulator);
 }
 
-fn address_accessible(emulator: &Emulator, address: u16) -> bool {
-    let accessing_oam = address >= 0xFE00 && address < 0xFEA0;
-    (emulator.dma.in_progress && !accessing_oam) || !emulator.dma.in_progress
-}
-
 pub fn read_byte_from_memory(emulator: &mut Emulator, address: u16) -> u8 {
-    let byte = if address_accessible(emulator, address) {
-        mmu::read_byte(emulator, address)
-    }
-    else {
-        0xFF
-    };
+    let byte = mmu::read_byte(emulator, address);
     step_one_machine_cycle(emulator);
     byte
 }
 
 pub fn read_word_from_memory(emulator: &mut Emulator, address: u16) -> u16 {
-    let word = if address_accessible(emulator, address) {
-        mmu::read_word(emulator, address)
-    } 
-    else {
-        0xFFFF
-    };
+    let word = mmu::read_word(emulator, address);
     for _ in 1..=2 {
         step_one_machine_cycle(emulator);
     }
@@ -40,16 +25,12 @@ pub fn read_word_from_memory(emulator: &mut Emulator, address: u16) -> u16 {
 }
 
 pub fn store_byte_in_memory(emulator: &mut Emulator, address: u16, byte: u8) {
-    if address_accessible(emulator, address) {
-        mmu::write_byte(emulator, address, byte);
-    }
+    mmu::write_byte(emulator, address, byte);
     step_one_machine_cycle(emulator);
 }
 
 pub fn store_word_in_memory(emulator: &mut Emulator, address: u16, word: u16) {
-    if address_accessible(emulator, address) {
-        mmu::write_word(emulator, address, word);
-    }
+    mmu::write_word(emulator, address, word);
     for _ in 1..=2 {
         step_one_machine_cycle(emulator);
     }
