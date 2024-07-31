@@ -32,6 +32,7 @@ pub struct CpuState {
     pub registers: Registers,
     pub clock: Clock,
     pub halted: bool,
+    pub halt_bug: bool,
     pub interrupts: Interrupts
 }
 
@@ -75,6 +76,7 @@ pub fn initialize_cpu() -> CpuState {
             total_clock_cycles: 0,
         },
         halted: false,
+        halt_bug: false,
         interrupts: Interrupts {
             enable_delay: 0,
             disable_delay: 0,

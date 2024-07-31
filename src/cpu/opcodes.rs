@@ -7,6 +7,14 @@ use crate::cpu::jumps;
 use crate::cpu::loads;
 use crate::emulator::Emulator;
 
+fn emulate_halt_bug(cpu: &mut CpuState) {
+    // Mimics halt bug behavior, which runs the instruction after HALT twice.
+    if !cpu.halted && cpu.halt_bug {
+        cpu.registers.program_counter -= 1;
+        cpu.halt_bug = false;
+    }
+}
+
 fn update_interrupt_flag_after_delay(cpu: &mut CpuState) {
     if cpu.interrupts.enable_delay > 0 {
         if cpu.interrupts.enable_delay == 1 {
@@ -31,8 +39,9 @@ pub fn step(emulator: &mut Emulator) {
 
     let opcode = read_next_instruction_byte(emulator);
 
+    emulate_halt_bug(&mut emulator.cpu);
     update_interrupt_flag_after_delay(&mut emulator.cpu);
-    
+
     match opcode {
         0x00 =>
             (),
@@ -361,9 +370,12 @@ pub fn step(emulator: &mut Emulator) {
             loads::load_source_register_in_memory(emulator, Register::L, address);
         },
         0x76 => {
-            if emulator.cpu.halted && interrupts::interrupts_fired(emulator) {
+            if interrupts::interrupts_fired(emulator) {
                 emulator.cpu.halted = false;
-                emulator.cpu.registers.program_counter += 1;
+
+                if !emulator.cpu.interrupts.enabled {
+                    emulator.cpu.halt_bug = true;
+                }
             }
             else {
                 emulator.cpu.halted = true;
