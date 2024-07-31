@@ -1,6 +1,7 @@
 use emulator::Emulator;
 use keys::Key;
 use std::cell::RefCell;
+use std::panic;
 use wasm_bindgen::prelude::*;
 
 thread_local! {
@@ -28,9 +29,13 @@ extern "C" {
     pub fn play_audio_samples(left_samples: &[f32], right_samples: &[f32]);
 }
 
+extern crate console_error_panic_hook;
+
 #[wasm_bindgen(js_name = initializeEmulator)]
 pub fn initialize_emulator(rom_buffer: &[u8], bios_buffer: &[u8]) {
     EMULATOR.with(|emulator_cell| {
+        console_error_panic_hook::set_once();
+
         let mut emulator = emulator_cell.borrow_mut();
 
         emulator::load_rom(&mut emulator, rom_buffer)
@@ -45,6 +50,8 @@ pub fn initialize_emulator(rom_buffer: &[u8], bios_buffer: &[u8]) {
 #[wasm_bindgen(js_name = initializeEmulatorWithoutBios)]
 pub fn initialize_emulator_without_bios(rom_buffer: &[u8]) {
     EMULATOR.with(|emulator_cell| {
+        console_error_panic_hook::set_once();
+
         let mut emulator = emulator_cell.borrow_mut();
 
         emulator::load_rom(&mut emulator, rom_buffer)
