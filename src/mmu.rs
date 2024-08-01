@@ -86,7 +86,12 @@ pub fn read_byte(emulator: &Emulator, address: u16) -> u8 {
             0x8000..=0x9FFF => memory.video_ram[(address & 0x1FFF) as usize],
             0xA000..=0xBFFF => {
                 let calculated_address = (memory.ram_bank_number as u16 * 0x2000) + (address & 0x1FFF);
-                memory.external_ram[calculated_address as usize]
+                if memory.ram_enabled {
+                    memory.external_ram[calculated_address as usize] 
+                }
+                else {
+                    0xFF
+                }
             },
             0xC000..=0xEFFF => memory.working_ram[(address & 0x1FFF) as usize],
             0xF000 => match address & 0x0F00 {
@@ -150,7 +155,7 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
             0x0000..=0x1FFF => {
                 match memory.cartridge_header.type_code {
                     CART_TYPE_MBC1_WITH_RAM | CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY => {
-                        memory.ram_enabled = value == 0xA;
+                        memory.ram_enabled = (value & 0xF) == 0xA;
                     }
                     _ => ()
                 }
@@ -186,7 +191,10 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
                 }
             },
             0x8000..=0x9FFF => memory.video_ram[(address & 0x1FFF) as usize] = value,
-            0xA000..=0xBFFF => memory.external_ram[(address & 0x1FFF) as usize] = value,
+            0xA000..=0xBFFF => 
+                if memory.ram_enabled {
+                    memory.external_ram[(address & 0x1FFF) as usize] = value
+                },
             0xC000..=0xEFFF => memory.working_ram[(address & 0x1FFF) as usize] = value,
             0xF000 => match address & 0x0F00 {
                 0x000..=0xD00 => memory.working_ram[(address & 0x1FFF) as usize] = value,

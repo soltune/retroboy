@@ -140,8 +140,15 @@ fn reads_from_video_ram() {
 
 #[test]
 fn reads_from_external_ram() {
-    let emulator = setup_emulator_with_test_memory();
+    let mut emulator = setup_emulator_with_test_memory();
+    emulator.memory.ram_enabled = true;
     assert_eq!(read_byte(&emulator, 0xA001), 0x22);
+}
+
+#[test]
+fn disallow_access_to_external_ram_if_not_enabled() {
+    let emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&emulator, 0xA001), 0xFF);
 }
 
 #[test]
@@ -358,6 +365,14 @@ fn enable_external_ram_if_correct_cartridge_type_scenario_two() {
 }
 
 #[test]
+fn enable_external_ram_if_lower_nibble_is_equal_to_a() {
+    let mut emulator = setup_emulator_with_test_memory();
+    emulator.memory.cartridge_header.type_code = CART_TYPE_MBC1_WITH_RAM;
+    write_byte(&mut emulator, 0x0000, 0x1A);
+    assert_eq!(emulator.memory.ram_enabled, true);
+}
+
+#[test]
 fn not_enable_external_ram_if_incorrect_cartridge_type() {
     let mut emulator = setup_emulator_with_test_memory();
     emulator.memory.cartridge_header.type_code = CART_TYPE_MBC1;
@@ -458,6 +473,7 @@ fn reads_from_different_ram_bank() {
     emulator.memory.cartridge_header.type_code = CART_TYPE_MBC1_WITH_RAM;
     emulator.memory.mbc_mode = MBCMode::RAM;
     emulator.memory.ram_bank_number = 3;
+    emulator.memory.ram_enabled = true;
     emulator.memory.external_ram[0x6005] = 0xA1;
     let result = read_byte(&emulator, 0xA005);
     assert_eq!(result, 0xA1);
