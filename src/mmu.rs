@@ -80,7 +80,7 @@ pub fn read_byte(emulator: &Emulator, address: u16) -> u8 {
             0x0000 if address < 0x0100 && memory.in_bios => memory.bios[address as usize],
             0x0000..=0x3FFF => memory.rom[address as usize],
             0x4000..=0x7FFF => {
-                let calculated_address = (memory.rom_bank_number as u16 * 0x4000) + (address & 0x3FFF);
+                let calculated_address = (memory.rom_bank_number as u32 * 0x4000) + (address & 0x3FFF) as u32;
                 memory.rom[calculated_address as usize]
             },
             0x8000..=0x9FFF => memory.video_ram[(address & 0x1FFF) as usize],
@@ -185,7 +185,7 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
             0x6000..=0x7FFF => {
                 match memory.cartridge_header.type_code {
                     CART_TYPE_MBC1_WITH_RAM | CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY => {
-                        memory.mbc_mode = if value == 1 { MBCMode::RAM } else { MBCMode::ROM }
+                        memory.mbc_mode = if value == 1 { MBCMode::RAM } else { MBCMode::ROM };
                     }
                     _ => ()
                 }
