@@ -11,29 +11,29 @@ fn step_one_machine_cycle(emulator: &mut Emulator) {
 }
 
 pub fn read_byte_from_memory(emulator: &mut Emulator, address: u16) -> u8 {
-    let byte = mmu::read_byte(emulator, address);
     step_one_machine_cycle(emulator);
+    let byte = mmu::read_byte(emulator, address);
     byte
 }
 
 pub fn read_word_from_memory(emulator: &mut Emulator, address: u16) -> u16 {
-    let word = mmu::read_word(emulator, address);
     for _ in 1..=2 {
         step_one_machine_cycle(emulator);
     }
+    let word = mmu::read_word(emulator, address);
     word
 }
 
 pub fn store_byte_in_memory(emulator: &mut Emulator, address: u16, byte: u8) {
-    mmu::write_byte(emulator, address, byte);
     step_one_machine_cycle(emulator);
+    mmu::write_byte(emulator, address, byte);
 }
 
 pub fn store_word_in_memory(emulator: &mut Emulator, address: u16, word: u16) {
-    mmu::write_word(emulator, address, word);
     for _ in 1..=2 {
         step_one_machine_cycle(emulator);
     }
+    mmu::write_word(emulator, address, word);
 }
 
 pub fn read_from_register(cpu_state: &CpuState, register: &Register) -> u8 {
