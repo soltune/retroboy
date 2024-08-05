@@ -29,12 +29,14 @@ pub struct Memory {
 #[derive(Debug)]
 pub struct CartridgeHeader {
     pub sgb_support: bool,
-    pub type_code: u8
+    pub type_code: u8,
+    pub max_banks: u16
 }
 
 const ENTRY_POINT_ADDRESS: usize = 0x100;
 const SGB_SUPPORT_ADDRESS: usize = 0x146;
 const CARTRIDGE_TYPE_ADDRESS: usize = 0x147;
+const ROM_SIZE_ADDRESS: usize = 0x148;
 
 pub const CART_TYPE_ROM_ONLY: u8 = 0;
 pub const CART_TYPE_MBC1: u8 = 1;
@@ -59,6 +61,7 @@ pub fn initialize_memory() -> Memory {
         cartridge_header: CartridgeHeader {
             sgb_support: false,
             type_code: 0,
+            max_banks: 0
         },
         ram_enabled: false,
         rom_bank_number: 1,
@@ -163,7 +166,12 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
             0x2000..=0x3FFF => {
                 match memory.cartridge_header.type_code {
                     CART_TYPE_MBC1 | CART_TYPE_MBC1_WITH_RAM | CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY => {
-                        let bank_value = if value == 0 { 1 as u8 } else { value };
+                        let masked_value = value & 0x1F;
+                        let mut bank_value = if masked_value == 0 { 1 as u8 } else { masked_value };
+ 
+                        let max_bank_mask = ((memory.cartridge_header.max_banks - 1) & 0x1F) as u8;
+                        bank_value &= max_bank_mask;
+                        
                         memory.rom_bank_number = (memory.rom_bank_number & 0x60) + (bank_value & 0x1F);
                     },
                     _ => ()
@@ -175,7 +183,7 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
                         if memory.mbc_mode == MBCMode::RAM {
                             memory.ram_bank_number = value & 0x3;
                         }
-                        else {
+                        else if memory.cartridge_header.max_banks >= 64 {
                             memory.rom_bank_number = ((value & 0x3) << 5) + (memory.rom_bank_number & 0x1F);
                         }
                     },
@@ -267,10 +275,15 @@ pub fn cartridge_type_supported(type_code: u8) -> bool {
     SUPPORTED_CARTRIDGE_TYPES.contains(&type_code)
 }
 
+fn as_max_banks(rom_size_index: u8) -> u16 {
+    (2 as u16).pow(rom_size_index as u32 + 1)
+}
+
 pub fn load_rom_buffer(memory: &mut Memory, buffer: Vec<u8>) {
     if buffer.len() > ENTRY_POINT_ADDRESS {
         memory.cartridge_header.sgb_support = buffer[SGB_SUPPORT_ADDRESS] == 0x03;
         memory.cartridge_header.type_code = buffer[CARTRIDGE_TYPE_ADDRESS];
+        memory.cartridge_header.max_banks = as_max_banks(buffer[ROM_SIZE_ADDRESS]);
     } 
     memory.rom = buffer; 
 }

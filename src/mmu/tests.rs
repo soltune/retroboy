@@ -393,6 +393,7 @@ fn disable_external_ram_if_correct_cartridge_type() {
 fn set_rom_bank_number() {
     let mut emulator = setup_emulator_with_test_memory();
     emulator.memory.cartridge_header.type_code = CART_TYPE_MBC1;
+    emulator.memory.cartridge_header.max_banks = 8;
     write_byte(&mut emulator, 0x2000, 0x4);
     assert_eq!(emulator.memory.rom_bank_number, 0x04);
 }
@@ -401,6 +402,7 @@ fn set_rom_bank_number() {
 fn sets_the_lower_five_bits_of_the_rom_bank_number() {
     let mut emulator = setup_emulator_with_test_memory();
     emulator.memory.cartridge_header.type_code = CART_TYPE_MBC1;
+    emulator.memory.cartridge_header.max_banks = 128;
     emulator.memory.mbc_mode = MBCMode::ROM;
     emulator.memory.rom_bank_number = 0x41;
     write_byte(&mut emulator, 0x2000, 0x4);
@@ -408,9 +410,35 @@ fn sets_the_lower_five_bits_of_the_rom_bank_number() {
 }
 
 #[test]
+fn masks_bank_number_to_required_number_of_bits() {
+    let mut emulator = setup_emulator_with_test_memory();
+
+    let mut rom_buffer = vec![0; 0x40000];
+    rom_buffer[0] = 0xB1;
+    rom_buffer[1] = 0xD2;
+    rom_buffer[0x8000] = 0xBB;
+    rom_buffer[0x8001] = 0xD1;
+
+    load_rom_buffer(&mut emulator.memory, rom_buffer);
+
+    emulator.memory.cartridge_header.type_code = CART_TYPE_MBC1;
+    emulator.memory.cartridge_header.max_banks = 16;
+    emulator.memory.mbc_mode = MBCMode::ROM;
+
+    // The ROM is 256 KB, so 0x12 is too big and it will be masked
+    // to the required number of bits with a result of 0x2 for the
+    // bank number.
+    write_byte(&mut emulator, 0x2000, 0x12);
+
+    assert_eq!(emulator.memory.rom_bank_number, 0x2);
+    assert_eq!(read_byte(&emulator, 0x4001), 0xD1);
+}
+
+#[test]
 fn treats_setting_bank_zero_as_bank_one() {
     let mut emulator = setup_emulator_with_test_memory();
     emulator.memory.cartridge_header.type_code = CART_TYPE_MBC1;
+    emulator.memory.cartridge_header.max_banks = 8;
     emulator.memory.mbc_mode = MBCMode::ROM;
     write_byte(&mut emulator, 0x2000, 0x0);
     assert_eq!(emulator.memory.rom_bank_number, 0x1);
@@ -420,6 +448,7 @@ fn treats_setting_bank_zero_as_bank_one() {
 fn sets_ram_bank_number() {
     let mut emulator = setup_emulator_with_test_memory();
     emulator.memory.cartridge_header.type_code = CART_TYPE_MBC1;
+    emulator.memory.cartridge_header.max_banks = 8;
     emulator.memory.mbc_mode = MBCMode::RAM;
     write_byte(&mut emulator, 0x4000, 0x2);
     assert_eq!(emulator.memory.ram_bank_number, 0x2);
@@ -429,6 +458,7 @@ fn sets_ram_bank_number() {
 fn sets_high_two_bits_of_rom_bank_number() {
     let mut emulator = setup_emulator_with_test_memory();
     emulator.memory.cartridge_header.type_code = CART_TYPE_MBC1;
+    emulator.memory.cartridge_header.max_banks = 128;
     emulator.memory.mbc_mode = MBCMode::ROM;
     emulator.memory.rom_bank_number = 0x41;
     write_byte(&mut emulator, 0x4000, 0x3);
