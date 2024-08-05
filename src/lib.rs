@@ -1,7 +1,6 @@
 use emulator::Emulator;
 use keys::Key;
 use std::cell::RefCell;
-use std::panic;
 use wasm_bindgen::prelude::*;
 
 thread_local! {
