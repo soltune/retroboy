@@ -258,19 +258,6 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
     }
 }
 
-pub fn read_word(emulator: &Emulator, address: u16) -> u16 {
-    let first_byte = read_byte(&emulator, address) as u16;
-    let second_byte = read_byte(&emulator, address + 1) as u16;
-    first_byte + (second_byte << 8)
-}
-
-pub fn write_word(emulator: &mut Emulator, address: u16, value: u16) {
-    let first_byte = value & 0xFF;
-    let second_byte = value >> 8;
-    write_byte(emulator, address, first_byte as u8);
-    write_byte(emulator, address + 1, second_byte as u8);
-}
-
 pub fn cartridge_type_supported(type_code: u8) -> bool {
     SUPPORTED_CARTRIDGE_TYPES.contains(&type_code)
 }

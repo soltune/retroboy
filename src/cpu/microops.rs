@@ -1,4 +1,4 @@
-use crate::mmu;
+use crate::{mmu, utils};
 use crate::cpu::{Register, RegisterPair, CpuState};
 use crate::emulator::Emulator;
 use crate::emulator;
@@ -17,11 +17,13 @@ pub fn read_byte_from_memory(emulator: &mut Emulator, address: u16) -> u8 {
 }
 
 pub fn read_word_from_memory(emulator: &mut Emulator, address: u16) -> u16 {
-    for _ in 1..=2 {
-        step_one_machine_cycle(emulator);
-    }
-    let word = mmu::read_word(emulator, address);
-    word
+    step_one_machine_cycle(emulator);
+    let first_byte = mmu::read_byte(emulator, address);
+
+    step_one_machine_cycle(emulator);
+    let second_byte = mmu::read_byte(emulator, address + 1);
+
+    utils::as_word(first_byte, second_byte)
 }
 
 pub fn store_byte_in_memory(emulator: &mut Emulator, address: u16, byte: u8) {
@@ -30,10 +32,13 @@ pub fn store_byte_in_memory(emulator: &mut Emulator, address: u16, byte: u8) {
 }
 
 pub fn store_word_in_memory(emulator: &mut Emulator, address: u16, word: u16) {
-    for _ in 1..=2 {
-        step_one_machine_cycle(emulator);
-    }
-    mmu::write_word(emulator, address, word);
+    let (first_byte, second_byte) = utils::as_bytes(word);
+
+    step_one_machine_cycle(emulator);
+    mmu::write_byte(emulator, address, first_byte);
+
+    step_one_machine_cycle(emulator);
+    mmu::write_byte(emulator, address + 1, second_byte);
 }
 
 pub fn read_from_register(cpu_state: &CpuState, register: &Register) -> u8 {

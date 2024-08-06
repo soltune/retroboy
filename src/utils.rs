@@ -20,5 +20,15 @@ pub fn reset_bit(byte: u8, bit_index: u8) -> u8 {
     byte & mask
 }
 
+pub fn as_word(low_byte: u8, high_byte: u8) -> u16 {
+    ((high_byte as u16) << 8) | low_byte as u16
+}
+
+pub fn as_bytes(word: u16) -> (u8, u8) {
+    let low_byte = (word & 0xFF) as u8;
+    let high_byte = (word >> 8) as u8;
+    (low_byte, high_byte)
+}
+
 #[cfg(test)]
 mod tests;

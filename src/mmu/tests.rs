@@ -300,12 +300,6 @@ fn reads_joyp_register() {
 }
 
 #[test]
-fn reads_word_from_emulator() {
-    let emulator= setup_emulator_with_test_memory();
-    assert_eq!(read_word(&emulator, 0x20AF), 0x1711);
-}
-
-#[test]
 fn loads_rom_buffer_into_emulator() {
     let mut emulator = setup_emulator_with_test_memory();
 
@@ -338,14 +332,6 @@ fn writes_to_video_ram() {
     let mut emulator = setup_emulator_with_test_memory();
     write_byte(&mut emulator, 0x8002, 0xC1);
     assert_eq!(emulator.memory.video_ram[2], 0xC1);
-}
-
-#[test]
-fn writes_word_to_video_ram() {
-    let mut emulator = setup_emulator_with_test_memory();
-    write_word(&mut emulator, 0x8002, 0xC1DD);
-    assert_eq!(emulator.memory.video_ram[2], 0xDD);
-    assert_eq!(emulator.memory.video_ram[3], 0xC1);
 }
 
 #[test]
