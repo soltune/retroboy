@@ -246,7 +246,11 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
                     0x4A => emulator.gpu.registers.wy = value,
                     0x4B => emulator.gpu.registers.wx = value,
                     0x0F => emulator.interrupts.flags = value,
-                    0x04 => emulator.timers.divider = value,
+                    0x04 => {
+                        emulator.timers.divider = value;
+                        emulator.timers.divider_clock = 0;
+                        emulator.timers.m_cycles_clock = 0;
+                    },
                     0x05 => emulator.timers.counter = value,
                     0x06 => emulator.timers.modulo = value,
                     0x07 => emulator.timers.control = value,
