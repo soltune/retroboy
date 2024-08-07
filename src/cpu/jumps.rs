@@ -45,10 +45,10 @@ pub fn stack_return(emulator: &mut Emulator) {
 }
 
 pub fn conditional_stack_return(emulator: &mut Emulator, condition: bool) {
+    microops::run_extra_machine_cycle(emulator);
     if condition {
         stack_return(emulator);
     }
-    microops::run_extra_machine_cycle(emulator);
 }
 
 pub fn restart(emulator: &mut Emulator, new_address: u16) {
