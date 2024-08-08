@@ -19,7 +19,7 @@ pub fn write_scanline(emulator: &mut Emulator) {
         for viewport_x in 0..GB_SCREEN_WIDTH as u8 {
             let x = scx.wrapping_add(viewport_x);
 
-            let bg_color = read_window_color(emulator, x, y)
+            let bg_color = read_window_color(emulator, viewport_x, y)
                 .unwrap_or(read_bg_color(emulator, x, y));
 
             let sprite_color = read_sprite_pixel_color(emulator, viewport_x, ly, bg_color);
