@@ -120,7 +120,7 @@ fn lookup_sprite(emulator: &Emulator, x: u8, y: u8, eight_by_sixteen_mode: bool)
 }
 
 fn calculate_tile_index(sprite: &Sprite, y_int: i16, eight_by_sixteen_mode: bool) -> u8 {
-    if eight_by_sixteen_mode && ((y_int - sprite.y_pos)) >= 8 {
+    if eight_by_sixteen_mode && (y_int - sprite.y_pos) >= 8 {
         if sprite.y_flip { sprite.tile_index & 0xFE } else { sprite.tile_index | 0x01 }
     }
     else if eight_by_sixteen_mode {
