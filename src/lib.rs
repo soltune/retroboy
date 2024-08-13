@@ -3,10 +3,6 @@ use keys::Key;
 use std::cell::RefCell;
 use wasm_bindgen::prelude::*;
 
-thread_local! {
-    pub static EMULATOR: RefCell<Emulator> = RefCell::new(emulator::initialize_emulator());
-}
-
 const DOWN_KEY_CODE: &str = "ArrowDown";
 const UP_KEY_CODE: &str = "ArrowUp";
 const LEFT_KEY_CODE: &str = "ArrowLeft";
@@ -22,10 +18,19 @@ extern "C" {
     #[wasm_bindgen(js_namespace = console)]
     pub fn log(s: &str);
 
-    pub fn render(frame_buffer: &[u8]); 
+    #[wasm_bindgen(js_name = canvasRender)]
+    pub fn canvas_render(frame_buffer: &[u8]); 
 
     #[wasm_bindgen(js_name = playAudioSamples)]
     pub fn play_audio_samples(left_samples: &[f32], right_samples: &[f32]);
+}
+
+fn initialize_web_emulator() -> Emulator {
+    emulator::initialize_emulator(canvas_render)
+}
+
+thread_local! {
+    pub static EMULATOR: RefCell<Emulator> = RefCell::new(initialize_web_emulator());
 }
 
 extern crate console_error_panic_hook;
@@ -65,7 +70,7 @@ pub fn initialize_emulator_without_bios(rom_buffer: &[u8]) {
 #[wasm_bindgen(js_name = resetEmulator)]
 pub fn reset_emulator() {
     EMULATOR.with(|emulator_cell| {
-         emulator_cell.replace(emulator::initialize_emulator());
+         emulator_cell.replace(initialize_web_emulator());
     })
 }
 

@@ -1,4 +1,4 @@
-use crate::emulator::initialize_emulator;
+use crate::emulator::initialize_screenless_emulator;
 use super::*;
 
 fn prep_div_apu_for_next_step(emulator: &mut Emulator, step: u8) {
@@ -32,7 +32,7 @@ fn initialize_disabled_noise_channel(emulator: &mut Emulator) {
 
 #[test]
 fn should_not_decrement_period_divider_when_apu_is_off() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     emulator.apu.enabled = false;
     emulator.apu.channel1.enabled = true;
     emulator.apu.channel1.period.divider = 742;
@@ -45,7 +45,7 @@ fn should_not_decrement_period_divider_when_apu_is_off() {
 
 #[test]
 fn should_not_decrement_period_divider_if_channel_1_is_off() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     emulator.apu.enabled = true;
     emulator.apu.channel1.enabled = false;
     emulator.apu.channel1.period.divider = 742;
@@ -58,7 +58,7 @@ fn should_not_decrement_period_divider_if_channel_1_is_off() {
 
 #[test]
 fn should_decrement_period_divider_for_channel_1() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     emulator.apu.enabled = true;
     emulator.apu.channel1.enabled = true;
     emulator.apu.channel1.period.divider = 742;
@@ -71,7 +71,7 @@ fn should_decrement_period_divider_for_channel_1() {
 
 #[test]
 fn should_decrement_period_divider_for_channel_2() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     emulator.apu.enabled = true;
     emulator.apu.channel2.enabled = true;
     emulator.apu.channel2.period.divider = 742;
@@ -84,7 +84,7 @@ fn should_decrement_period_divider_for_channel_2() {
 
 #[test]
 fn should_reload_period_divider_once_it_reaches_zero() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     emulator.apu.enabled = true;
     emulator.apu.channel1.enabled = true;
     emulator.apu.channel1.period.divider = 1;
@@ -96,7 +96,7 @@ fn should_reload_period_divider_once_it_reaches_zero() {
 
 #[test]
 fn should_properly_wrap_period_divider_value_when_decrementing_it() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     emulator.apu.enabled = true;
     emulator.apu.channel1.enabled = true;
     emulator.apu.channel1.period.divider = 1;
@@ -110,7 +110,7 @@ fn should_properly_wrap_period_divider_value_when_decrementing_it() {
 
 #[test]
 fn should_increment_wave_duty_position_when_period_divider_reaches_zero() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     emulator.apu.enabled = true;
     emulator.apu.channel1.enabled = true;
     emulator.apu.channel1.period.divider = 1;
@@ -123,7 +123,7 @@ fn should_increment_wave_duty_position_when_period_divider_reaches_zero() {
 
 #[test]
 fn should_reset_wave_duty_position_to_zero_when_increased_above_seven() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     emulator.apu.enabled = true;
     emulator.apu.channel1.enabled = true;
     emulator.apu.channel1.period.divider = 1;
@@ -136,7 +136,7 @@ fn should_reset_wave_duty_position_to_zero_when_increased_above_seven() {
 
 #[test]
 fn should_increment_divider_apu_every_time_bit_four_of_divider_timer_goes_from_one_to_zero() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     emulator.apu.enabled = true;
     emulator.apu.channel1.enabled = true;
     emulator.apu.channel1.period.divider = 1;
@@ -150,7 +150,7 @@ fn should_increment_divider_apu_every_time_bit_four_of_divider_timer_goes_from_o
 
 #[test]
 fn should_not_increment_divider_apu_if_bit_four_of_divider_timer_remains_unchanged() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     emulator.apu.enabled = true;
     emulator.apu.channel1.enabled = true;
     emulator.apu.channel1.period.divider = 1;
@@ -164,7 +164,7 @@ fn should_not_increment_divider_apu_if_bit_four_of_divider_timer_remains_unchang
 
 #[test]
 fn should_wrap_div_apu_to_zero_when_increased_above_seven() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     emulator.apu.enabled = true;
     emulator.apu.channel1.enabled = true;
     prep_div_apu_for_next_step(&mut emulator, 7);
@@ -174,7 +174,7 @@ fn should_wrap_div_apu_to_zero_when_increased_above_seven() {
 
 #[test]
 fn should_trigger_channel_1_when_writing_to_channel_1_period_high() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     emulator.apu.enabled = true;
     emulator.apu.channel1.dac_enabled = true;
     emulator.apu.channel1.enabled = false;
@@ -189,7 +189,7 @@ fn should_trigger_channel_1_when_writing_to_channel_1_period_high() {
 
 #[test]
 fn should_trigger_channel_2_when_writing_to_channel_2_period_high() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     emulator.apu.enabled = true;
     emulator.apu.channel2.dac_enabled = true;
     emulator.apu.channel2.enabled = false;
@@ -201,7 +201,7 @@ fn should_trigger_channel_2_when_writing_to_channel_2_period_high() {
 
 #[test]
 fn should_not_trigger_channel_1_if_trigger_bit_is_not_set_when_writing_to_channel_1_period_high() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     emulator.apu.enabled = true;
     emulator.apu.channel1.dac_enabled = true;
     emulator.apu.channel1.enabled = false;
@@ -213,7 +213,7 @@ fn should_not_trigger_channel_1_if_trigger_bit_is_not_set_when_writing_to_channe
 
 #[test]
 fn should_not_trigger_channel_1_if_dac_is_disabled_when_writing_to_channel_1_period_high() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     emulator.apu.enabled = true;
     emulator.apu.channel1.dac_enabled = false;
     emulator.apu.channel1.enabled = false;
@@ -225,7 +225,7 @@ fn should_not_trigger_channel_1_if_dac_is_disabled_when_writing_to_channel_1_per
 
 #[test]
 fn should_disable_dac_and_channel_1_when_writing_to_channel_1_volume() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     emulator.apu.enabled = true;
     emulator.apu.channel1.dac_enabled = true;
     emulator.apu.channel1.enabled = true;
@@ -238,7 +238,7 @@ fn should_disable_dac_and_channel_1_when_writing_to_channel_1_volume() {
 
 #[test]
 fn should_disable_dac_and_channel_2_when_writing_to_channel_2_volume() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     emulator.apu.enabled = true;
     emulator.apu.channel2.dac_enabled = true;
     emulator.apu.channel2.enabled = true;
@@ -251,7 +251,7 @@ fn should_disable_dac_and_channel_2_when_writing_to_channel_2_volume() {
 
 #[test]
 fn should_not_disable_dac_if_bits_three_through_seven_have_values_when_writing_to_channel_1_volume() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     emulator.apu.enabled = true;
     emulator.apu.channel1.dac_enabled = true;
     emulator.apu.channel1.enabled = true;
@@ -264,7 +264,7 @@ fn should_not_disable_dac_if_bits_three_through_seven_have_values_when_writing_t
 
 #[test]
 fn should_update_channel_1_envelope_volume_and_reset_timer_when_timer_decrements_to_zero() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
 
     emulator.apu.enabled = true;
     prep_div_apu_for_next_step(&mut emulator, 7);
@@ -288,7 +288,7 @@ fn should_update_channel_1_envelope_volume_and_reset_timer_when_timer_decrements
 
 #[test]
 fn should_decrement_channel_1_envelope_timer() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
 
     emulator.apu.enabled = true;
     prep_div_apu_for_next_step(&mut emulator, 7);
@@ -313,7 +313,7 @@ fn should_decrement_channel_1_envelope_timer() {
 
 #[test]
 fn should_not_step_channel_1_envelope_if_divider_apu_is_on_wrong_step() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
 
     emulator.apu.enabled = true;
     prep_div_apu_for_next_step(&mut emulator, 4);
@@ -337,7 +337,7 @@ fn should_not_step_channel_1_envelope_if_divider_apu_is_on_wrong_step() {
 
 #[test]
 fn should_step_channel_1_length_timer() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
 
     emulator.apu.enabled = true;
     prep_div_apu_for_next_step(&mut emulator, 0);
@@ -360,7 +360,7 @@ fn should_step_channel_1_length_timer() {
 
 #[test]
 fn should_not_step_channel_1_length_timer_if_divider_apu_is_on_wrong_step() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
 
     emulator.apu.enabled = true;
     prep_div_apu_for_next_step(&mut emulator, 1);
@@ -383,7 +383,7 @@ fn should_not_step_channel_1_length_timer_if_divider_apu_is_on_wrong_step() {
 
 #[test]
 fn should_disable_channel_1_when_length_timer_reaches_zero() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
 
     emulator.apu.enabled = true;
     prep_div_apu_for_next_step(&mut emulator, 0);
@@ -407,7 +407,7 @@ fn should_disable_channel_1_when_length_timer_reaches_zero() {
 
 #[test]
 fn should_initialize_length_timer_when_channel_1_is_triggered() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     emulator.apu.enabled = true;
     emulator.apu.channel1.dac_enabled = true;
     emulator.apu.channel1.enabled = false;
@@ -420,7 +420,7 @@ fn should_initialize_length_timer_when_channel_1_is_triggered() {
 
 #[test]
 fn should_decrement_channel_1_sweep_timer() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
 
     emulator.apu.enabled = true;
     prep_div_apu_for_next_step(&mut emulator, 2);
@@ -444,7 +444,7 @@ fn should_decrement_channel_1_sweep_timer() {
 
 #[test]
 fn should_disable_channel_1_on_sweep_overflow() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
 
     emulator.apu.enabled = true;
     prep_div_apu_for_next_step(&mut emulator, 2);
@@ -468,7 +468,7 @@ fn should_disable_channel_1_on_sweep_overflow() {
 
 #[test]
 fn should_reload_sweep_timer_and_frequency_when_timer_reaches_zero() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
 
     emulator.apu.enabled = true;
     prep_div_apu_for_next_step(&mut emulator, 2);
@@ -495,7 +495,7 @@ fn should_reload_sweep_timer_and_frequency_when_timer_reaches_zero() {
 
 #[test]
 fn should_properly_initialize_sweep_timer_and_shadow_frequency_on_trigger() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
 
     emulator.apu.enabled = true;
     emulator.apu.channel1.dac_enabled = true;
@@ -515,7 +515,7 @@ fn should_properly_initialize_sweep_timer_and_shadow_frequency_on_trigger() {
 
 #[test]
 fn should_decrement_period_divider_for_channel_3() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     emulator.apu.enabled = true;
     emulator.apu.channel3.dac_enabled = true;
     emulator.apu.channel3.enabled = true;
@@ -528,7 +528,7 @@ fn should_decrement_period_divider_for_channel_3() {
 
 #[test]
 fn should_reload_period_divider_once_it_reaches_zero_for_channel_3() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     emulator.apu.enabled = true;
     emulator.apu.channel3.enabled = true;
     emulator.apu.channel3.dac_enabled = true;
@@ -541,7 +541,7 @@ fn should_reload_period_divider_once_it_reaches_zero_for_channel_3() {
 
 #[test]
 fn should_increment_wave_position_when_period_divider_reaches_zero_for_channel_3() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     emulator.apu.enabled = true;
     emulator.apu.channel3.enabled = true;
     emulator.apu.channel3.dac_enabled = true;
@@ -555,7 +555,7 @@ fn should_increment_wave_position_when_period_divider_reaches_zero_for_channel_3
 
 #[test]
 fn should_trigger_channel_3_when_writing_to_channel_3_period_high() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     emulator.apu.enabled = true;
     emulator.apu.channel3.dac_enabled = true;
     emulator.apu.channel3.enabled = false;
@@ -567,7 +567,7 @@ fn should_trigger_channel_3_when_writing_to_channel_3_period_high() {
 
 #[test]
 fn should_disable_channel_3_when_resetting_bit_7_of_dac_enabled_register() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     emulator.apu.enabled = true;
     emulator.apu.channel3.dac_enabled = true;
     emulator.apu.channel3.enabled = true;
@@ -578,7 +578,7 @@ fn should_disable_channel_3_when_resetting_bit_7_of_dac_enabled_register() {
 
 #[test]
 fn should_initialize_length_timer_when_channel_3_is_triggered() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     emulator.apu.enabled = true;
     emulator.apu.channel3.dac_enabled = true;
     emulator.apu.channel3.enabled = false;
@@ -591,7 +591,7 @@ fn should_initialize_length_timer_when_channel_3_is_triggered() {
 
 #[test]
 fn should_step_channel_3_length_timer() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
 
     emulator.apu.enabled = true;
     prep_div_apu_for_next_step(&mut emulator, 0);
@@ -614,7 +614,7 @@ fn should_step_channel_3_length_timer() {
 
 #[test]
 fn should_not_decrement_period_divider_for_channel_4_if_only_four_instruction_cycles() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     initialize_noise_channel(&mut emulator);
 
     emulator.apu.channel4.period_divider = 742;
@@ -627,7 +627,7 @@ fn should_not_decrement_period_divider_for_channel_4_if_only_four_instruction_cy
 
 #[test]
 fn should_decrement_period_divider_for_channel_4_after_sixteen_instruction_cycles() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     initialize_noise_channel(&mut emulator);
 
     emulator.apu.channel4.period_divider = 742;
@@ -639,7 +639,7 @@ fn should_decrement_period_divider_for_channel_4_after_sixteen_instruction_cycle
 
 #[test]
 fn should_reload_period_divider_for_channel_4_once_it_decrements_to_zero() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     initialize_noise_channel(&mut emulator);
     emulator.apu.channel4.period_divider = 1;
 
@@ -655,7 +655,7 @@ fn should_reload_period_divider_for_channel_4_once_it_decrements_to_zero() {
 
 #[test]
 fn should_calculate_next_lfsr_value_correctly_for_channel_4() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     initialize_noise_channel(&mut emulator);
 
     emulator.apu.channel4.period_divider = 1;
@@ -669,7 +669,7 @@ fn should_calculate_next_lfsr_value_correctly_for_channel_4() {
 
 #[test]
 fn should_calculate_next_lfsr_value_correctly_in_width_mode_for_channel_4() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     initialize_noise_channel(&mut emulator);
 
     emulator.apu.channel4.period_divider = 1;
@@ -683,7 +683,7 @@ fn should_calculate_next_lfsr_value_correctly_in_width_mode_for_channel_4() {
 
 #[test]
 fn should_trigger_channel_4() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     initialize_disabled_noise_channel(&mut emulator);
 
     set_ch4_control(&mut emulator, 0b10000000);
@@ -693,7 +693,7 @@ fn should_trigger_channel_4() {
 
 #[test]
 fn should_set_ch4_control() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     initialize_disabled_noise_channel(&mut emulator);
 
     set_ch4_control(&mut emulator, 0b10000000);
@@ -703,7 +703,7 @@ fn should_set_ch4_control() {
 
 #[test]
 fn should_set_all_bits_of_lfsr_to_one_on_channel_4_trigger() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     initialize_disabled_noise_channel(&mut emulator);
 
     set_ch4_control(&mut emulator, 0b10000000);
@@ -713,7 +713,7 @@ fn should_set_all_bits_of_lfsr_to_one_on_channel_4_trigger() {
 
 #[test]
 fn should_disable_channel_4() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     initialize_noise_channel(&mut emulator);
 
     set_ch4_envelope_settings(&mut emulator, 0b00000111);
@@ -725,7 +725,7 @@ fn should_disable_channel_4() {
 
 #[test]
 fn should_step_channel_4_length_timer() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     initialize_noise_channel(&mut emulator);
     prep_div_apu_for_next_step(&mut emulator, 0);
     
@@ -740,7 +740,7 @@ fn should_step_channel_4_length_timer() {
 
 #[test]
 fn should_step_channel_4_envelope_timer() {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     initialize_noise_channel(&mut emulator);
     prep_div_apu_for_next_step(&mut emulator, 7);
     

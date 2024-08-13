@@ -82,12 +82,12 @@ pub fn step(emulator: &mut Emulator) {
 
 #[cfg(test)]
 mod tests {
-    use crate::emulator::initialize_emulator;
+    use crate::emulator::initialize_screenless_emulator;
     use super::*;
 
     #[test]
     fn increments_base_speed_by_number_of_m_cycles() {
-        let mut emulator = initialize_emulator();
+        let mut emulator = initialize_screenless_emulator();
         emulator.cpu.clock.instruction_clock_cycles = 4;
         step(&mut emulator);
         assert_eq!(emulator.timers.m_cycles_clock, 1);
@@ -95,7 +95,7 @@ mod tests {
 
     #[test]
     fn resets_base_speed_after_four_m_cycles() {
-        let mut emulator = initialize_emulator();
+        let mut emulator = initialize_screenless_emulator();
         emulator.cpu.clock.instruction_clock_cycles = 4;
         emulator.timers.m_cycles_clock = 3;
         step(&mut emulator);
@@ -104,7 +104,7 @@ mod tests {
 
     #[test]
     fn increments_divider_clock_after_four_m_cycles() {
-        let mut emulator = initialize_emulator();
+        let mut emulator = initialize_screenless_emulator();
         emulator.cpu.clock.instruction_clock_cycles = 4;
         emulator.timers.m_cycles_clock = 3;
         step(&mut emulator);
@@ -113,7 +113,7 @@ mod tests {
 
     #[test]
     fn increments_divider_register_after_sixteen_divider_clock_increments() {
-        let mut emulator = initialize_emulator();
+        let mut emulator = initialize_screenless_emulator();
         emulator.cpu.clock.instruction_clock_cycles = 4;
         emulator.timers.m_cycles_clock = 3;
         emulator.timers.divider_clock = 15;
@@ -124,7 +124,7 @@ mod tests {
 
     #[test]
     fn wraps_when_divider_register_overflows() {
-        let mut emulator = initialize_emulator();
+        let mut emulator = initialize_screenless_emulator();
         emulator.cpu.clock.instruction_clock_cycles = 4;
         emulator.timers.m_cycles_clock = 3;
         emulator.timers.divider_clock = 15;
@@ -136,7 +136,7 @@ mod tests {
 
     #[test]
     fn increments_counter_register_at_a_fourth_the_rate_of_base_speed_when_configured() {
-        let mut emulator = initialize_emulator();
+        let mut emulator = initialize_screenless_emulator();
         emulator.cpu.clock.instruction_clock_cycles = 4;
         emulator.timers.m_cycles_clock = 3;
         emulator.timers.base_clock = 3;
@@ -148,7 +148,7 @@ mod tests {
 
     #[test]
     fn increments_counter_register_at_a_sixteenth_of_the_rate_of_base_speed_when_configured() {
-        let mut emulator = initialize_emulator();
+        let mut emulator = initialize_screenless_emulator();
         emulator.cpu.clock.instruction_clock_cycles = 4;
         emulator.timers.m_cycles_clock = 3;
         emulator.timers.base_clock = 15;
@@ -160,7 +160,7 @@ mod tests {
 
     #[test]
     fn increments_counter_register_at_a_sixty_fourth_of_the_rate_of_base_speed_when_configured() {
-        let mut emulator = initialize_emulator();
+        let mut emulator = initialize_screenless_emulator();
         emulator.cpu.clock.instruction_clock_cycles = 4;
         emulator.timers.m_cycles_clock = 3;
         emulator.timers.base_clock = 63;
@@ -172,7 +172,7 @@ mod tests {
 
     #[test]
     fn increments_counter_register_at_same_rate_of_base_speed_when_configured() {
-        let mut emulator = initialize_emulator();
+        let mut emulator = initialize_screenless_emulator();
         emulator.cpu.clock.instruction_clock_cycles = 4;
         emulator.timers.m_cycles_clock = 3;
         emulator.timers.base_clock = 0;
@@ -184,7 +184,7 @@ mod tests {
 
     #[test]
     fn should_not_increment_counter_register_at_wrong_time() {
-        let mut emulator = initialize_emulator();
+        let mut emulator = initialize_screenless_emulator();
         emulator.cpu.clock.instruction_clock_cycles = 4;
         emulator.timers.m_cycles_clock = 3;
         emulator.timers.base_clock = 14;
@@ -196,7 +196,7 @@ mod tests {
 
     #[test]
     fn should_not_increment_counter_register_if_timer_is_off() {
-        let mut emulator = initialize_emulator();
+        let mut emulator = initialize_screenless_emulator();
         emulator.cpu.clock.instruction_clock_cycles = 4;
         emulator.timers.m_cycles_clock = 3;
         emulator.timers.base_clock = 15;
@@ -208,7 +208,7 @@ mod tests {
 
     #[test]
     fn should_fire_interrupt_on_counter_register_overflow() {
-        let mut emulator = initialize_emulator();
+        let mut emulator = initialize_screenless_emulator();
         emulator.cpu.clock.instruction_clock_cycles = 4;
         emulator.timers.m_cycles_clock = 3;
         emulator.timers.base_clock = 0x15;
@@ -222,7 +222,7 @@ mod tests {
 
     #[test]
     fn should_reset_counter_register_to_modulo_on_overflow() {
-        let mut emulator = initialize_emulator();
+        let mut emulator = initialize_screenless_emulator();
         emulator.cpu.clock.instruction_clock_cycles = 4;
         emulator.timers.m_cycles_clock = 3;
         emulator.timers.base_clock = 0x15;

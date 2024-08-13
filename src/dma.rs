@@ -58,13 +58,13 @@ pub fn step(emulator: &mut Emulator) {
 
 #[cfg(test)]
 mod tests {
-    use crate::emulator::initialize_emulator;
+    use crate::emulator::initialize_screenless_emulator;
     use crate::mmu;
     use super::*;
 
     #[test]
     fn should_start_dma_transfer() {
-        let mut emulator = initialize_emulator();
+        let mut emulator = initialize_screenless_emulator();
         start_dma(&mut emulator, 0x12);
         assert_eq!(emulator.dma.source, 0x1200);
         assert_eq!(emulator.dma.offset, 0x0);
@@ -73,7 +73,7 @@ mod tests {
 
     #[test]
     fn should_allow_modifications_to_dma_register_if_transfer_is_already_in_progress() {
-        let mut emulator = initialize_emulator();
+        let mut emulator = initialize_screenless_emulator();
         emulator.dma.in_progress = true;
         start_dma(&mut emulator, 0x12);
         assert_eq!(emulator.dma.source, 0x1200);
@@ -83,7 +83,7 @@ mod tests {
 
     #[test]
     fn should_transfer_byte_from_source_to_destination() {
-        let mut emulator = initialize_emulator();
+        let mut emulator = initialize_screenless_emulator();
 
         let mut test_instructions: Vec<u8> = vec![0; 0x8000];
         test_instructions.resize(0x8000, 0);
@@ -104,7 +104,7 @@ mod tests {
 
     #[test]
     fn should_stop_dma_transfer_after_transferring_160_bytes() {
-        let mut emulator = initialize_emulator();
+        let mut emulator = initialize_screenless_emulator();
 
         let mut test_instructions: Vec<u8> = vec![0; 0x8000];
         test_instructions.resize(0x8000, 0);
@@ -126,7 +126,7 @@ mod tests {
 
     #[test]
     fn should_do_nothing_if_no_dma_transfer_is_in_progress() {
-        let mut emulator = initialize_emulator();
+        let mut emulator = initialize_screenless_emulator();
         step(&mut emulator);
         assert_eq!(emulator.dma.source, 0x0);
         assert_eq!(emulator.dma.offset, 0x0);

@@ -142,7 +142,7 @@ pub fn should_trigger(channel: &WaveChannel) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use crate::emulator::initialize_emulator;
+    use crate::emulator::initialize_screenless_emulator;
     use super::*;
 
     fn enable_wave_channel(channel: &mut WaveChannel) {
@@ -152,7 +152,7 @@ mod tests {
 
     #[test]
     fn should_calculate_dac_output_when_amplitude_is_zero() {
-        let mut emulator = initialize_emulator();
+        let mut emulator = initialize_screenless_emulator();
         enable_wave_channel(&mut emulator.apu.channel3);
 
         emulator.apu.channel3.wave_pattern_ram[0] = 0xAC;
@@ -168,7 +168,7 @@ mod tests {
 
     #[test]
     fn should_calculate_dac_output_when_amplitude_is_non_zero() {
-        let mut emulator = initialize_emulator();
+        let mut emulator = initialize_screenless_emulator();
         enable_wave_channel(&mut emulator.apu.channel3);
 
         emulator.apu.channel3.wave_pattern_ram[0] = 0xAC;
@@ -184,7 +184,7 @@ mod tests {
 
     #[test]
     fn should_generate_no_sound_if_channel_is_muted() {
-        let mut emulator = initialize_emulator();
+        let mut emulator = initialize_screenless_emulator();
         enable_wave_channel(&mut emulator.apu.channel3);
 
         emulator.apu.channel3.wave_pattern_ram[0] = 0xAC;
@@ -200,7 +200,7 @@ mod tests {
 
     #[test]
     fn should_shift_sample_right_once_if_channel_is_set_to_half_of_volume() {
-        let mut emulator = initialize_emulator();
+        let mut emulator = initialize_screenless_emulator();
         enable_wave_channel(&mut emulator.apu.channel3);
 
         emulator.apu.channel3.wave_pattern_ram[0] = 0xAC;
@@ -216,7 +216,7 @@ mod tests {
 
     #[test]
     fn should_produce_no_audio_output_if_channel_is_disabled() {
-        let mut emulator = initialize_emulator();
+        let mut emulator = initialize_screenless_emulator();
 
         emulator.apu.channel3.wave_pattern_ram[0] = 0xAC;
         emulator.apu.channel3.wave_pattern_ram[1] = 0xC0;

@@ -1,9 +1,9 @@
-use crate::emulator::initialize_emulator;
+use crate::emulator::initialize_screenless_emulator;
 
 use super::*;
 
 fn setup_emulator_with_test_memory() -> Emulator {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
 
     emulator.memory.bios[0] = 0xaf;
     emulator.memory.bios[1] = 0xF1;

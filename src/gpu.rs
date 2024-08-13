@@ -119,7 +119,7 @@ pub fn skip_bios(gpu_state: &mut GpuState) {
     gpu_state.registers.stat = 0x85;
 }
 
-pub fn step(emulator: &mut Emulator, mut render: impl FnMut(&Vec<u8>)) {
+pub fn step(emulator: &mut Emulator) {
     emulator.gpu.mode_clock += T_CYCLE_INCREMENT as u16;
 
     match emulator.gpu.mode {
@@ -141,7 +141,7 @@ pub fn step(emulator: &mut Emulator, mut render: impl FnMut(&Vec<u8>)) {
             if emulator.gpu.mode_clock >= HBLANK_TIME {
                 if emulator.gpu.registers.ly == FRAME_SCANLINE_COUNT - VBLANK_SCANLINE_COUNT - 1 {
                     update_mode(emulator, VBLANK_MODE);
-                    render(&emulator.gpu.frame_buffer);
+                    (emulator.render)(&emulator.gpu.frame_buffer);
                     fire_vblank_interrupt(emulator);
                 }
                 else {

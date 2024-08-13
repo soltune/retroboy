@@ -1,9 +1,9 @@
 use super::*;
-use crate::emulator::initialize_emulator;
+use crate::emulator::initialize_screenless_emulator;
 use crate::mmu;
 
 fn init_emulator_with_test_instructions(mut test_instructions: Vec<u8>) -> Emulator {
-    let mut emulator = initialize_emulator();
+    let mut emulator = initialize_screenless_emulator();
     test_instructions.resize(0x8000, 0);
     mmu::load_rom_buffer(&mut emulator.memory, test_instructions);
     emulator.memory.in_bios = false;

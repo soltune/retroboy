@@ -7,13 +7,11 @@ use crate::dma;
 use crate::dma::{initialize_dma, DmaState};
 use crate::gpu::{self, initialize_gpu, GpuState};
 use crate::keys::{initialize_keys, KeyState};
-use crate::render;
 use crate::mmu;
 use crate::mmu::{Memory, initialize_memory};
 use std::cell::RefMut;
 use std::io;
 
-#[derive(Debug)]
 pub struct Emulator {
     pub cpu: CpuState,
     pub interrupts: InterruptRegisters,
@@ -22,10 +20,11 @@ pub struct Emulator {
     pub gpu: GpuState,
     pub keys: KeyState,
     pub apu: ApuState,
-    pub dma: DmaState
+    pub dma: DmaState,
+    pub render: fn(&[u8]),
 }
 
-pub fn initialize_emulator() -> Emulator {
+pub fn initialize_emulator(render: fn(&[u8])) -> Emulator {
     Emulator {
         cpu: initialize_cpu(),
         interrupts: InterruptRegisters {
@@ -45,8 +44,13 @@ pub fn initialize_emulator() -> Emulator {
         gpu: initialize_gpu(),
         keys: initialize_keys(),
         apu: initialize_apu(),
-        dma: initialize_dma()
+        dma: initialize_dma(),
+        render
     }
+}
+
+pub fn initialize_screenless_emulator() -> Emulator {
+    initialize_emulator(|_| {})
 }
 
 pub fn load_rom(emulator: &mut RefMut<Emulator>, rom: &[u8]) -> io::Result<()> {
@@ -81,9 +85,7 @@ fn transfer_to_game_rom(memory: &mut Memory) {
 pub fn sync(emulator: &mut Emulator) {
     timers::step(emulator);
     dma::step(emulator);
-    gpu::step(emulator, |buffer: &Vec<u8>| {
-        render(buffer.as_slice());
-    });
+    gpu::step(emulator);
     apu::step(emulator);
 }
 
