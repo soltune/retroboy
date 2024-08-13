@@ -1,4 +1,3 @@
-use crate::apu;
 use crate::emulator;
 use crate::emulator::Emulator;
 use crate::keys;
@@ -82,16 +81,11 @@ pub fn step_until_next_audio_buffer() {
     EMULATOR.with(|emulator_cell| {
         let mut emulator = emulator_cell.borrow_mut();
 
-        while !apu::audio_buffers_full(&mut emulator) {
-            emulator::step(&mut emulator);
-        }
+        let audio_buffers = emulator::step_until_next_audio_buffer(&mut emulator);
+        let left_samples_slice = audio_buffers.0;
+        let right_samples_slice = audio_buffers.1;
 
-        let left_samples_slice = apu::get_left_sample_queue(&emulator);
-        let right_samples_slice = apu::get_right_sample_queue(&emulator);
-    
         play_audio_samples(left_samples_slice, right_samples_slice);
-    
-        apu::clear_audio_buffers(&mut emulator);
     })
 }
 

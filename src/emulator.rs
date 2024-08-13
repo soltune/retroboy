@@ -96,3 +96,16 @@ pub fn step(emulator: &mut Emulator) {
 
     cpu::opcodes::step(emulator);
 }
+
+pub fn step_until_next_audio_buffer(emulator: &mut Emulator) -> (&[f32], &[f32]) {
+    apu::clear_audio_buffers(emulator);
+
+    while !apu::audio_buffers_full(emulator) {
+        step(emulator);
+    }
+
+    let left_samples_slice = apu::get_left_sample_queue(emulator);
+    let right_samples_slice = apu::get_right_sample_queue(emulator);
+
+    (left_samples_slice, right_samples_slice)
+}
