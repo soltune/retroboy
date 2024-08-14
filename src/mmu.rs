@@ -1,3 +1,4 @@
+use crate::bios::DMG_BOOTIX;
 use crate::{apu, dma};
 use crate::emulator::Emulator;
 use crate::keys;
@@ -51,7 +52,7 @@ pub const SUPPORTED_CARTRIDGE_TYPES: [u8; 4] = [CART_TYPE_ROM_ONLY,
 pub fn initialize_memory() -> Memory {
     Memory {
         in_bios: true,
-        bios: [0; 0x100],
+        bios: DMG_BOOTIX,
         rom: Vec::new(),
         video_ram: [0; 0x2000],
         object_attribute_memory: [0; 0xa0],
@@ -276,13 +277,7 @@ pub fn load_rom_buffer(memory: &mut Memory, buffer: Vec<u8>) {
         memory.cartridge_header.type_code = buffer[CARTRIDGE_TYPE_ADDRESS];
         memory.cartridge_header.max_banks = as_max_banks(buffer[ROM_SIZE_ADDRESS]);
     } 
-    memory.rom = buffer; 
-}
-
-pub fn load_bios_buffer_slice(memory: &mut Memory, buffer_slice: &[u8]) {
-    let mut buffer: [u8; 256] = [0; 256];
-    buffer.copy_from_slice(buffer_slice);
-    memory.bios = buffer;
+    memory.rom = buffer;
 }
 
 #[cfg(test)]

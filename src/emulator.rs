@@ -1,6 +1,6 @@
 use crate::apu;
 use crate::apu::{initialize_apu, ApuState};
-use crate::cpu::{self, at_end_of_boot_rom, initialize_cpu, interrupts, timers, CpuState};
+use crate::cpu::{self, at_end_of_boot_rom, initialize_cpu, timers, CpuState};
 use crate::cpu::interrupts::InterruptRegisters;
 use crate::cpu::timers::TimerRegisters;
 use crate::dma;
@@ -64,18 +64,6 @@ pub fn load_rom(emulator: &mut RefMut<Emulator>, rom: &[u8]) -> io::Result<()> {
         let error_message  = format!("Unsupported cartridge type {cartridge_type}."); 
         Err(io::Error::new(io::ErrorKind::Other, error_message)) 
     }
-}
-
-pub fn load_bios(emulator: &mut RefMut<Emulator>, bios: &[u8]) {
-    mmu::load_bios_buffer_slice(&mut emulator.memory, bios);
-}
-
-pub fn skip_bios(emulator: &mut RefMut<Emulator>) {
-    cpu::skip_bios(&mut emulator.cpu);
-    gpu::skip_bios(&mut emulator.gpu);
-    apu::skip_bios(&mut emulator.apu);
-    timers::skip_bios(emulator);
-    interrupts::skip_bios(emulator);
 }
 
 fn transfer_to_game_rom(memory: &mut Memory) {

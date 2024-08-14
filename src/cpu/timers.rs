@@ -54,11 +54,6 @@ fn increment_counter_register(timer_registers: &mut TimerRegisters,
     }
 }
 
-pub fn skip_bios(emulator: &mut Emulator) {
-    emulator.timers.control = 0xF8;
-    emulator.timers.divider = 0xAB;
-}
-
 pub fn step(emulator: &mut Emulator) {
     let timer_registers = &mut emulator.timers;
     let instruction_cycles = T_CYCLE_INCREMENT;

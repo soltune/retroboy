@@ -111,14 +111,6 @@ fn compare_ly_and_lyc(emulator: &mut Emulator) {
     }
 }
 
-pub fn skip_bios(gpu_state: &mut GpuState) {
-    // Initialize the GPU to a state that it would be after running the BIOS.
-    // This code assumes the DMG boot ROM has run.
-    gpu_state.registers.palette = 0xFC;
-    gpu_state.registers.lcdc = 0x91;
-    gpu_state.registers.stat = 0x85;
-}
-
 pub fn step(emulator: &mut Emulator) {
     emulator.gpu.mode_clock += T_CYCLE_INCREMENT as u16;
 

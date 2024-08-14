@@ -161,11 +161,6 @@ pub fn step(emulator: &mut Emulator) {
     emulator.apu.last_divider_time = emulator.timers.divider;
 }
 
-pub fn skip_bios(apu_state: &mut ApuState) {
-    apu_state.enabled = true;
-    apu_state.channel1.enabled = true;
-}
-
 fn in_length_period_first_half(current_divider_apu: u8) -> bool {
     let length_period_first_half_steps = vec![1,3,5,7];
     length_period_first_half_steps.contains(&current_divider_apu)

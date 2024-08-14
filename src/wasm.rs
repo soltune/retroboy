@@ -38,7 +38,7 @@ thread_local! {
 extern crate console_error_panic_hook;
 
 #[wasm_bindgen(js_name = initializeEmulator)]
-pub fn initialize_emulator(rom_buffer: &[u8], bios_buffer: &[u8]) {
+pub fn initialize_emulator(rom_buffer: &[u8]) {
     EMULATOR.with(|emulator_cell| {
         console_error_panic_hook::set_once();
 
@@ -46,27 +46,9 @@ pub fn initialize_emulator(rom_buffer: &[u8], bios_buffer: &[u8]) {
 
         emulator::load_rom(&mut emulator, rom_buffer)
             .expect("An error occurred when trying to load the ROM."); 
-
-        emulator::load_bios(&mut emulator, bios_buffer);
 
         log("Emulator initialized!");
     })
-}
-
-#[wasm_bindgen(js_name = initializeEmulatorWithoutBios)]
-pub fn initialize_emulator_without_bios(rom_buffer: &[u8]) {
-    EMULATOR.with(|emulator_cell| {
-        console_error_panic_hook::set_once();
-
-        let mut emulator = emulator_cell.borrow_mut();
-
-        emulator::load_rom(&mut emulator, rom_buffer)
-            .expect("An error occurred when trying to load the ROM."); 
-
-        emulator::skip_bios(&mut emulator);
-
-        log("Emulator initialized!");
-    }) 
 }
 
 #[wasm_bindgen(js_name = resetEmulator)]
