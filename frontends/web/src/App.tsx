@@ -2,11 +2,13 @@ import FileUploadIcon from "@mui/icons-material/FileUpload";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import HelpIcon from "@mui/icons-material/Help";
 import PauseIcon from "@mui/icons-material/Pause";
+import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import {
     Button,
     CssBaseline,
+    IconButton,
     ThemeProvider,
     Typography,
     createTheme,
@@ -136,6 +138,16 @@ const App = (): JSX.Element => {
         }
     };
 
+    const downloadScreenshot = (): void => {
+        if (canvasRef.current) {
+            const dataUrl = canvasRef.current.toDataURL("image/png");
+            const link = document.createElement("a");
+            link.href = dataUrl;
+            link.download = "retroboy-screenshot.png";
+            link.click();
+        }
+    };
+
     useEffect(() => {
         initalizeWasm();
     }, []);
@@ -224,19 +236,23 @@ const App = (): JSX.Element => {
                                 <CssGrid
                                     orientation={Orientation.horizontal}
                                     alignItems={Position.center}
-                                    template="1fr auto"
+                                    template="1fr auto auto"
                                 >
                                     <Typography variant="h3">
                                         Retro Boy
                                     </Typography>
-                                    <Button
-                                        color="secondary"
-                                        variant="contained"
-                                        onClick={() => setShowHelpText(true)}
-                                        startIcon={<HelpIcon />}
+                                    <IconButton
+                                        onClick={downloadScreenshot}
+                                        aria-label="screenshot"
                                     >
-                                        Help
-                                    </Button>
+                                        <PhotoCameraIcon />
+                                    </IconButton>
+                                    <IconButton
+                                        aria-label="help"
+                                        onClick={() => setShowHelpText(true)}
+                                    >
+                                        <HelpIcon />
+                                    </IconButton>
                                 </CssGrid>
                                 <Typography variant="h6">
                                     A simple Game Boy emulator for the web.
