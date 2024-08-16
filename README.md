@@ -27,6 +27,15 @@ To run the web frontend:
 3. Run `yarn install` in the frontends/web directory to install all dependencies.
 4. Run `yarn start` in the same directory to run the application locally.
 
+## Screenshots
+
+<p float="left">
+  <img src="screenshots/kirby.png" width="400" />
+  <img src="screenshots/pacman.png" width="400" />
+  <img src="screenshots/super-mario-land.png" width="400" />  
+  <img src="screenshots/tetris.png" width="400" />
+</p>
+
 ## Test Suite
 
 This project holds a fairly extensive test suite, as the bulk of the logic was designed using a TDD approach. There are a lot of tests that exercise CPU opcodes, and basic tests that exercise the GPU. Run `cargo test` to run the test suite.
