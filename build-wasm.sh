@@ -1,0 +1,1 @@
+wasm-pack build --target web --out-dir ./frontends/web/src/core --out-name retroboyCore

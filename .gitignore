@@ -2,3 +2,6 @@
 gameboy_emulator/target
 bios.bin
 pkg
+frontends/web/node_modules
+frontends/web/public
+frontends/web/src/core

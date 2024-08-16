@@ -1,6 +1,8 @@
-# WebBoy
+# Retro Boy
 
-This repo holds the core logic for WebBoy: a Game Boy emulator written in Rust. The code can be compiled down to WebAssembly so it can be played on the web.
+This repo holds the core logic for Retro Boy: a Game Boy emulator written in Rust.
+
+The code can also be compiled down to WebAssembly so it can be played on the web.
 
 This emulator passes the following test suites from Blargg's test ROM collection:
 
@@ -10,11 +12,20 @@ This emulator passes the following test suites from Blargg's test ROM collection
 4. [Memory timing tests 2](https://github.com/retrio/gb-test-roms/tree/master/mem_timing-2)
 5. [APU tests (DMG)](https://github.com/retrio/gb-test-roms/tree/master/dmg_sound)
 
-## How to Use
+## How to Compile to WebAssembly
 
-1. Clone [webboy-client](https://github.com/smparsons/webboy-client) to your local machine. The project should live under the same directory as webboy-core.
-2. To build the project, simply run `cargo build`.
-3. To compile the implementation to WebAssembly, you will first need to install wasm-pack with the command `cargo install wasm-pack`. Then, run `sh ./build.sh` to generate the Javascript binding code in the webboy-client project.
+To compile the implementation to WebAssembly, you will first need to install wasm-pack with the command `cargo install wasm-pack` if you haven't done so already. Then, run `sh ./build-wasm.sh` to build the core project and generate the Javascript binding code in the web frontend directory.
+
+## Web Frontend
+
+The web frontend for this emulator is a React/TypeScript app designed with Material UI. It is located in the frontends/web folder. The UI provides the ability to load a ROM as well as play, pause, or reset the emulator. It also provides a fullscreen mode.
+
+To run the web frontend:
+
+1. Compile the Rust code to WebAssembly and generate the Javascript binding code as described in the "How to Compile to WebAssembly" section.
+2. When the binding code is generated, it will be added to the frontends/web/src/core directory.
+3. Run `yarn install` in the frontends/web directory to install all dependencies.
+4. Run `yarn start` in the same directory to run the application locally.
 
 ## Test Suite
 
