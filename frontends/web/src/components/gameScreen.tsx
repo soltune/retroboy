@@ -8,6 +8,7 @@ const Screen = styled("canvas")`
     width: ${GAMEBOY_WIDTH * 3}px;
     height: ${GAMEBOY_HEIGHT * 3}px;
     border: ${({ theme }) => `1px solid ${theme.palette.text.secondary}`};
+    image-rendering: pixelated;
 `;
 
 const renderFrame = (
@@ -43,6 +44,8 @@ const GameScreen = forwardRef<HTMLCanvasElement, GameScreenProps>(
                 const canvasContext = canvas.getContext("2d");
 
                 if (canvasContext) {
+                    //canvasContext.scale(3, 3);
+
                     (window as any).canvasRender = (buffer: number[]): void => {
                         renderFrame(canvasContext, buffer);
                     };
