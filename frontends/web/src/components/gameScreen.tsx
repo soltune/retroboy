@@ -44,8 +44,6 @@ const GameScreen = forwardRef<HTMLCanvasElement, GameScreenProps>(
                 const canvasContext = canvas.getContext("2d");
 
                 if (canvasContext) {
-                    //canvasContext.scale(3, 3);
-
                     (window as any).canvasRender = (buffer: number[]): void => {
                         renderFrame(canvasContext, buffer);
                     };
