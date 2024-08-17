@@ -38,22 +38,22 @@ thread_local! {
 
 extern crate console_error_panic_hook;
 
-fn as_mode(mode: &str) -> Mode {
-    match mode {
+fn as_mode(mode_text: &str) -> Mode {
+    match mode_text {
         "DMG" => emulator::Mode::DMG,
         "CGB" => emulator::Mode::CGB,
-        _ => panic!("Unsupported mode: {}", mode)
+        _ => panic!("Unsupported mode: {}", mode_text)
     }
 }
 
 #[wasm_bindgen(js_name = initializeEmulator)]
-pub fn initialize_emulator(rom_buffer: &[u8], mode: &str) {
+pub fn initialize_emulator(rom_buffer: &[u8], mode_text: &str) {
     EMULATOR.with(|emulator_cell| {
         console_error_panic_hook::set_once();
 
         let mut emulator = emulator_cell.borrow_mut();
 
-        emulator::set_mode(&mut emulator, as_mode(mode));
+        emulator::set_mode(&mut emulator, as_mode(mode_text));
 
         emulator::load_rom(&mut emulator, rom_buffer)
             .expect("An error occurred when trying to load the ROM."); 
