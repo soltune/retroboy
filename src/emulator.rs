@@ -12,6 +12,11 @@ use crate::mmu::{Memory, initialize_memory};
 use std::cell::RefMut;
 use std::io;
 
+pub enum Mode {
+    DMG,
+    CGB
+}
+
 pub struct Emulator {
     pub cpu: CpuState,
     pub interrupts: InterruptRegisters,
@@ -22,6 +27,7 @@ pub struct Emulator {
     pub apu: ApuState,
     pub dma: DmaState,
     pub render: fn(&[u8]),
+    pub mode: Mode
 }
 
 pub fn initialize_emulator(render: fn(&[u8])) -> Emulator {
@@ -45,7 +51,8 @@ pub fn initialize_emulator(render: fn(&[u8])) -> Emulator {
         keys: initialize_keys(),
         apu: initialize_apu(),
         dma: initialize_dma(),
-        render
+        render,
+        mode: Mode::DMG
     }
 }
 
@@ -75,6 +82,10 @@ pub fn sync(emulator: &mut Emulator) {
     dma::step(emulator);
     gpu::step(emulator);
     apu::step(emulator);
+}
+
+pub fn set_mode(emulator: &mut Emulator, mode: Mode) {
+    emulator.mode = mode;
 }
 
 pub fn step(emulator: &mut Emulator) {

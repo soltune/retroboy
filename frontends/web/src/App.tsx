@@ -60,6 +60,8 @@ const keys = [
     "KeyZ",
 ];
 
+const defaultMode = "DMG";
+
 const App = (): JSX.Element => {
     const [wasmInitialized, setWasmInitialized] = useState(false);
 
@@ -82,7 +84,7 @@ const App = (): JSX.Element => {
 
     const playGame = (): void => {
         if (romBuffer) {
-            initializeEmulator(romBuffer.data);
+            initializeEmulator(romBuffer.data, defaultMode);
         }
 
         if (!audioContextRef.current) {

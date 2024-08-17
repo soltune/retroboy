@@ -1,5 +1,6 @@
 use crate::emulator;
 use crate::emulator::Emulator;
+use crate::emulator::Mode;
 use crate::keys;
 use crate::keys::Key;
 use std::cell::RefCell;
@@ -37,12 +38,22 @@ thread_local! {
 
 extern crate console_error_panic_hook;
 
+fn as_mode(mode: &str) -> Mode {
+    match mode {
+        "DMG" => emulator::Mode::DMG,
+        "CGB" => emulator::Mode::CGB,
+        _ => panic!("Unsupported mode: {}", mode)
+    }
+}
+
 #[wasm_bindgen(js_name = initializeEmulator)]
-pub fn initialize_emulator(rom_buffer: &[u8]) {
+pub fn initialize_emulator(rom_buffer: &[u8], mode: &str) {
     EMULATOR.with(|emulator_cell| {
         console_error_panic_hook::set_once();
 
         let mut emulator = emulator_cell.borrow_mut();
+
+        emulator::set_mode(&mut emulator, as_mode(mode));
 
         emulator::load_rom(&mut emulator, rom_buffer)
             .expect("An error occurred when trying to load the ROM."); 
