@@ -359,7 +359,8 @@ fn should_render_tile_line_with_sprite() {
         priority: false,
         y_flip: false,
         x_flip: false,
-        dmg_palette: false
+        dmg_palette: false,
+        address: 0xFE00
     };
 
     let mut sprites = Vec::new();
@@ -399,7 +400,8 @@ fn should_render_sprite_with_white_background_if_background_and_window_enabled_i
         priority: false,
         y_flip: false,
         x_flip: false,
-        dmg_palette: false
+        dmg_palette: false,
+        address: 0xFE00
     };
 
     let mut sprites = Vec::new();
@@ -439,7 +441,8 @@ fn should_render_tile_line_with_sprite_having_negative_y_pos() {
         priority: false,
         y_flip: false,
         x_flip: false,
-        dmg_palette: false
+        dmg_palette: false,
+        address: 0xFE00
     };
 
     let mut sprites = Vec::new();
@@ -479,7 +482,8 @@ fn should_flip_sprite_on_x_axis() {
         priority: false,
         y_flip: false,
         x_flip: true,
-        dmg_palette: false
+        dmg_palette: false,
+        address: 0xFE00
     };
 
     let mut sprites = Vec::new();
@@ -519,7 +523,8 @@ fn should_flip_sprite_on_y_axis() {
         priority: false,
         y_flip: true,
         x_flip: false,
-        dmg_palette: false
+        dmg_palette: false,
+        address: 0xFE00
     };
 
     let mut sprites = Vec::new();
@@ -560,7 +565,8 @@ fn should_render_eight_by_sixteen_sprite() {
         priority: false,
         y_flip: false,
         x_flip: false,
-        dmg_palette: false
+        dmg_palette: false,
+        address: 0xFE00
     };
 
     let mut sprites = Vec::new();
@@ -612,7 +618,8 @@ fn should_prioritize_non_white_background_colors_when_sprite_priority_flag_set_t
         priority: true,
         y_flip: false,
         x_flip: false,
-        dmg_palette: false
+        dmg_palette: false,
+        address: 0xFE00
     };
 
     let mut sprites = Vec::new();
@@ -652,7 +659,8 @@ fn should_prioritize_background_colors_when_lcdc_bit_1_is_off() {
         priority: false,
         y_flip: false,
         x_flip: false,
-        dmg_palette: false
+        dmg_palette: false,
+        address: 0xFE00
     };
 
     let mut sprites = Vec::new();
