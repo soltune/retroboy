@@ -61,7 +61,7 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.gpu.registers.scx = 0xA1;
     emulator.gpu.registers.wy = 0xBB;
     emulator.gpu.registers.wx = 0xDD;
-    emulator.gpu.registers.palette = 0xC1;
+    emulator.gpu.registers.palettes.bgp = 0xC1;
     emulator.gpu.registers.ly = 0x2B;
     emulator.gpu.registers.lyc = 0xAB;
     emulator.gpu.registers.stat = 0xD2;

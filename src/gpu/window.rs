@@ -16,7 +16,7 @@ pub fn read_window_color(emulator: &Emulator, x: u8, y: u8) -> Option<Color> {
     let wx = emulator.gpu.registers.wx;
     let wy = emulator.gpu.registers.wy;
     let lcdc = emulator.gpu.registers.lcdc;
-    let palette = emulator.gpu.registers.palette;
+    let palette = emulator.gpu.registers.palettes.bgp;
 
     let x_int = x as i16;
     let wx_int = wx as i16;

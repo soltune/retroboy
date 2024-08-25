@@ -14,7 +14,7 @@ fn resolve_line_address(emulator: &Emulator, y: u8, column_tile_offset: u8, row_
 
 pub fn read_bg_color(emulator: &Emulator, x: u8, y: u8) -> Color {
     let lcdc = emulator.gpu.registers.lcdc;
-    let palette = emulator.gpu.registers.palette;
+    let palette = emulator.gpu.registers.palettes.bgp;
 
     let background_and_window_enabled = get_bg_and_window_enabled_mode(lcdc);
 

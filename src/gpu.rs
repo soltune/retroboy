@@ -6,6 +6,7 @@ use crate::utils::{is_bit_set, T_CYCLE_INCREMENT};
 
 #[derive(Debug)]
 pub struct Palettes {
+    pub bgp: u8,
     pub obp0: u8,
     pub obp1: u8
 }
@@ -17,7 +18,6 @@ pub struct GpuRegisters {
     pub scx: u8,
     pub wx: u8,
     pub wy: u8,
-    pub palette: u8,
     pub ly: u8,
     pub lyc: u8,
     pub stat: u8,
@@ -64,11 +64,11 @@ pub fn initialize_gpu() -> GpuState {
             scx: 0,
             wx: 0,
             wy: 0,
-            palette: 0,
             ly: 0,
             lyc: 0,
             stat: 0,
             palettes: Palettes {
+                bgp: 0,
                 obp0: 0,
                 obp1: 0
             }
