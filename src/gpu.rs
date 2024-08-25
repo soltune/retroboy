@@ -5,6 +5,12 @@ use crate::gpu::sprites::{collect_scanline_sprites, Sprite};
 use crate::utils::{is_bit_set, T_CYCLE_INCREMENT};
 
 #[derive(Debug)]
+pub struct Palettes {
+    pub obp0: u8,
+    pub obp1: u8
+}
+
+#[derive(Debug)]
 pub struct GpuRegisters {
     pub lcdc: u8,
     pub scy: u8,
@@ -15,8 +21,7 @@ pub struct GpuRegisters {
     pub ly: u8,
     pub lyc: u8,
     pub stat: u8,
-    pub obp0: u8,
-    pub obp1: u8,
+    pub palettes: Palettes
 }
 
 #[derive(Debug)]
@@ -63,8 +68,10 @@ pub fn initialize_gpu() -> GpuState {
             ly: 0,
             lyc: 0,
             stat: 0,
-            obp0: 0,
-            obp1: 0,
+            palettes: Palettes {
+                obp0: 0,
+                obp1: 0
+            }
         },
         frame_buffer: vec![0xFF; (GB_SCREEN_WIDTH * GB_SCREEN_HEIGHT * BYTES_PER_COLOR) as usize],
         sprite_buffer: Vec::new()

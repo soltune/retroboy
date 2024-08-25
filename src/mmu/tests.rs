@@ -65,8 +65,8 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.gpu.registers.ly = 0x2B;
     emulator.gpu.registers.lyc = 0xAB;
     emulator.gpu.registers.stat = 0xD2;
-    emulator.gpu.registers.obp0 = 0x1B;
-    emulator.gpu.registers.obp1 = 0xE4;
+    emulator.gpu.registers.palettes.obp0 = 0x1B;
+    emulator.gpu.registers.palettes.obp1 = 0xE4;
 
     emulator.keys.column = 0x10;
     emulator.keys.select_buttons = 0x04;

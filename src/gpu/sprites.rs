@@ -146,7 +146,7 @@ pub fn calculate_sprite_pixel_color(emulator: &Emulator, sprite: &Sprite, x: u8,
     if column_offset >= 0 {
         let lsb_byte = mmu::read_byte(&emulator, line_address);
         let msb_byte = mmu::read_byte(&emulator, line_address + 1);
-        let palette = get_sprite_palette(sprite.dmg_palette, emulator.gpu.registers.obp0, emulator.gpu.registers.obp1);
+        let palette = get_sprite_palette(sprite.dmg_palette, emulator.gpu.registers.palettes.obp0, emulator.gpu.registers.palettes.obp1);
 
         if (sprite.priority && bg_color == WHITE) || !sprite.priority {
             as_obj_color_rgb(column_offset as u8, palette, msb_byte, lsb_byte, sprite.x_flip) 

@@ -309,7 +309,7 @@ fn should_render_tile_line_with_sprite() {
     emulator.gpu.sprite_buffer = sprites;
     emulator.gpu.registers.ly = 0;
     emulator.gpu.registers.palette = 0b00011011;
-    emulator.gpu.registers.obp0 = 0b00011011;
+    emulator.gpu.registers.palettes.obp0 = 0b00011011;
     emulator.gpu.registers.lcdc = 0b10000011;
 
     write_scanline(&mut emulator);
@@ -350,7 +350,7 @@ fn should_render_sprite_with_white_background_if_background_and_window_enabled_i
     emulator.gpu.sprite_buffer = sprites;
     emulator.gpu.registers.ly = 0;
     emulator.gpu.registers.palette = 0b00011011;
-    emulator.gpu.registers.obp0 = 0b00011011;
+    emulator.gpu.registers.palettes.obp0 = 0b00011011;
     emulator.gpu.registers.lcdc = 0b10000010;
 
     write_scanline(&mut emulator);
@@ -391,7 +391,7 @@ fn should_render_tile_line_with_sprite_having_negative_y_pos() {
     emulator.gpu.sprite_buffer = sprites;
     emulator.gpu.registers.ly = 0;
     emulator.gpu.registers.palette = 0b00011011;
-    emulator.gpu.registers.obp0 = 0b00011011;
+    emulator.gpu.registers.palettes.obp0 = 0b00011011;
     emulator.gpu.registers.lcdc = 0b10000011;
 
     write_scanline(&mut emulator);
@@ -432,7 +432,7 @@ fn should_flip_sprite_on_x_axis() {
     emulator.gpu.sprite_buffer = sprites;
     emulator.gpu.registers.ly = 0;
     emulator.gpu.registers.palette = 0b00011011;
-    emulator.gpu.registers.obp0 = 0b00011011;
+    emulator.gpu.registers.palettes.obp0 = 0b00011011;
     emulator.gpu.registers.lcdc = 0b10000011;
 
     write_scanline(&mut emulator);
@@ -473,7 +473,7 @@ fn should_flip_sprite_on_y_axis() {
     emulator.gpu.sprite_buffer = sprites;
     emulator.gpu.registers.ly = 0;
     emulator.gpu.registers.palette = 0b00011011;
-    emulator.gpu.registers.obp0 = 0b00011011;
+    emulator.gpu.registers.palettes.obp0 = 0b00011011;
     emulator.gpu.registers.lcdc = 0b10000011;
 
     write_scanline(&mut emulator);
@@ -515,7 +515,7 @@ fn should_render_eight_by_sixteen_sprite() {
     emulator.gpu.sprite_buffer = sprites;
     emulator.gpu.registers.ly = 0;
     emulator.gpu.registers.palette = 0b00011011;
-    emulator.gpu.registers.obp0 = 0b00011011;
+    emulator.gpu.registers.palettes.obp0 = 0b00011011;
     emulator.gpu.registers.lcdc = 0b10000111;
 
     for _ in 0..9 {
@@ -568,7 +568,7 @@ fn should_prioritize_non_white_background_colors_when_sprite_priority_flag_set_t
     emulator.gpu.sprite_buffer = sprites;
     emulator.gpu.registers.ly = 0;
     emulator.gpu.registers.palette = 0b00011011;
-    emulator.gpu.registers.obp0 = 0b00011011;
+    emulator.gpu.registers.palettes.obp0 = 0b00011011;
     emulator.gpu.registers.lcdc = 0b10000011;
 
     write_scanline(&mut emulator);
@@ -609,7 +609,7 @@ fn should_prioritize_background_colors_when_lcdc_bit_1_is_off() {
     emulator.gpu.sprite_buffer = sprites;
     emulator.gpu.registers.ly = 0;
     emulator.gpu.registers.palette = 0b00011011;
-    emulator.gpu.registers.obp0 = 0b00011011;
+    emulator.gpu.registers.palettes.obp0 = 0b00011011;
     emulator.gpu.registers.lcdc = 0b10000001;
 
     write_scanline(&mut emulator);
