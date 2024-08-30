@@ -12,6 +12,7 @@ use crate::mmu::{Memory, initialize_memory};
 use std::cell::RefMut;
 use std::io;
 
+#[derive(PartialEq, Eq)]
 pub enum Mode {
     DMG,
     CGB

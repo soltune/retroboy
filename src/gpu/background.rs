@@ -1,8 +1,10 @@
-use crate::emulator::Emulator;
+use crate::emulator::{Emulator, Mode};
 use crate::gpu::colors::{Color, as_bg_color_rgb};
 use crate::gpu::line_addressing::{resolve_bg_tile_index_address, resolve_tile_data_address};
 use crate::gpu::utils::get_bg_and_window_enabled_mode;
 use crate::mmu;
+
+use super::colors::as_cgb_bg_color_rgb;
 
 fn resolve_line_address(emulator: &Emulator, y: u8, column_tile_offset: u8, row_tile_offset: u8) -> u16 {
     let lcdc = emulator.gpu.registers.lcdc;
@@ -27,7 +29,15 @@ pub fn read_bg_color(emulator: &Emulator, x: u8, y: u8) -> Color {
     
         let bit_index = x % 8;
     
-        as_bg_color_rgb(bit_index, palette, msb_byte, lsb_byte)
+        if emulator.mode == Mode::CGB {
+            // TODO: As I progress with implementing CGB support, I need to support looking up the palette
+            // number from the attribute of the tile. For now, always set to 0.
+            let palette_number = 0;
+            as_cgb_bg_color_rgb(&emulator.gpu.registers.palettes, bit_index, palette_number, msb_byte, lsb_byte)
+        }
+        else {
+            as_bg_color_rgb(bit_index, palette, msb_byte, lsb_byte)
+        }
     }
     else {
         [0xFF, 0xFF, 0xFF, 0xFF]

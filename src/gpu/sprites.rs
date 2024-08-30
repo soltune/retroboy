@@ -1,7 +1,7 @@
-use crate::emulator::Emulator;
-use crate::gpu::colors::{as_obj_color_rgb, WHITE, Color};
+use crate::emulator::{Emulator, Mode};
+use crate::gpu::colors::{as_cgb_obj_color_rgb, as_obj_color_rgb, WHITE, Color};
 use crate::mmu;
-use crate::utils::is_bit_set;
+use crate::utils::{get_bit, is_bit_set};
 use crate::gpu::utils::{get_obj_enabled_mode, get_obj_size_mode};
 
 const BASE_OAM_ADDRESS: u16 = 0xFE00;
@@ -24,7 +24,9 @@ pub struct Sprite {
     pub y_flip: bool,
     pub x_flip: bool,
     pub dmg_palette: bool,
-    pub address: u16
+    pub address: u16,
+    pub cgb_bank: u8,
+    pub cgb_palette: u8
 }
 
 impl Sprite {
@@ -80,7 +82,9 @@ fn pull_sprite(emulator: &Emulator, sprite_number: u16) -> Sprite {
         y_flip: is_bit_set(attributes, 6),
         x_flip: is_bit_set(attributes, 5),
         dmg_palette: is_bit_set(attributes, 4),
-        address: sprite_address
+        address: sprite_address,
+        cgb_bank: get_bit(attributes, 3) as u8,
+        cgb_palette: attributes & 0b111
     }
 }
 
@@ -146,10 +150,15 @@ pub fn calculate_sprite_pixel_color(emulator: &Emulator, sprite: &Sprite, x: u8,
     if column_offset >= 0 {
         let lsb_byte = mmu::read_byte(&emulator, line_address);
         let msb_byte = mmu::read_byte(&emulator, line_address + 1);
-        let palette = get_sprite_palette(sprite.dmg_palette, emulator.gpu.registers.palettes.obp0, emulator.gpu.registers.palettes.obp1);
 
         if (sprite.priority && bg_color == WHITE) || !sprite.priority {
-            as_obj_color_rgb(column_offset as u8, palette, msb_byte, lsb_byte, sprite.x_flip) 
+            if emulator.mode == Mode::CGB {
+                as_cgb_obj_color_rgb(&emulator.gpu.registers.palettes, column_offset as u8, sprite.cgb_palette, msb_byte, lsb_byte, sprite.x_flip)
+            }
+            else {
+                let palette = get_sprite_palette(sprite.dmg_palette, emulator.gpu.registers.palettes.obp0, emulator.gpu.registers.palettes.obp1);
+                as_obj_color_rgb(column_offset as u8, palette, msb_byte, lsb_byte, sprite.x_flip) 
+            }
         }
         else {
            None

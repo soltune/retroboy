@@ -1,5 +1,5 @@
 use crate::bios::DMG_BOOTIX;
-use crate::{apu, dma};
+use crate::{apu, dma, gpu};
 use crate::emulator::Emulator;
 use crate::keys;
 
@@ -134,6 +134,10 @@ pub fn read_byte(emulator: &Emulator, address: u16) -> u8 {
                     0x49 => emulator.gpu.registers.palettes.obp1,
                     0x4A => emulator.gpu.registers.wy,
                     0x4B => emulator.gpu.registers.wx,
+                    0x68 => gpu::get_cgb_bcps(emulator),
+                    0x69 => gpu::get_cgb_bcpd(emulator),
+                    0x6A => gpu::get_cgb_ocps(emulator),
+                    0x6B => gpu::get_cgb_ocpd(emulator),
                     0x0F => emulator.interrupts.flags,
                     0x04 => emulator.timers.divider,
                     0x05 => emulator.timers.counter,
@@ -246,6 +250,10 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
                     0x49 => emulator.gpu.registers.palettes.obp1 = value,
                     0x4A => emulator.gpu.registers.wy = value,
                     0x4B => emulator.gpu.registers.wx = value,
+                    0x68 => gpu::set_cgb_bcps(emulator, value),
+                    0x69 => gpu::set_cgb_bcpd(emulator, value),
+                    0x6A => gpu::set_cgb_ocps(emulator, value),
+                    0x6B => gpu::set_cgb_ocpd(emulator, value),
                     0x0F => emulator.interrupts.flags = value,
                     0x04 => {
                         emulator.timers.divider = value;

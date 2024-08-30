@@ -300,7 +300,9 @@ fn should_render_tile_line_with_sprite() {
         y_flip: false,
         x_flip: false,
         dmg_palette: false,
-        address: 0xFE00
+        address: 0xFE00,
+        cgb_bank: 0,
+        cgb_palette: 0
     };
 
     let mut sprites = Vec::new();
@@ -341,7 +343,9 @@ fn should_render_sprite_with_white_background_if_background_and_window_enabled_i
         y_flip: false,
         x_flip: false,
         dmg_palette: false,
-        address: 0xFE00
+        address: 0xFE00,
+        cgb_bank: 0,
+        cgb_palette: 0
     };
 
     let mut sprites = Vec::new();
@@ -382,7 +386,9 @@ fn should_render_tile_line_with_sprite_having_negative_y_pos() {
         y_flip: false,
         x_flip: false,
         dmg_palette: false,
-        address: 0xFE00
+        address: 0xFE00,
+        cgb_bank: 0,
+        cgb_palette: 0
     };
 
     let mut sprites = Vec::new();
@@ -423,7 +429,9 @@ fn should_flip_sprite_on_x_axis() {
         y_flip: false,
         x_flip: true,
         dmg_palette: false,
-        address: 0xFE00
+        address: 0xFE00,
+        cgb_bank: 0,
+        cgb_palette: 0
     };
 
     let mut sprites = Vec::new();
@@ -464,7 +472,9 @@ fn should_flip_sprite_on_y_axis() {
         y_flip: true,
         x_flip: false,
         dmg_palette: false,
-        address: 0xFE00
+        address: 0xFE00,
+        cgb_bank: 0,
+        cgb_palette: 0
     };
 
     let mut sprites = Vec::new();
@@ -506,7 +516,9 @@ fn should_render_eight_by_sixteen_sprite() {
         y_flip: false,
         x_flip: false,
         dmg_palette: false,
-        address: 0xFE00
+        address: 0xFE00,
+        cgb_bank: 0,
+        cgb_palette: 0
     };
 
     let mut sprites = Vec::new();
@@ -559,7 +571,9 @@ fn should_prioritize_non_white_background_colors_when_sprite_priority_flag_set_t
         y_flip: false,
         x_flip: false,
         dmg_palette: false,
-        address: 0xFE00
+        address: 0xFE00,
+        cgb_bank: 0,
+        cgb_palette: 0
     };
 
     let mut sprites = Vec::new();
@@ -600,7 +614,9 @@ fn should_prioritize_background_colors_when_lcdc_bit_1_is_off() {
         y_flip: false,
         x_flip: false,
         dmg_palette: false,
-        address: 0xFE00
+        address: 0xFE00,
+        cgb_bank: 0,
+        cgb_palette: 0
     };
 
     let mut sprites = Vec::new();

@@ -1,15 +1,10 @@
 use crate::emulator::Emulator;
+use crate::emulator::Mode;
+use crate::gpu::colors::{initialize_palettes, Palettes};
 use crate::gpu::constants::{GB_SCREEN_HEIGHT, GB_SCREEN_WIDTH, BYTES_PER_COLOR};
 use crate::gpu::scanline::write_scanline;
 use crate::gpu::sprites::{collect_scanline_sprites, Sprite};
 use crate::utils::{is_bit_set, T_CYCLE_INCREMENT};
-
-#[derive(Debug)]
-pub struct Palettes {
-    pub bgp: u8,
-    pub obp0: u8,
-    pub obp1: u8
-}
 
 #[derive(Debug)]
 pub struct GpuRegisters {
@@ -67,11 +62,7 @@ pub fn initialize_gpu() -> GpuState {
             ly: 0,
             lyc: 0,
             stat: 0,
-            palettes: Palettes {
-                bgp: 0,
-                obp0: 0,
-                obp1: 0
-            }
+            palettes: initialize_palettes()
         },
         frame_buffer: vec![0xFF; (GB_SCREEN_WIDTH * GB_SCREEN_HEIGHT * BYTES_PER_COLOR) as usize],
         sprite_buffer: Vec::new()
@@ -168,6 +159,66 @@ pub fn step(emulator: &mut Emulator) {
         }
         _ => ()
     }    
+}
+
+pub fn get_cgb_bcpd(emulator: &Emulator) -> u8 {
+    if emulator.mode == Mode::CGB {
+        colors::get_cgb_bcpd(&emulator.gpu.registers.palettes)
+    }
+    else {
+        0xFF
+    }
+}
+
+pub fn set_cgb_bcpd(emulator: &mut Emulator, value: u8) {
+    if emulator.mode == Mode::CGB {
+        colors::set_cgb_bcpd(&mut emulator.gpu.registers.palettes, value);
+    }
+}
+
+pub fn get_cgb_bcps(emulator: &Emulator) -> u8 {
+    if emulator.mode == Mode::CGB {
+        colors::get_cgb_bcps(&emulator.gpu.registers.palettes)
+    }
+    else {
+        0xFF
+    }
+}
+
+pub fn set_cgb_bcps(emulator: &mut Emulator, value: u8) {
+    if emulator.mode == Mode::CGB {
+        colors::set_cgb_bcps(&mut emulator.gpu.registers.palettes, value);
+    }
+}
+
+pub fn get_cgb_ocpd(emulator: &Emulator) -> u8 {
+    if emulator.mode == Mode::CGB {
+        colors::get_cgb_ocpd(&emulator.gpu.registers.palettes)
+    }
+    else {
+        0xFF
+    }
+}
+
+pub fn set_cgb_ocpd(emulator: &mut Emulator, value: u8) {
+    if emulator.mode == Mode::CGB {
+        colors::set_cgb_ocpd(&mut emulator.gpu.registers.palettes, value);
+    }
+}
+
+pub fn get_cgb_ocps(emulator: &Emulator) -> u8 {
+    if emulator.mode == Mode::CGB {
+        colors::get_cgb_ocps(&emulator.gpu.registers.palettes)
+    }
+    else {
+        0xFF
+    }
+}
+
+pub fn set_cgb_ocps(emulator: &mut Emulator, value: u8) {
+    if emulator.mode == Mode::CGB {
+        colors::set_cgb_ocps(&mut emulator.gpu.registers.palettes, value);
+    }
 }
 
 #[cfg(test)]
