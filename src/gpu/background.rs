@@ -1,10 +1,8 @@
 use crate::emulator::{Emulator, Mode};
-use crate::gpu::colors::{Color, as_bg_color_rgb};
+use crate::gpu::colors::{Color, as_bg_color_rgb, as_cgb_bg_color_rgb};
 use crate::gpu::line_addressing::{resolve_bg_tile_index_address, resolve_tile_data_address};
 use crate::gpu::utils::get_bg_and_window_enabled_mode;
 use crate::mmu;
-
-use super::colors::as_cgb_bg_color_rgb;
 
 fn resolve_line_address(emulator: &Emulator, y: u8, column_tile_offset: u8, row_tile_offset: u8) -> u16 {
     let lcdc = emulator.gpu.registers.lcdc;
