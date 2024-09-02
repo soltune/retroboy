@@ -1,15 +1,14 @@
 use crate::emulator::Emulator;
 use crate::gpu::colors::{as_bg_color_rgb, Color};
-use crate::gpu::line_addressing::{resolve_window_tile_index_address, resolve_tile_data_address};
+use crate::gpu::line_addressing::{calculate_window_tile_map_index, calculate_tile_data_index};
 use crate::gpu::utils::{get_window_enabled_mode, get_bg_and_window_enabled_mode};
-use crate::mmu;
 
-fn resolve_line_address(emulator: &Emulator, y: u8, column_tile_offset: u8, row_tile_offset: u8) -> u16 {
+fn calculate_line_index(emulator: &Emulator, y: u8, column_tile_offset: u8, row_tile_offset: u8) -> u16 {
     let lcdc = emulator.gpu.registers.lcdc;
-    let tile_index_address = resolve_window_tile_index_address(lcdc, column_tile_offset, row_tile_offset);
-    let tile_index = mmu::read_byte(emulator, tile_index_address);
-    let tile_data_address = resolve_tile_data_address(lcdc, tile_index);
-    tile_data_address + ((y % 8) * 2) as u16
+    let tile_map_index = calculate_window_tile_map_index(lcdc, column_tile_offset, row_tile_offset);
+    let tile_index = emulator.gpu.video_ram[tile_map_index as usize];
+    let tile_data_index = calculate_tile_data_index(lcdc, tile_index);
+    tile_data_index + ((y % 8) * 2) as u16
 }
 
 pub fn read_window_color(emulator: &Emulator, x: u8, y: u8) -> Option<Color> {
@@ -27,9 +26,9 @@ pub fn read_window_color(emulator: &Emulator, x: u8, y: u8) -> Option<Color> {
     if background_and_window_enabled && window_enabled && x_int >= wx_int - 7 && y >= wy {
         let column_tile_offset = (y - wy) / 8;
         let row_tile_offset = ((x_int - (wx_int - 7)) / 8) as u8;
-        let line_address = resolve_line_address(emulator, y, column_tile_offset, row_tile_offset);
-        let lsb_byte = mmu::read_byte(emulator, line_address);
-        let msb_byte = mmu::read_byte(emulator, line_address + 1);
+        let line_index = calculate_line_index(emulator, y, column_tile_offset, row_tile_offset);
+        let lsb_byte = emulator.gpu.video_ram[line_index as usize];
+        let msb_byte = emulator.gpu.video_ram[(line_index + 1) as usize];
 
         let bit_index = ((x_int - (wx_int - 7)) % 8) as u8;
 

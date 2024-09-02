@@ -8,10 +8,10 @@ const SAMPLE_TILE_A: [u8; 16] = [0x3C, 0x7E, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42,
 const SAMPLE_TILE_B: [u8; 16] = [0xFF, 0x0, 0x7E, 0xFF, 0x85, 0x81, 0x89, 0x83, 0x93, 0x85, 0xA5, 0x8B, 0xC9, 0x97, 0x7E, 0xFF];
 const WINDOW_TILE: [u8; 16] = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
 
-fn write_tile_to_memory(emulator: &mut Emulator, base_address: u16, index: u16, tile_bytes: [u8; 16]) {
+fn write_tile_to_memory(emulator: &mut Emulator, base_index: u16, index: u16, tile_bytes: [u8; 16]) {
     let offset = index * 16;
     for (tile_byte_index, tile_byte) in tile_bytes.iter().enumerate() {
-        emulator.memory.video_ram[(base_address + offset + tile_byte_index as u16) as usize] = *tile_byte;
+        emulator.gpu.video_ram[(base_index + offset + tile_byte_index as u16) as usize] = *tile_byte;
     }
 }
 
@@ -24,7 +24,7 @@ fn write_tile_to_obj_memory(emulator: &mut Emulator, index: u16, tile_bytes: [u8
 }
 
 fn write_window_tile_index_to_memory(emulator: &mut Emulator, position_index: u16, tile_index: u8) {
-    emulator.memory.video_ram[(0x1C00 + position_index) as usize] = tile_index;
+    emulator.gpu.video_ram[(0x1C00 + position_index) as usize] = tile_index;
 }
 
 fn line(index: u32) -> u32 {
@@ -185,7 +185,7 @@ fn should_render_tile_line_in_middle_of_frame() {
     
     write_tile_to_bg_memory(&mut emulator, 1, SAMPLE_TILE_A);
     
-    emulator.memory.video_ram[0x1A10] = 0x1;
+    emulator.gpu.video_ram[0x1A10] = 0x1;
     emulator.gpu.registers.ly = 3;
     emulator.gpu.registers.scy = 0x80;
     emulator.gpu.registers.scx = 0x80;
@@ -212,7 +212,7 @@ fn should_render_tile_line_properly_with_greater_scroll_x_value() {
     
     write_tile_to_bg_memory(&mut emulator, 1, SAMPLE_TILE_A);
     
-    emulator.memory.video_ram[0x1A10] = 0x1;
+    emulator.gpu.video_ram[0x1A10] = 0x1;
     emulator.gpu.registers.ly = 3;
     emulator.gpu.registers.scy = 0x80;
     emulator.gpu.registers.scx = 0x82;
@@ -239,7 +239,7 @@ fn should_wrap_around_when_rendering_past_max_tile_map_x_value() {
     
     write_tile_to_bg_memory(&mut emulator, 1, SAMPLE_TILE_A);
     
-    emulator.memory.video_ram[0x1800] = 0x1;
+    emulator.gpu.video_ram[0x1800] = 0x1;
     emulator.gpu.registers.ly = 0;
     emulator.gpu.registers.scx = 0xFE;
     emulator.gpu.registers.palettes.bgp = 0b00011011;
@@ -265,7 +265,7 @@ fn should_wrap_around_when_rendering_past_max_tile_map_y_value() {
     
     write_tile_to_bg_memory(&mut emulator, 1, SAMPLE_TILE_A);
     
-    emulator.memory.video_ram[0x1800] = 0x1;
+    emulator.gpu.video_ram[0x1800] = 0x1;
     emulator.gpu.registers.ly = 2;
     emulator.gpu.registers.scy = 0xFE;
     emulator.gpu.registers.palettes.bgp = 0b00011011;
@@ -300,7 +300,7 @@ fn should_render_tile_line_with_sprite() {
         y_flip: false,
         x_flip: false,
         dmg_palette: false,
-        address: 0xFE00,
+        oam_index: 0,
         cgb_bank: 0,
         cgb_palette: 0
     };
@@ -343,7 +343,7 @@ fn should_render_sprite_with_white_background_if_background_and_window_enabled_i
         y_flip: false,
         x_flip: false,
         dmg_palette: false,
-        address: 0xFE00,
+        oam_index: 0,
         cgb_bank: 0,
         cgb_palette: 0
     };
@@ -386,7 +386,7 @@ fn should_render_tile_line_with_sprite_having_negative_y_pos() {
         y_flip: false,
         x_flip: false,
         dmg_palette: false,
-        address: 0xFE00,
+        oam_index: 0,
         cgb_bank: 0,
         cgb_palette: 0
     };
@@ -429,7 +429,7 @@ fn should_flip_sprite_on_x_axis() {
         y_flip: false,
         x_flip: true,
         dmg_palette: false,
-        address: 0xFE00,
+        oam_index: 0,
         cgb_bank: 0,
         cgb_palette: 0
     };
@@ -472,7 +472,7 @@ fn should_flip_sprite_on_y_axis() {
         y_flip: true,
         x_flip: false,
         dmg_palette: false,
-        address: 0xFE00,
+        oam_index: 0,
         cgb_bank: 0,
         cgb_palette: 0
     };
@@ -516,7 +516,7 @@ fn should_render_eight_by_sixteen_sprite() {
         y_flip: false,
         x_flip: false,
         dmg_palette: false,
-        address: 0xFE00,
+        oam_index: 0,
         cgb_bank: 0,
         cgb_palette: 0
     };
@@ -571,7 +571,7 @@ fn should_prioritize_non_white_background_colors_when_sprite_priority_flag_set_t
         y_flip: false,
         x_flip: false,
         dmg_palette: false,
-        address: 0xFE00,
+        oam_index: 0,
         cgb_bank: 0,
         cgb_palette: 0
     };
@@ -614,7 +614,7 @@ fn should_prioritize_background_colors_when_lcdc_bit_1_is_off() {
         y_flip: false,
         x_flip: false,
         dmg_palette: false,
-        address: 0xFE00,
+        oam_index: 0,
         cgb_bank: 0,
         cgb_palette: 0
     };

@@ -15,8 +15,6 @@ pub struct Memory {
     pub in_bios: bool,
     pub bios: [u8; 0x100],
     pub rom: Vec<u8>,
-    pub video_ram: [u8; 0x2000],
-    pub object_attribute_memory: [u8; 0xa0],
     pub working_ram: [u8; 0x3e00],
     pub external_ram: [u8; 0x8000],
     pub zero_page_ram: [u8; 0x80],
@@ -54,8 +52,6 @@ pub fn initialize_memory() -> Memory {
         in_bios: true,
         bios: DMG_BOOTIX,
         rom: Vec::new(),
-        video_ram: [0; 0x2000],
-        object_attribute_memory: [0; 0xa0],
         working_ram: [0; 0x3e00],
         external_ram: [0; 0x8000],
         zero_page_ram: [0; 0x80],
@@ -87,7 +83,7 @@ pub fn read_byte(emulator: &Emulator, address: u16) -> u8 {
                 let calculated_address = (memory.rom_bank_number as u32 * 0x4000) + (address & 0x3FFF) as u32;
                 memory.rom[calculated_address as usize]
             },
-            0x8000..=0x9FFF => memory.video_ram[(address & 0x1FFF) as usize],
+            0x8000..=0x9FFF => gpu::get_video_ram_byte(emulator, address & 0x1FFF),
             0xA000..=0xBFFF => {
                 let calculated_address = (memory.ram_bank_number as u16 * 0x2000) + (address & 0x1FFF);
                 if memory.ram_enabled {
@@ -100,7 +96,7 @@ pub fn read_byte(emulator: &Emulator, address: u16) -> u8 {
             0xC000..=0xEFFF => memory.working_ram[(address & 0x1FFF) as usize],
             0xF000 => match address & 0x0F00 {
                 0x000..=0xD00 => memory.working_ram[(address & 0x1FFF) as usize],
-                0xE00 if address < 0xFEA0 => memory.object_attribute_memory[(address & 0xFF) as usize],
+                0xE00 if address < 0xFEA0 => gpu::get_object_attribute_memory_byte(emulator, address & 0xFF),
                 0xF00 if address == 0xFFFF => emulator.interrupts.enabled,
                 0xF00 if address >= 0xFF80 => memory.zero_page_ram[(address & 0x7F) as usize],
                 _ => match address & 0xFF {
@@ -203,7 +199,7 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
                     _ => ()
                 }
             },
-            0x8000..=0x9FFF => memory.video_ram[(address & 0x1FFF) as usize] = value,
+            0x8000..=0x9FFF => gpu::set_video_ram_byte(emulator, address & 0x1FFF, value),
             0xA000..=0xBFFF => 
                 if memory.ram_enabled {
                     memory.external_ram[(address & 0x1FFF) as usize] = value
@@ -211,7 +207,7 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
             0xC000..=0xEFFF => memory.working_ram[(address & 0x1FFF) as usize] = value,
             0xF000 => match address & 0x0F00 {
                 0x000..=0xD00 => memory.working_ram[(address & 0x1FFF) as usize] = value,
-                0xE00 if address < 0xFEA0 => memory.object_attribute_memory[(address & 0xFF) as usize]= value,
+                0xE00 if address < 0xFEA0 => gpu::set_object_attribute_memory_byte(emulator, address & 0xFF, value),
                 0xF00 if address == 0xFFFF => emulator.interrupts.enabled = value,
                 0xF00 if address >= 0xFF80 => memory.zero_page_ram[(address & 0x7F) as usize] = value,
                 _ => match address & 0xFF {

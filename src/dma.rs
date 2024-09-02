@@ -1,5 +1,5 @@
 use crate::emulator::Emulator;
-use crate::mmu;
+use crate::{gpu, mmu};
 
 #[derive(Debug)]
 pub struct DmaState {
@@ -36,7 +36,8 @@ pub fn get_source(emulator: &Emulator) -> u8 {
 
 fn transfer_byte(emulator: &mut Emulator) {
     let address = emulator.dma.source + (emulator.dma.offset as u16);
-    emulator.memory.object_attribute_memory[emulator.dma.offset as usize] = mmu::read_byte(emulator, address);
+    let byte_to_transfer = mmu::read_byte(emulator, address);
+    gpu::set_object_attribute_memory_byte(emulator, emulator.dma.offset as u16, byte_to_transfer);
 }
 
 pub fn step(emulator: &mut Emulator) {
@@ -96,7 +97,7 @@ mod tests {
         
         step(&mut emulator);
         
-        assert_eq!(emulator.memory.object_attribute_memory[0], 0x12);
+        assert_eq!(emulator.gpu.object_attribute_memory[0], 0x12);
         assert_eq!(emulator.dma.source, 0x1200);
         assert_eq!(emulator.dma.offset, 1);
         assert_eq!(emulator.dma.in_progress, true);
@@ -119,7 +120,7 @@ mod tests {
             step(&mut emulator);
         }
         
-        assert_eq!(emulator.memory.object_attribute_memory[0x9F], 0x12);
+        assert_eq!(emulator.gpu.object_attribute_memory[0x9F], 0x12);
         assert_eq!(emulator.dma.offset, DMA_TRANSFER_BYTES);
         assert_eq!(emulator.dma.in_progress, false);
     }

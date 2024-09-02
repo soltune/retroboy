@@ -25,9 +25,9 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.memory.rom[0x5ACD] = 0x9C;
     emulator.memory.rom[0x5ACE] = 0x55;
 
-    emulator.memory.video_ram[0] = 0xB1;
-    emulator.memory.video_ram[1] = 0xD2;
-    emulator.memory.video_ram[2] = 0xAA;
+    emulator.gpu.video_ram[0] = 0xB1;
+    emulator.gpu.video_ram[1] = 0xD2;
+    emulator.gpu.video_ram[2] = 0xAA;
 
     emulator.memory.external_ram[0] = 0xC2;
     emulator.memory.external_ram[1] = 0x22;
@@ -40,9 +40,9 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.memory.working_ram[0x15F0] = 0x2B;
     emulator.memory.working_ram[0x15F1] = 0x7C;
 
-    emulator.memory.object_attribute_memory[0x7A] = 0x44;
-    emulator.memory.object_attribute_memory[0x7B] = 0x45;
-    emulator.memory.object_attribute_memory[0x7C] = 0x9B;
+    emulator.gpu.object_attribute_memory[0x7A] = 0x44;
+    emulator.gpu.object_attribute_memory[0x7B] = 0x45;
+    emulator.gpu.object_attribute_memory[0x7C] = 0x9B;
 
     emulator.memory.zero_page_ram[0x20] = 0xBB;
     emulator.memory.zero_page_ram[0x21] = 0x44;
@@ -331,7 +331,7 @@ fn loads_rom_buffer_into_emulator() {
 fn writes_to_video_ram() {
     let mut emulator = setup_emulator_with_test_memory();
     write_byte(&mut emulator, 0x8002, 0xC1);
-    assert_eq!(emulator.memory.video_ram[2], 0xC1);
+    assert_eq!(emulator.gpu.video_ram[2], 0xC1);
 }
 
 #[test]

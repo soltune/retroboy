@@ -25,7 +25,9 @@ pub struct GpuState {
     pub mode_clock: u16,
     pub registers: GpuRegisters,
     pub frame_buffer: Vec<u8>,
-    pub sprite_buffer: Vec<Sprite>
+    pub sprite_buffer: Vec<Sprite>,
+    pub video_ram: [u8; 0x4000],
+    pub object_attribute_memory: [u8; 0xa0]
 }
 
 const OAM_MODE: u8 = 2;
@@ -65,7 +67,9 @@ pub fn initialize_gpu() -> GpuState {
             palettes: initialize_palettes()
         },
         frame_buffer: vec![0xFF; (GB_SCREEN_WIDTH * GB_SCREEN_HEIGHT * BYTES_PER_COLOR) as usize],
-        sprite_buffer: Vec::new()
+        sprite_buffer: Vec::new(),
+        video_ram: [0; 0x4000],
+        object_attribute_memory: [0; 0xa0],
     }
 }
 
@@ -219,6 +223,22 @@ pub fn set_cgb_ocps(emulator: &mut Emulator, value: u8) {
     if emulator.mode == Mode::CGB {
         colors::set_cgb_ocps(&mut emulator.gpu.registers.palettes, value);
     }
+}
+
+pub fn get_video_ram_byte(emulator: &Emulator, index: u16) -> u8 {
+    emulator.gpu.video_ram[index as usize]
+}
+
+pub fn set_video_ram_byte(emulator: &mut Emulator, index: u16, value: u8) {
+    emulator.gpu.video_ram[index as usize] = value;
+}
+
+pub fn get_object_attribute_memory_byte(emulator: &Emulator, index: u16) -> u8 {
+    emulator.gpu.object_attribute_memory[index as usize]
+}
+
+pub fn set_object_attribute_memory_byte(emulator: &mut Emulator, index: u16, value: u8) {
+    emulator.gpu.object_attribute_memory[index as usize] = value;
 }
 
 #[cfg(test)]
