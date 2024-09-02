@@ -227,15 +227,15 @@ fn should_not_fire_stat_interrupt_when_lyc_equals_ly_if_disabled() {
 fn should_set_cgb_vbk() {
     let mut emulator = initialize_screenless_emulator();
     emulator.mode = Mode::CGB;
-    set_cgb_vbk(&mut emulator, 0x1);
-    assert_eq!(emulator.gpu.registers.cgb_vbk, 0x1);
+    set_cgb_vbk(&mut emulator, 1);
+    assert_eq!(emulator.gpu.registers.cgb_vbk, 1);
 }
 
 #[test]
 fn should_get_cgb_vbk() {
     let mut emulator = initialize_screenless_emulator();
     emulator.mode = Mode::CGB;
-    emulator.gpu.registers.cgb_vbk = 0x1;
+    emulator.gpu.registers.cgb_vbk = 1;
     assert_eq!(get_cgb_vbk(&emulator), 0xFF);
 }
 
@@ -251,7 +251,7 @@ fn should_ignore_all_bits_other_than_bit_0_when_getting_cgb_vbk() {
 fn should_not_set_cgb_vbk_if_dmg_mode() {
     let mut emulator = initialize_screenless_emulator();
     emulator.mode = Mode::DMG;
-    set_cgb_vbk(&mut emulator, 0x1);
+    set_cgb_vbk(&mut emulator, 1);
     assert_eq!(emulator.gpu.registers.cgb_vbk, 0);
 }
 
@@ -261,4 +261,40 @@ fn should_return_ff_when_getting_cgb_vbk_if_dmg_mode() {
     emulator.mode = Mode::DMG;
     set_cgb_vbk(&mut emulator, 0);
     assert_eq!(get_cgb_vbk(&emulator), 0xFF);
+}
+
+#[test]
+fn should_read_from_bank_1_of_video_ram() {
+    let mut emulator = initialize_screenless_emulator();
+    emulator.mode = Mode::CGB;
+    emulator.gpu.video_ram[0x3800] = 0xA1;
+    set_cgb_vbk(&mut emulator, 1);
+    assert_eq!(get_video_ram_byte(&emulator, 0x1800), 0xA1);
+}
+
+#[test]
+fn should_set_byte_in_bank_1_of_video_ram() {
+    let mut emulator = initialize_screenless_emulator();
+    emulator.mode = Mode::CGB;
+    set_cgb_vbk(&mut emulator, 1);
+    set_video_ram_byte(&mut emulator, 0x1802, 0xA1);
+    assert_eq!(emulator.gpu.video_ram[0x3802], 0xA1);
+}
+
+#[test]
+fn should_read_from_bank_0_of_video_ram() {
+    let mut emulator = initialize_screenless_emulator();
+    emulator.mode = Mode::CGB;
+    emulator.gpu.video_ram[0x1800] = 0xA1;
+    set_cgb_vbk(&mut emulator, 0);
+    assert_eq!(get_video_ram_byte(&emulator, 0x1800), 0xA1);
+}
+
+#[test]
+fn should_set_byte_in_bank_0_of_video_ram() {
+    let mut emulator = initialize_screenless_emulator();
+    emulator.mode = Mode::CGB;
+    set_cgb_vbk(&mut emulator, 0);
+    set_video_ram_byte(&mut emulator, 0x1802, 0xA1);
+    assert_eq!(emulator.gpu.video_ram[0x1802], 0xA1);
 }

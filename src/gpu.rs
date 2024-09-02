@@ -227,12 +227,24 @@ pub fn set_cgb_ocps(emulator: &mut Emulator, value: u8) {
     }
 }
 
+fn calculate_video_ram_index(emulator: &Emulator, index: u16) -> u16 {
+    if emulator.mode == Mode::CGB {
+        let bank = emulator.gpu.registers.cgb_vbk & 0b1;
+        if bank == 1 { index + 0x2000 } else { index }
+    }
+    else {
+        index
+    }
+}
+
 pub fn get_video_ram_byte(emulator: &Emulator, index: u16) -> u8 {
-    emulator.gpu.video_ram[index as usize]
+    let calculated_index = calculate_video_ram_index(emulator, index);
+    emulator.gpu.video_ram[calculated_index as usize]
 }
 
 pub fn set_video_ram_byte(emulator: &mut Emulator, index: u16, value: u8) {
-    emulator.gpu.video_ram[index as usize] = value;
+    let calculated_index = calculate_video_ram_index(emulator, index);
+    emulator.gpu.video_ram[calculated_index as usize] = value;
 }
 
 pub fn get_object_attribute_memory_byte(emulator: &Emulator, index: u16) -> u8 {
