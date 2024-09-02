@@ -16,7 +16,8 @@ pub struct GpuRegisters {
     pub ly: u8,
     pub lyc: u8,
     pub stat: u8,
-    pub palettes: Palettes
+    pub palettes: Palettes,
+    pub cgb_vbk: u8
 }
 
 #[derive(Debug)]
@@ -64,12 +65,13 @@ pub fn initialize_gpu() -> GpuState {
             ly: 0,
             lyc: 0,
             stat: 0,
-            palettes: initialize_palettes()
+            palettes: initialize_palettes(),
+            cgb_vbk: 0
         },
         frame_buffer: vec![0xFF; (GB_SCREEN_WIDTH * GB_SCREEN_HEIGHT * BYTES_PER_COLOR) as usize],
         sprite_buffer: Vec::new(),
         video_ram: [0; 0x4000],
-        object_attribute_memory: [0; 0xa0],
+        object_attribute_memory: [0; 0xa0]
     }
 }
 
@@ -239,6 +241,21 @@ pub fn get_object_attribute_memory_byte(emulator: &Emulator, index: u16) -> u8 {
 
 pub fn set_object_attribute_memory_byte(emulator: &mut Emulator, index: u16, value: u8) {
     emulator.gpu.object_attribute_memory[index as usize] = value;
+}
+
+pub fn get_cgb_vbk(emulator: &Emulator) -> u8 {
+    if emulator.mode == Mode::CGB {
+        emulator.gpu.registers.cgb_vbk | 0b11111110
+    }
+    else {
+        0xFF
+    }
+}
+
+pub fn set_cgb_vbk(emulator: &mut Emulator, value: u8) {
+    if emulator.mode == Mode::CGB {
+        emulator.gpu.registers.cgb_vbk = value;
+    }
 }
 
 #[cfg(test)]

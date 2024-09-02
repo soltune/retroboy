@@ -222,3 +222,43 @@ fn should_not_fire_stat_interrupt_when_lyc_equals_ly_if_disabled() {
     step(&mut emulator);
     assert_eq!(emulator.interrupts.flags, 0x0);
 }
+
+#[test]
+fn should_set_cgb_vbk() {
+    let mut emulator = initialize_screenless_emulator();
+    emulator.mode = Mode::CGB;
+    set_cgb_vbk(&mut emulator, 0x1);
+    assert_eq!(emulator.gpu.registers.cgb_vbk, 0x1);
+}
+
+#[test]
+fn should_get_cgb_vbk() {
+    let mut emulator = initialize_screenless_emulator();
+    emulator.mode = Mode::CGB;
+    emulator.gpu.registers.cgb_vbk = 0x1;
+    assert_eq!(get_cgb_vbk(&emulator), 0xFF);
+}
+
+#[test]
+fn should_ignore_all_bits_other_than_bit_0_when_getting_cgb_vbk() {
+    let mut emulator = initialize_screenless_emulator();
+    emulator.mode = Mode::CGB;
+    emulator.gpu.registers.cgb_vbk = 0b00101010;
+    assert_eq!(get_cgb_vbk(&emulator), 0b11111110);
+}
+
+#[test]
+fn should_not_set_cgb_vbk_if_dmg_mode() {
+    let mut emulator = initialize_screenless_emulator();
+    emulator.mode = Mode::DMG;
+    set_cgb_vbk(&mut emulator, 0x1);
+    assert_eq!(emulator.gpu.registers.cgb_vbk, 0);
+}
+
+#[test]
+fn should_return_ff_when_getting_cgb_vbk_if_dmg_mode() {
+    let mut emulator = initialize_screenless_emulator();
+    emulator.mode = Mode::DMG;
+    set_cgb_vbk(&mut emulator, 0);
+    assert_eq!(get_cgb_vbk(&emulator), 0xFF);
+}
