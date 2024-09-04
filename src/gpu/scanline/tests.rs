@@ -27,16 +27,44 @@ fn write_window_tile_index_to_memory(emulator: &mut Emulator, position_index: u1
     emulator.gpu.video_ram[(0x1C00 + position_index) as usize] = tile_index;
 }
 
-fn line(index: u32) -> u32 {
-    index * GB_SCREEN_WIDTH
+struct FrameBufferAssertion<'a> {
+    frame_buffer: &'a Vec<u8>,
+    coordinates: (u32, u32)
 }
 
-fn assert_pixel_color(frame_buffer: &Vec<u8>, pixel_position: u32, color: Color) {
-    let pixel_index = (pixel_position * 4) as usize;
-    assert_eq!(frame_buffer[pixel_index], color[0]);
-    assert_eq!(frame_buffer[pixel_index + 1], color[1]);
-    assert_eq!(frame_buffer[pixel_index + 2], color[2]);
-    assert_eq!(frame_buffer[pixel_index + 3], color[3]);
+impl <'a> FrameBufferAssertion<'a> {
+    pub fn new(frame_buffer: &Vec<u8>) -> FrameBufferAssertion {
+        FrameBufferAssertion {
+            frame_buffer,
+            coordinates: (0, 0),
+        }
+    }
+
+    pub fn at_starting_coordinates(&mut self, coordinates: (u32, u32)) -> &mut Self {
+        self.coordinates = coordinates;
+        self
+    }
+
+    fn assert_pixel_color(&self, frame_buffer: &Vec<u8>, pixel_position: u32, color: Color) {
+        let pixel_index = (pixel_position * 4) as usize;
+        assert_eq!(frame_buffer[pixel_index], color[0]);
+        assert_eq!(frame_buffer[pixel_index + 1], color[1]);
+        assert_eq!(frame_buffer[pixel_index + 2], color[2]);
+        assert_eq!(frame_buffer[pixel_index + 3], color[3]);
+    }
+
+    pub fn has_pixels(&self, color_pixels: &[Color]) {
+        let (x, y) = self.coordinates;
+        let pixel_position = y * GB_SCREEN_WIDTH + x;
+
+        for (index, color) in color_pixels.iter().enumerate() {
+            self.assert_pixel_color(self.frame_buffer, pixel_position + index as u32, *color);
+        }
+    }
+}
+
+fn assert_that(frame_buffer: &Vec<u8>) -> FrameBufferAssertion {
+    FrameBufferAssertion::new(frame_buffer)
 }
 
 #[test]
@@ -52,15 +80,10 @@ fn should_render_nothing_if_lcd_enable_flag_is_off() {
     write_scanline(&mut emulator);
 
     let frame_buffer = &emulator.gpu.frame_buffer;
-    
-    assert_pixel_color(frame_buffer, 0, WHITE);
-    assert_pixel_color(frame_buffer, 1, WHITE);
-    assert_pixel_color(frame_buffer, 2, WHITE);
-    assert_pixel_color(frame_buffer, 3, WHITE);
-    assert_pixel_color(frame_buffer, 4, WHITE);
-    assert_pixel_color(frame_buffer, 5, WHITE);
-    assert_pixel_color(frame_buffer, 6, WHITE);
-    assert_pixel_color(frame_buffer, 7, WHITE);
+
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 0))
+        .has_pixels(&[WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE]);
 }
 
 #[test]
@@ -77,14 +100,9 @@ fn should_render_tile_line() {
 
     let frame_buffer = &emulator.gpu.frame_buffer;
 
-    assert_pixel_color(frame_buffer, 0, BLACK);
-    assert_pixel_color(frame_buffer, 1, LIGHT_GRAY);
-    assert_pixel_color(frame_buffer, 2, WHITE);
-    assert_pixel_color(frame_buffer, 3, WHITE);
-    assert_pixel_color(frame_buffer, 4, WHITE);
-    assert_pixel_color(frame_buffer, 5, WHITE);
-    assert_pixel_color(frame_buffer, 6, LIGHT_GRAY);
-    assert_pixel_color(frame_buffer, 7, BLACK);
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 0))
+        .has_pixels(&[BLACK, LIGHT_GRAY, WHITE, WHITE, WHITE, WHITE, LIGHT_GRAY, BLACK]);
 }
 
 #[test]
@@ -103,32 +121,17 @@ fn should_render_multiple_tile_lines() {
 
     let frame_buffer = &emulator.gpu.frame_buffer;
 
-    assert_pixel_color(frame_buffer, 0, BLACK);
-    assert_pixel_color(frame_buffer, 1, LIGHT_GRAY);
-    assert_pixel_color(frame_buffer, 2, WHITE);
-    assert_pixel_color(frame_buffer, 3, WHITE);
-    assert_pixel_color(frame_buffer, 4, WHITE);
-    assert_pixel_color(frame_buffer, 5, WHITE);
-    assert_pixel_color(frame_buffer, 6, LIGHT_GRAY);
-    assert_pixel_color(frame_buffer, 7, BLACK);
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 0))
+        .has_pixels(&[BLACK, LIGHT_GRAY, WHITE, WHITE, WHITE, WHITE, LIGHT_GRAY, BLACK]);
 
-    assert_pixel_color(frame_buffer, line(1) + 0, BLACK);
-    assert_pixel_color(frame_buffer, line(1) + 1, WHITE);
-    assert_pixel_color(frame_buffer, line(1) + 2, BLACK);
-    assert_pixel_color(frame_buffer, line(1) + 3, BLACK);
-    assert_pixel_color(frame_buffer, line(1) + 4, BLACK);
-    assert_pixel_color(frame_buffer, line(1) + 5, BLACK);
-    assert_pixel_color(frame_buffer, line(1) + 6, WHITE);
-    assert_pixel_color(frame_buffer, line(1) + 7, BLACK);
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 1))
+        .has_pixels(&[BLACK, WHITE, BLACK, BLACK, BLACK, BLACK, WHITE, BLACK]);
 
-    assert_pixel_color(frame_buffer, line(2) + 0, BLACK);
-    assert_pixel_color(frame_buffer, line(2) + 1, WHITE);
-    assert_pixel_color(frame_buffer, line(2) + 2, BLACK);
-    assert_pixel_color(frame_buffer, line(2) + 3, BLACK);
-    assert_pixel_color(frame_buffer, line(2) + 4, BLACK);
-    assert_pixel_color(frame_buffer, line(2) + 5, BLACK);
-    assert_pixel_color(frame_buffer, line(2) + 6, WHITE);
-    assert_pixel_color(frame_buffer, line(2) + 7, BLACK);
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 2))
+        .has_pixels(&[BLACK, WHITE, BLACK, BLACK, BLACK, BLACK, WHITE, BLACK]);
 }
 
 #[test]
@@ -151,32 +154,17 @@ fn should_overlay_window_over_multiple_tile_lines() {
 
     let frame_buffer = &emulator.gpu.frame_buffer;
 
-    assert_pixel_color(frame_buffer, 0, BLACK);
-    assert_pixel_color(frame_buffer, 1, LIGHT_GRAY);
-    assert_pixel_color(frame_buffer, 2, WHITE);
-    assert_pixel_color(frame_buffer, 3, WHITE);
-    assert_pixel_color(frame_buffer, 4, WHITE);
-    assert_pixel_color(frame_buffer, 5, WHITE);
-    assert_pixel_color(frame_buffer, 6, LIGHT_GRAY);
-    assert_pixel_color(frame_buffer, 7, BLACK);
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 0))
+        .has_pixels(&[BLACK, LIGHT_GRAY, WHITE, WHITE, WHITE, WHITE, LIGHT_GRAY, BLACK]);
 
-    assert_pixel_color(frame_buffer, line(1) + 0, BLACK);
-    assert_pixel_color(frame_buffer, line(1) + 1, WHITE);
-    assert_pixel_color(frame_buffer, line(1) + 2, WHITE);
-    assert_pixel_color(frame_buffer, line(1) + 3, WHITE);
-    assert_pixel_color(frame_buffer, line(1) + 4, WHITE);
-    assert_pixel_color(frame_buffer, line(1) + 5, WHITE);
-    assert_pixel_color(frame_buffer, line(1) + 6, WHITE);
-    assert_pixel_color(frame_buffer, line(1) + 7, WHITE);
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 1))
+        .has_pixels(&[BLACK, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE]);
 
-    assert_pixel_color(frame_buffer, line(2) + 0, BLACK);
-    assert_pixel_color(frame_buffer, line(2) + 1, WHITE);
-    assert_pixel_color(frame_buffer, line(2) + 2, WHITE);
-    assert_pixel_color(frame_buffer, line(2) + 3, WHITE);
-    assert_pixel_color(frame_buffer, line(2) + 4, WHITE);
-    assert_pixel_color(frame_buffer, line(2) + 5, WHITE);
-    assert_pixel_color(frame_buffer, line(2) + 6, WHITE);
-    assert_pixel_color(frame_buffer, line(2) + 7, WHITE);
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 2))
+        .has_pixels(&[BLACK, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE]);
 }
 
 #[test]
@@ -196,14 +184,9 @@ fn should_render_tile_line_in_middle_of_frame() {
 
     let frame_buffer = &emulator.gpu.frame_buffer;
 
-    assert_pixel_color(frame_buffer, line(3) + 0, BLACK);
-    assert_pixel_color(frame_buffer, line(3) + 1, WHITE);
-    assert_pixel_color(frame_buffer, line(3) + 2, BLACK);
-    assert_pixel_color(frame_buffer, line(3) + 3, BLACK);
-    assert_pixel_color(frame_buffer, line(3) + 4, BLACK);
-    assert_pixel_color(frame_buffer, line(3) + 5, BLACK);
-    assert_pixel_color(frame_buffer, line(3) + 6, WHITE);
-    assert_pixel_color(frame_buffer, line(3) + 7, BLACK);
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 3))
+        .has_pixels(&[BLACK, WHITE, BLACK, BLACK, BLACK, BLACK, WHITE, BLACK]);
 }
 
 #[test]
@@ -223,14 +206,9 @@ fn should_render_tile_line_properly_with_greater_scroll_x_value() {
 
     let frame_buffer = &emulator.gpu.frame_buffer;
 
-    assert_pixel_color(frame_buffer, line(3) + 0, BLACK);
-    assert_pixel_color(frame_buffer, line(3) + 1, BLACK);
-    assert_pixel_color(frame_buffer, line(3) + 2, BLACK);
-    assert_pixel_color(frame_buffer, line(3) + 3, BLACK);
-    assert_pixel_color(frame_buffer, line(3) + 4, WHITE);
-    assert_pixel_color(frame_buffer, line(3) + 5, BLACK);
-    assert_pixel_color(frame_buffer, line(3) + 6, BLACK);
-    assert_pixel_color(frame_buffer, line(3) + 7, BLACK);
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 3))
+        .has_pixels(&[BLACK, BLACK, BLACK, BLACK, WHITE, BLACK, BLACK, BLACK]);
 }
 
 #[test]
@@ -249,14 +227,9 @@ fn should_wrap_around_when_rendering_past_max_tile_map_x_value() {
 
     let frame_buffer = &emulator.gpu.frame_buffer;
 
-    assert_pixel_color(frame_buffer, 0, BLACK);
-    assert_pixel_color(frame_buffer, 1, BLACK);
-    assert_pixel_color(frame_buffer, 2, BLACK);
-    assert_pixel_color(frame_buffer, 3, LIGHT_GRAY);
-    assert_pixel_color(frame_buffer, 4, WHITE);
-    assert_pixel_color(frame_buffer, 5, WHITE);
-    assert_pixel_color(frame_buffer, 6, WHITE);
-    assert_pixel_color(frame_buffer, 7, WHITE);
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 0))
+        .has_pixels(&[BLACK, BLACK, BLACK, LIGHT_GRAY, WHITE, WHITE, WHITE, WHITE]);
 }
 
 #[test]
@@ -275,14 +248,9 @@ fn should_wrap_around_when_rendering_past_max_tile_map_y_value() {
 
     let frame_buffer = &emulator.gpu.frame_buffer;
 
-    assert_pixel_color(frame_buffer, line(2) + 0, BLACK);
-    assert_pixel_color(frame_buffer, line(2) + 1, LIGHT_GRAY);
-    assert_pixel_color(frame_buffer, line(2) + 2, WHITE);
-    assert_pixel_color(frame_buffer, line(2) + 3, WHITE);
-    assert_pixel_color(frame_buffer, line(2) + 4, WHITE);
-    assert_pixel_color(frame_buffer, line(2) + 5, WHITE);
-    assert_pixel_color(frame_buffer, line(2) + 6, LIGHT_GRAY);
-    assert_pixel_color(frame_buffer, line(2) + 7, BLACK);
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 2))
+        .has_pixels(&[BLACK, LIGHT_GRAY, WHITE, WHITE, WHITE, WHITE, LIGHT_GRAY, BLACK]);
 }
 
 #[test]
@@ -318,14 +286,9 @@ fn should_render_tile_line_with_sprite() {
 
     let frame_buffer: &Vec<u8> = &emulator.gpu.frame_buffer;
 
-    assert_pixel_color(frame_buffer, 0, BLACK);
-    assert_pixel_color(frame_buffer, 1, LIGHT_GRAY);
-    assert_pixel_color(frame_buffer, 2, DARK_GRAY);
-    assert_pixel_color(frame_buffer, 3, DARK_GRAY);
-    assert_pixel_color(frame_buffer, 4, DARK_GRAY);
-    assert_pixel_color(frame_buffer, 5, DARK_GRAY);
-    assert_pixel_color(frame_buffer, 6, DARK_GRAY);
-    assert_pixel_color(frame_buffer, 7, DARK_GRAY);
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 0))
+        .has_pixels(&[BLACK, LIGHT_GRAY, DARK_GRAY, DARK_GRAY, DARK_GRAY, DARK_GRAY, DARK_GRAY, DARK_GRAY]);
 }
 
 #[test]
@@ -361,14 +324,9 @@ fn should_render_sprite_with_white_background_if_background_and_window_enabled_i
 
     let frame_buffer = &emulator.gpu.frame_buffer;
 
-    assert_pixel_color(frame_buffer, 0, WHITE);
-    assert_pixel_color(frame_buffer, 1, WHITE);
-    assert_pixel_color(frame_buffer, 2, DARK_GRAY);
-    assert_pixel_color(frame_buffer, 3, DARK_GRAY);
-    assert_pixel_color(frame_buffer, 4, DARK_GRAY);
-    assert_pixel_color(frame_buffer, 5, DARK_GRAY);
-    assert_pixel_color(frame_buffer, 6, DARK_GRAY);
-    assert_pixel_color(frame_buffer, 7, DARK_GRAY);
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 0))
+        .has_pixels(&[WHITE, WHITE, DARK_GRAY, DARK_GRAY, DARK_GRAY, DARK_GRAY, DARK_GRAY, DARK_GRAY]);
 }
 
 #[test]
@@ -404,14 +362,9 @@ fn should_render_tile_line_with_sprite_having_negative_y_pos() {
 
     let frame_buffer = &emulator.gpu.frame_buffer;
 
-    assert_pixel_color(frame_buffer, 0, BLACK);
-    assert_pixel_color(frame_buffer, 1, LIGHT_GRAY);
-    assert_pixel_color(frame_buffer, 2, WHITE);
-    assert_pixel_color(frame_buffer, 3, WHITE);
-    assert_pixel_color(frame_buffer, 4, WHITE);
-    assert_pixel_color(frame_buffer, 5, WHITE);
-    assert_pixel_color(frame_buffer, 6, LIGHT_GRAY);
-    assert_pixel_color(frame_buffer, 7, DARK_GRAY);
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 0))
+        .has_pixels(&[BLACK, LIGHT_GRAY, WHITE, WHITE, WHITE, WHITE, LIGHT_GRAY, DARK_GRAY]);
 }
 
 #[test]
@@ -447,14 +400,9 @@ fn should_flip_sprite_on_x_axis() {
 
     let frame_buffer = &emulator.gpu.frame_buffer;
 
-    assert_pixel_color(frame_buffer, 0, BLACK);
-    assert_pixel_color(frame_buffer, 1, LIGHT_GRAY);
-    assert_pixel_color(frame_buffer, 2, WHITE);
-    assert_pixel_color(frame_buffer, 3, WHITE);
-    assert_pixel_color(frame_buffer, 4, DARK_GRAY);
-    assert_pixel_color(frame_buffer, 5, WHITE);
-    assert_pixel_color(frame_buffer, 6, LIGHT_GRAY);
-    assert_pixel_color(frame_buffer, 7, BLACK); 
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 0))
+        .has_pixels(&[BLACK, LIGHT_GRAY, WHITE, WHITE, DARK_GRAY, WHITE, LIGHT_GRAY, BLACK]);
 }
 
 #[test]
@@ -490,14 +438,9 @@ fn should_flip_sprite_on_y_axis() {
 
     let frame_buffer = &emulator.gpu.frame_buffer;
 
-    assert_pixel_color(frame_buffer, 0, BLACK);
-    assert_pixel_color(frame_buffer, 1, LIGHT_GRAY);
-    assert_pixel_color(frame_buffer, 2, WHITE);
-    assert_pixel_color(frame_buffer, 3, WHITE);
-    assert_pixel_color(frame_buffer, 4, DARK_GRAY);
-    assert_pixel_color(frame_buffer, 5, WHITE);
-    assert_pixel_color(frame_buffer, 6, LIGHT_GRAY);
-    assert_pixel_color(frame_buffer, 7, DARK_GRAY);
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 0))
+        .has_pixels(&[BLACK, LIGHT_GRAY, WHITE, WHITE, DARK_GRAY, WHITE, LIGHT_GRAY, DARK_GRAY]);
 }
 
 #[test]
@@ -537,23 +480,13 @@ fn should_render_eight_by_sixteen_sprite() {
 
     let frame_buffer = &emulator.gpu.frame_buffer;
 
-    assert_pixel_color(frame_buffer, 0, BLACK);
-    assert_pixel_color(frame_buffer, 1, BLACK);
-    assert_pixel_color(frame_buffer, 2, BLACK);
-    assert_pixel_color(frame_buffer, 3, LIGHT_GRAY);
-    assert_pixel_color(frame_buffer, 4, WHITE);
-    assert_pixel_color(frame_buffer, 5, WHITE);
-    assert_pixel_color(frame_buffer, 6, WHITE);
-    assert_pixel_color(frame_buffer, 7, WHITE);
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 0))
+        .has_pixels(&[BLACK, BLACK, BLACK, LIGHT_GRAY, WHITE, WHITE, WHITE, WHITE]);
 
-    assert_pixel_color(frame_buffer, line(8) + 0, BLACK);
-    assert_pixel_color(frame_buffer, line(8) + 1, BLACK);
-    assert_pixel_color(frame_buffer, line(8) + 2, DARK_GRAY);
-    assert_pixel_color(frame_buffer, line(8) + 3, DARK_GRAY);
-    assert_pixel_color(frame_buffer, line(8) + 4, DARK_GRAY);
-    assert_pixel_color(frame_buffer, line(8) + 5, DARK_GRAY);
-    assert_pixel_color(frame_buffer, line(8) + 6, DARK_GRAY);
-    assert_pixel_color(frame_buffer, line(8) + 7, DARK_GRAY);
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 8))
+        .has_pixels(&[BLACK, BLACK, DARK_GRAY, DARK_GRAY, DARK_GRAY, DARK_GRAY, DARK_GRAY, DARK_GRAY]);
 }
 
 #[test]
@@ -589,14 +522,9 @@ fn should_prioritize_non_white_background_colors_when_sprite_priority_flag_set_t
 
     let frame_buffer = &emulator.gpu.frame_buffer;
 
-    assert_pixel_color(frame_buffer, 0, BLACK);
-    assert_pixel_color(frame_buffer, 1, LIGHT_GRAY);
-    assert_pixel_color(frame_buffer, 2, DARK_GRAY);
-    assert_pixel_color(frame_buffer, 3, DARK_GRAY);
-    assert_pixel_color(frame_buffer, 4, DARK_GRAY);
-    assert_pixel_color(frame_buffer, 5, DARK_GRAY);
-    assert_pixel_color(frame_buffer, 6, LIGHT_GRAY);
-    assert_pixel_color(frame_buffer, 7, BLACK); 
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 0))
+        .has_pixels(&[BLACK, LIGHT_GRAY, DARK_GRAY, DARK_GRAY, DARK_GRAY, DARK_GRAY, LIGHT_GRAY, BLACK]);
 }
 
 #[test]
@@ -632,12 +560,7 @@ fn should_prioritize_background_colors_when_lcdc_bit_1_is_off() {
 
     let frame_buffer = &emulator.gpu.frame_buffer;
 
-    assert_pixel_color(frame_buffer, 0, BLACK);
-    assert_pixel_color(frame_buffer, 1, LIGHT_GRAY);
-    assert_pixel_color(frame_buffer, 2, WHITE);
-    assert_pixel_color(frame_buffer, 3, WHITE);
-    assert_pixel_color(frame_buffer, 4, WHITE);
-    assert_pixel_color(frame_buffer, 5, WHITE);
-    assert_pixel_color(frame_buffer, 6, LIGHT_GRAY);
-    assert_pixel_color(frame_buffer, 7, BLACK);
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 0))
+        .has_pixels(&[BLACK, LIGHT_GRAY, WHITE, WHITE, WHITE, WHITE, LIGHT_GRAY, BLACK]);
 }
