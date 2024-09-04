@@ -23,6 +23,10 @@ fn write_tile_to_obj_memory(emulator: &mut Emulator, index: u16, tile_bytes: [u8
     write_tile_to_memory(emulator, 0x0000, index, tile_bytes)
 }
 
+fn write_sprite_to_sprite_buffer(emulator: &mut Emulator, sprite: Sprite) {
+    emulator.gpu.sprite_buffer.push(sprite);
+}
+
 fn write_window_tile_index_to_memory(emulator: &mut Emulator, position_index: u16, tile_index: u8) {
     emulator.gpu.video_ram[(0x1C00 + position_index) as usize] = tile_index;
 }
@@ -259,8 +263,8 @@ fn should_render_tile_line_with_sprite() {
 
     write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
     write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
-    
-    let sprite = Sprite {
+
+    write_sprite_to_sprite_buffer(&mut emulator, Sprite {
         y_pos: 0,
         x_pos: 2,
         tile_index: 1,
@@ -271,12 +275,8 @@ fn should_render_tile_line_with_sprite() {
         oam_index: 0,
         cgb_bank: 0,
         cgb_palette: 0
-    };
+    });
 
-    let mut sprites = Vec::new();
-    sprites.push(sprite);
-
-    emulator.gpu.sprite_buffer = sprites;
     emulator.gpu.registers.ly = 0;
     emulator.gpu.registers.palettes.bgp = 0b00011011;
     emulator.gpu.registers.palettes.obp0 = 0b00011011;
@@ -297,8 +297,8 @@ fn should_render_sprite_with_white_background_if_background_and_window_enabled_i
 
     write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
     write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
-    
-    let sprite = Sprite {
+
+    write_sprite_to_sprite_buffer(&mut emulator, Sprite {
         y_pos: 0,
         x_pos: 2,
         tile_index: 1,
@@ -309,12 +309,8 @@ fn should_render_sprite_with_white_background_if_background_and_window_enabled_i
         oam_index: 0,
         cgb_bank: 0,
         cgb_palette: 0
-    };
+    });
 
-    let mut sprites = Vec::new();
-    sprites.push(sprite);
-
-    emulator.gpu.sprite_buffer = sprites;
     emulator.gpu.registers.ly = 0;
     emulator.gpu.registers.palettes.bgp = 0b00011011;
     emulator.gpu.registers.palettes.obp0 = 0b00011011;
@@ -335,8 +331,8 @@ fn should_render_tile_line_with_sprite_having_negative_y_pos() {
 
     write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
     write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
-    
-    let sprite = Sprite {
+
+    write_sprite_to_sprite_buffer(&mut emulator, Sprite {
         y_pos: -2,
         x_pos: 2,
         tile_index: 1,
@@ -347,12 +343,8 @@ fn should_render_tile_line_with_sprite_having_negative_y_pos() {
         oam_index: 0,
         cgb_bank: 0,
         cgb_palette: 0
-    };
+    });
 
-    let mut sprites = Vec::new();
-    sprites.push(sprite);
-
-    emulator.gpu.sprite_buffer = sprites;
     emulator.gpu.registers.ly = 0;
     emulator.gpu.registers.palettes.bgp = 0b00011011;
     emulator.gpu.registers.palettes.obp0 = 0b00011011;
@@ -373,8 +365,8 @@ fn should_flip_sprite_on_x_axis() {
 
     write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
     write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
-    
-    let sprite = Sprite {
+
+    write_sprite_to_sprite_buffer(&mut emulator, Sprite {
         y_pos: -2,
         x_pos: 2,
         tile_index: 1,
@@ -385,12 +377,8 @@ fn should_flip_sprite_on_x_axis() {
         oam_index: 0,
         cgb_bank: 0,
         cgb_palette: 0
-    };
+    });
 
-    let mut sprites = Vec::new();
-    sprites.push(sprite);
-
-    emulator.gpu.sprite_buffer = sprites;
     emulator.gpu.registers.ly = 0;
     emulator.gpu.registers.palettes.bgp = 0b00011011;
     emulator.gpu.registers.palettes.obp0 = 0b00011011;
@@ -411,8 +399,8 @@ fn should_flip_sprite_on_y_axis() {
 
     write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
     write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
-    
-    let sprite = Sprite {
+
+    write_sprite_to_sprite_buffer(&mut emulator, Sprite {
         y_pos: -2,
         x_pos: 2,
         tile_index: 1,
@@ -423,12 +411,8 @@ fn should_flip_sprite_on_y_axis() {
         oam_index: 0,
         cgb_bank: 0,
         cgb_palette: 0
-    };
-
-    let mut sprites = Vec::new();
-    sprites.push(sprite);
-
-    emulator.gpu.sprite_buffer = sprites;
+    });
+    
     emulator.gpu.registers.ly = 0;
     emulator.gpu.registers.palettes.bgp = 0b00011011;
     emulator.gpu.registers.palettes.obp0 = 0b00011011;
@@ -450,8 +434,8 @@ fn should_render_eight_by_sixteen_sprite() {
     write_tile_to_bg_memory(&mut emulator, 0, BLACK_TILE);
     write_tile_to_obj_memory(&mut emulator, 2, SAMPLE_TILE_A);
     write_tile_to_obj_memory(&mut emulator, 3, SAMPLE_TILE_B);
-    
-    let sprite = Sprite {
+
+    write_sprite_to_sprite_buffer(&mut emulator, Sprite {
         y_pos: 0,
         x_pos: 2,
         tile_index: 3,
@@ -462,12 +446,8 @@ fn should_render_eight_by_sixteen_sprite() {
         oam_index: 0,
         cgb_bank: 0,
         cgb_palette: 0
-    };
+    });
 
-    let mut sprites = Vec::new();
-    sprites.push(sprite);
-
-    emulator.gpu.sprite_buffer = sprites;
     emulator.gpu.registers.ly = 0;
     emulator.gpu.registers.palettes.bgp = 0b00011011;
     emulator.gpu.registers.palettes.obp0 = 0b00011011;
@@ -496,7 +476,7 @@ fn should_prioritize_non_white_background_colors_when_sprite_priority_flag_set_t
     write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
     write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
     
-    let sprite = Sprite {
+    write_sprite_to_sprite_buffer(&mut emulator, Sprite {
         y_pos: 0,
         x_pos: 2,
         tile_index: 1,
@@ -507,12 +487,8 @@ fn should_prioritize_non_white_background_colors_when_sprite_priority_flag_set_t
         oam_index: 0,
         cgb_bank: 0,
         cgb_palette: 0
-    };
+    });
 
-    let mut sprites = Vec::new();
-    sprites.push(sprite);
-
-    emulator.gpu.sprite_buffer = sprites;
     emulator.gpu.registers.ly = 0;
     emulator.gpu.registers.palettes.bgp = 0b00011011;
     emulator.gpu.registers.palettes.obp0 = 0b00011011;
@@ -533,8 +509,8 @@ fn should_prioritize_background_colors_when_lcdc_bit_1_is_off() {
 
     write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
     write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
-    
-    let sprite = Sprite {
+
+    write_sprite_to_sprite_buffer(&mut emulator, Sprite {
         y_pos: 0,
         x_pos: 2,
         tile_index: 1,
@@ -545,12 +521,8 @@ fn should_prioritize_background_colors_when_lcdc_bit_1_is_off() {
         oam_index: 0,
         cgb_bank: 0,
         cgb_palette: 0
-    };
-
-    let mut sprites = Vec::new();
-    sprites.push(sprite);
-
-    emulator.gpu.sprite_buffer = sprites;
+    });
+    
     emulator.gpu.registers.ly = 0;
     emulator.gpu.registers.palettes.bgp = 0b00011011;
     emulator.gpu.registers.palettes.obp0 = 0b00011011;
