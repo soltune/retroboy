@@ -92,7 +92,7 @@ fn calculate_palette_data_index_by_address(spec_address: u8) -> usize {
 
 fn rgb555_as_color(rgb555: u16) -> Color {
     let red = ((rgb555 & 0b1111100000000000) >> 11) as u16;
-    let green = ((rgb555 & 0b0000011111100000) >> 6) as u16;
+    let green = ((rgb555 & 0b0000011111000000) >> 6) as u16;
     let blue = ((rgb555 & 0b0000000000111110) >> 1) as u16;
     
     // Takes the five bits of each color channel and scales them to eight bits.

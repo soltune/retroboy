@@ -1,7 +1,17 @@
+use crate::emulator::Emulator;
 use crate::gpu::utils::*;
+use crate::utils::is_bit_set;
  
 const TILES_PER_ROW: u8 = 32;
 const TILE_DATA_LENGTH: u8 = 16;
+
+pub struct TileAttributes {
+    pub priority: bool,
+    pub y_flip: bool,
+    pub x_flip: bool,
+    pub bank_number: bool,
+    pub palette_number: u8,
+}
 
 fn calculate_tile_map_index(tile_map_mode: bool, tile_map_offset: u16) -> u16 {
     if tile_map_mode {
@@ -14,6 +24,18 @@ fn calculate_tile_map_index(tile_map_mode: bool, tile_map_offset: u16) -> u16 {
 
 fn calculate_tile_offset(column_tile_offset: u8, row_tile_offset: u8) -> u16 {
     column_tile_offset as u16 * TILES_PER_ROW as u16 + row_tile_offset as u16
+}
+
+pub fn get_cgb_tile_attributes(emulator: &Emulator, tile_map_index: u16) -> TileAttributes {
+    let tile_attributes_index = 0x2000 + tile_map_index;
+    let attributes_byte = emulator.gpu.video_ram[tile_attributes_index as usize];
+    TileAttributes {
+        priority: is_bit_set(attributes_byte, 7),
+        y_flip: is_bit_set(attributes_byte, 6),
+        x_flip: is_bit_set(attributes_byte, 5),
+        bank_number: is_bit_set(attributes_byte, 4),
+        palette_number: attributes_byte & 0b00000111,
+    }
 }
 
 pub fn calculate_bg_tile_map_index(lcdc: u8, column_tile_offset: u8, row_tile_offset: u8) -> u16 {
