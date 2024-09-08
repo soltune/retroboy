@@ -113,8 +113,8 @@ fn lookup_object_palette(palettes: &Palettes, palette_number: u8, color_id: u8) 
     palettes.cgb_ocpd[index]
 }
 
-pub fn as_cgb_bg_color_rgb(palettes: &Palettes, bit_index: u8, palette_number: u8, msb_byte: u8, lsb_byte: u8) -> Color {
-    let color_id = calculate_color_id(bit_index, msb_byte, lsb_byte, false);
+pub fn as_cgb_bg_color_rgb(palettes: &Palettes, bit_index: u8, palette_number: u8, msb_byte: u8, lsb_byte: u8, x_flip: bool) -> Color {
+    let color_id = calculate_color_id(bit_index, msb_byte, lsb_byte, x_flip);
     let palette = lookup_background_palette(palettes, palette_number, color_id);
     rgb555_as_color(palette)
 }
@@ -369,7 +369,7 @@ mod tests {
         let msb_byte = 0b00101010;
         let lsb_byte = 0b11010101;
 
-        let color = as_cgb_bg_color_rgb(&palettes, 0, palette_number, msb_byte, lsb_byte);
+        let color = as_cgb_bg_color_rgb(&palettes, 0, palette_number, msb_byte, lsb_byte, false);
 
         // Palette will be 0b1110111011101110.
         assert_eq!(color, [0xEE, 0xDE, 0xBD, 0xFF]);

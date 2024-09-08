@@ -30,7 +30,7 @@ pub fn read_window_color(emulator: &Emulator, x: u8, y: u8) -> Option<Color> {
 
         if emulator.mode == Mode::CGB {
             let attributes = get_cgb_tile_attributes(emulator, tile_map_index);
-            Some(as_cgb_bg_color_rgb(&emulator.gpu.registers.palettes, bit_index, attributes.palette_number, msb_byte, lsb_byte))
+            Some(as_cgb_bg_color_rgb(&emulator.gpu.registers.palettes, bit_index, attributes.palette_number, msb_byte, lsb_byte, attributes.x_flip))
         }
         else {
             let palette = emulator.gpu.registers.palettes.bgp;

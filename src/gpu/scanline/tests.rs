@@ -187,7 +187,7 @@ fn should_render_multiple_tile_lines_in_color_mode() {
 
     emulator.gpu.registers.lcdc = 0b10000011;
 
-    for _ in 0..3 {
+    for _ in 0..8 {
         write_scanline(&mut emulator);
         emulator.gpu.registers.ly += 1;
     }
@@ -204,7 +204,37 @@ fn should_render_multiple_tile_lines_in_color_mode() {
 
     assert_that(frame_buffer)
         .at_starting_coordinates((0, 2))
-        .has_pixels(&[RED, BLACK, RED, RED, RED, RED, BLACK, RED]); 
+        .has_pixels(&[RED, BLACK, RED, RED, RED, RED, BLACK, RED]);
+
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 7))
+        .has_pixels(&[RED, BLUE, BLACK, BLACK, BLACK, BLUE, RED, RED]); 
+}
+
+#[test]
+fn should_flip_background_tile_on_x_axis() {
+    let mut emulator = initialize_screenless_emulator();
+    
+    emulator.mode = Mode::CGB;
+
+    initialize_color_palettes(&mut emulator.gpu.registers.palettes);
+    
+    write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
+
+    write_tile_attributes(&mut emulator, 0, 0b00100001);
+
+    emulator.gpu.registers.lcdc = 0b10000011;
+
+    for _ in 0..8 {
+        write_scanline(&mut emulator);
+        emulator.gpu.registers.ly += 1;
+    }
+
+    let frame_buffer = &emulator.gpu.frame_buffer;
+
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 7))
+        .has_pixels(&[RED, RED, BLUE, BLACK, BLACK, BLACK, BLUE, RED]); 
 }
 
 #[test]
