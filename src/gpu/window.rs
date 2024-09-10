@@ -1,7 +1,7 @@
 use crate::emulator::{Emulator, Mode};
 use crate::gpu::colors::{Color, as_bg_color_rgb, as_cgb_bg_color_rgb};
 use crate::gpu::line_addressing::{calculate_window_tile_map_index, calculate_tile_data_index, get_cgb_tile_attributes};
-use crate::gpu::utils::{get_window_enabled_mode, get_bg_and_window_enabled_mode};
+use crate::gpu::utils::{get_window_enabled_mode, get_bg_and_window_enabled_mode, get_tile_line_bytes};
 
 pub fn read_window_color(emulator: &Emulator, x: u8, y: u8) -> Option<Color> {
     let wx = emulator.gpu.registers.wx;
@@ -21,19 +21,18 @@ pub fn read_window_color(emulator: &Emulator, x: u8, y: u8) -> Option<Color> {
         let tile_map_index = calculate_window_tile_map_index(lcdc, column_tile_offset, row_tile_offset);
         let tile_index = emulator.gpu.video_ram[tile_map_index as usize];
         let tile_data_index = calculate_tile_data_index(lcdc, tile_index);
-        let line_index = tile_data_index + ((y % 8) * 2) as u16;
 
-        let lsb_byte = emulator.gpu.video_ram[line_index as usize];
-        let msb_byte = emulator.gpu.video_ram[(line_index + 1) as usize];
-
+        let row_offset = y % 8;
         let bit_index = ((x_int - (wx_int - 7)) % 8) as u8;
 
         if emulator.mode == Mode::CGB {
             let attributes = get_cgb_tile_attributes(emulator, tile_map_index);
+            let (lsb_byte, msb_byte) = get_tile_line_bytes(&emulator.gpu, tile_data_index, row_offset, attributes.y_flip);
             Some(as_cgb_bg_color_rgb(&emulator.gpu.registers.palettes, bit_index, attributes.palette_number, msb_byte, lsb_byte, attributes.x_flip))
         }
         else {
             let palette = emulator.gpu.registers.palettes.bgp;
+            let (lsb_byte, msb_byte) = get_tile_line_bytes(&emulator.gpu, tile_data_index, row_offset, false);
             Some(as_bg_color_rgb(bit_index, palette, msb_byte, lsb_byte))
         }
     }  

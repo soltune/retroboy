@@ -1,6 +1,6 @@
 use crate::emulator::{Emulator, Mode};
 use crate::gpu::colors::{as_cgb_obj_color_rgb, as_obj_color_rgb, WHITE, Color};
-use crate::gpu::utils::{get_obj_enabled_mode, get_obj_size_mode};
+use crate::gpu::utils::{get_obj_enabled_mode, get_obj_size_mode, get_tile_line_bytes};
 use crate::utils::{get_bit, is_bit_set};
 
 const SPRITE_LIMIT_PER_SCANLINE: usize = 10;
@@ -139,13 +139,10 @@ pub fn calculate_sprite_pixel_color(emulator: &Emulator, sprite: &Sprite, x: u8,
     let calculated_index = calculate_tile_index(&sprite, y_int, eight_by_sixteen_mode);
     let tile_data_index = calculate_tile_data_index(calculated_index as u16);
     let row_offset = ((y_int - sprite.y_pos) % 8) as u8;
-    let tile_data_byte_offset = (if sprite.y_flip { 0xF - ((row_offset * 2) + 1) } else { row_offset * 2 }) as u16;
-    let line_index= tile_data_index + tile_data_byte_offset;
     let column_offset = x_int - sprite.x_pos;
 
     if column_offset >= 0 {
-        let lsb_byte = emulator.gpu.video_ram[line_index as usize];
-        let msb_byte = emulator.gpu.video_ram[(line_index + 1) as usize];
+        let (lsb_byte, msb_byte) = get_tile_line_bytes(&emulator.gpu, tile_data_index, row_offset, sprite.y_flip);
 
         if (sprite.priority && bg_color == WHITE) || !sprite.priority {
             if emulator.mode == Mode::CGB {
