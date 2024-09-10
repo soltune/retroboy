@@ -22,12 +22,12 @@ pub fn read_bg_color(emulator: &Emulator, x: u8, y: u8) -> Color {
     
         if emulator.mode == Mode::CGB {
             let attributes = get_cgb_tile_attributes(emulator, tile_map_index);
-            let (lsb_byte, msb_byte) = get_tile_line_bytes(&emulator.gpu, tile_data_index, row_offset, attributes.y_flip);
+            let (lsb_byte, msb_byte) = get_tile_line_bytes(&emulator.gpu, tile_data_index, row_offset, attributes.y_flip, attributes.from_bank_one);
             as_cgb_bg_color_rgb(&emulator.gpu.registers.palettes, bit_index, attributes.palette_number, msb_byte, lsb_byte, attributes.x_flip)
         }
         else {
             let palette = emulator.gpu.registers.palettes.bgp;
-            let (lsb_byte, msb_byte) = get_tile_line_bytes(&emulator.gpu, tile_data_index, row_offset, false);
+            let (lsb_byte, msb_byte) = get_tile_line_bytes(&emulator.gpu, tile_data_index, row_offset, false, false);
             as_bg_color_rgb(bit_index, palette, msb_byte, lsb_byte)
         }
     }

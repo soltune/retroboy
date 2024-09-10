@@ -9,7 +9,7 @@ pub struct TileAttributes {
     pub priority: bool,
     pub y_flip: bool,
     pub x_flip: bool,
-    pub bank_number: bool,
+    pub from_bank_one: bool,
     pub palette_number: u8,
 }
 
@@ -33,7 +33,7 @@ pub fn get_cgb_tile_attributes(emulator: &Emulator, tile_map_index: u16) -> Tile
         priority: is_bit_set(attributes_byte, 7),
         y_flip: is_bit_set(attributes_byte, 6),
         x_flip: is_bit_set(attributes_byte, 5),
-        bank_number: is_bit_set(attributes_byte, 4),
+        from_bank_one: is_bit_set(attributes_byte, 3),
         palette_number: attributes_byte & 0b00000111,
     }
 }

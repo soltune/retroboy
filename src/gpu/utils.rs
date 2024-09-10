@@ -53,10 +53,11 @@ fn calculate_line_index(tile_data_index: u16, row_offset: u8, y_flip: bool) -> u
     tile_data_index + byte_offset
 }
 
-pub fn get_tile_line_bytes(gpu_state: &GpuState, tile_data_index: u16, row_offset: u8, y_flip: bool) -> (u8, u8) {
+pub fn get_tile_line_bytes(gpu_state: &GpuState, tile_data_index: u16, row_offset: u8, y_flip: bool, from_bank_one: bool) -> (u8, u8) {
     let line_index = calculate_line_index(tile_data_index, row_offset, y_flip);
-    let lsb_byte = gpu_state.video_ram[line_index as usize];
-    let msb_byte = gpu_state.video_ram[(line_index + 1) as usize];
+    let calculated_line_index = if from_bank_one { line_index + 0x2000 } else { line_index };
+    let lsb_byte = gpu_state.video_ram[calculated_line_index as usize];
+    let msb_byte = gpu_state.video_ram[(calculated_line_index + 1) as usize];
     (lsb_byte, msb_byte)
 }
 

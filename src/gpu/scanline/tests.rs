@@ -22,6 +22,10 @@ fn write_tile_to_bg_memory(emulator: &mut Emulator, index: u16, tile_bytes: [u8;
     write_tile_to_memory(emulator, 0x1000, index, tile_bytes)
 }
 
+fn write_tile_to_bg_memory_in_bank_one(emulator: &mut Emulator, index: u16, tile_bytes: [u8; 16]) {
+    write_tile_to_memory(emulator, 0x3000, index, tile_bytes)
+}
+
 fn write_tile_to_obj_memory(emulator: &mut Emulator, index: u16, tile_bytes: [u8; 16]) {
     write_tile_to_memory(emulator, 0x0000, index, tile_bytes)
 }
@@ -184,6 +188,44 @@ fn should_render_multiple_tile_lines_in_color_mode() {
     write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
 
     write_tile_attributes(&mut emulator, 0, 0b00000001);
+
+    emulator.gpu.registers.lcdc = 0b10000011;
+
+    for _ in 0..8 {
+        write_scanline(&mut emulator);
+        emulator.gpu.registers.ly += 1;
+    }
+
+    let frame_buffer = &emulator.gpu.frame_buffer;
+
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 0))
+        .has_pixels(&[RED, BLUE, BLACK, BLACK, BLACK, BLACK, BLUE, RED]);
+
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 1))
+        .has_pixels(&[RED, BLACK, RED, RED, RED, RED, BLACK, RED]);
+
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 2))
+        .has_pixels(&[RED, BLACK, RED, RED, RED, RED, BLACK, RED]);
+
+    assert_that(frame_buffer)
+        .at_starting_coordinates((0, 7))
+        .has_pixels(&[RED, BLUE, BLACK, BLACK, BLACK, BLUE, RED, RED]); 
+}
+
+#[test]
+fn should_render_multiple_tile_lines_in_color_mode_from_bank_one() {
+    let mut emulator = initialize_screenless_emulator();
+    
+    emulator.mode = Mode::CGB;
+
+    initialize_color_palettes(&mut emulator.gpu.registers.palettes);
+    
+    write_tile_to_bg_memory_in_bank_one(&mut emulator, 0, SAMPLE_TILE_A);
+
+    write_tile_attributes(&mut emulator, 0, 0b00001001);
 
     emulator.gpu.registers.lcdc = 0b10000011;
 
@@ -417,7 +459,7 @@ fn should_render_tile_line_with_sprite() {
         x_flip: false,
         dmg_palette: false,
         oam_index: 0,
-        cgb_bank: 0,
+        cgb_from_bank_one: false,
         cgb_palette: 0
     });
 
@@ -451,7 +493,7 @@ fn should_render_sprite_with_white_background_if_background_and_window_enabled_i
         x_flip: false,
         dmg_palette: false,
         oam_index: 0,
-        cgb_bank: 0,
+        cgb_from_bank_one: false,
         cgb_palette: 0
     });
 
@@ -485,7 +527,7 @@ fn should_render_tile_line_with_sprite_having_negative_y_pos() {
         x_flip: false,
         dmg_palette: false,
         oam_index: 0,
-        cgb_bank: 0,
+        cgb_from_bank_one: false,
         cgb_palette: 0
     });
 
@@ -519,7 +561,7 @@ fn should_flip_sprite_on_x_axis() {
         x_flip: true,
         dmg_palette: false,
         oam_index: 0,
-        cgb_bank: 0,
+        cgb_from_bank_one: false,
         cgb_palette: 0
     });
 
@@ -553,7 +595,7 @@ fn should_flip_sprite_on_y_axis() {
         x_flip: false,
         dmg_palette: false,
         oam_index: 0,
-        cgb_bank: 0,
+        cgb_from_bank_one: false,
         cgb_palette: 0
     });
     
@@ -588,7 +630,7 @@ fn should_render_eight_by_sixteen_sprite() {
         x_flip: false,
         dmg_palette: false,
         oam_index: 0,
-        cgb_bank: 0,
+        cgb_from_bank_one: false,
         cgb_palette: 0
     });
 
@@ -629,7 +671,7 @@ fn should_prioritize_non_white_background_colors_when_sprite_priority_flag_set_t
         x_flip: false,
         dmg_palette: false,
         oam_index: 0,
-        cgb_bank: 0,
+        cgb_from_bank_one: false,
         cgb_palette: 0
     });
 
@@ -663,7 +705,7 @@ fn should_prioritize_background_colors_when_lcdc_bit_1_is_off() {
         x_flip: false,
         dmg_palette: false,
         oam_index: 0,
-        cgb_bank: 0,
+        cgb_from_bank_one: false,
         cgb_palette: 0
     });
     

@@ -1,7 +1,7 @@
 use crate::emulator::{Emulator, Mode};
 use crate::gpu::colors::{as_cgb_obj_color_rgb, as_obj_color_rgb, WHITE, Color};
 use crate::gpu::utils::{get_obj_enabled_mode, get_obj_size_mode, get_tile_line_bytes};
-use crate::utils::{get_bit, is_bit_set};
+use crate::utils::is_bit_set;
 
 const SPRITE_LIMIT_PER_SCANLINE: usize = 10;
 const TOTAL_SPRITES: u16 = 40;
@@ -21,7 +21,7 @@ pub struct Sprite {
     pub x_flip: bool,
     pub dmg_palette: bool,
     pub oam_index: u16,
-    pub cgb_bank: u8,
+    pub cgb_from_bank_one: bool,
     pub cgb_palette: u8
 }
 
@@ -79,7 +79,7 @@ fn pull_sprite(emulator: &Emulator, sprite_number: u16) -> Sprite {
         x_flip: is_bit_set(attributes, 5),
         dmg_palette: is_bit_set(attributes, 4),
         oam_index,
-        cgb_bank: get_bit(attributes, 3) as u8,
+        cgb_from_bank_one: is_bit_set(attributes, 3),
         cgb_palette: attributes & 0b111
     }
 }
@@ -142,13 +142,13 @@ pub fn calculate_sprite_pixel_color(emulator: &Emulator, sprite: &Sprite, x: u8,
     let column_offset = x_int - sprite.x_pos;
 
     if column_offset >= 0 {
-        let (lsb_byte, msb_byte) = get_tile_line_bytes(&emulator.gpu, tile_data_index, row_offset, sprite.y_flip);
-
         if (sprite.priority && bg_color == WHITE) || !sprite.priority {
             if emulator.mode == Mode::CGB {
+                let (lsb_byte, msb_byte) = get_tile_line_bytes(&emulator.gpu, tile_data_index, row_offset, sprite.y_flip, sprite.cgb_from_bank_one);
                 as_cgb_obj_color_rgb(&emulator.gpu.registers.palettes, column_offset as u8, sprite.cgb_palette, msb_byte, lsb_byte, sprite.x_flip)
             }
             else {
+                let (lsb_byte, msb_byte) = get_tile_line_bytes(&emulator.gpu, tile_data_index, row_offset, sprite.y_flip, false);
                 let palette = get_sprite_palette(sprite.dmg_palette, emulator.gpu.registers.palettes.obp0, emulator.gpu.registers.palettes.obp1);
                 as_obj_color_rgb(column_offset as u8, palette, msb_byte, lsb_byte, sprite.x_flip) 
             }
