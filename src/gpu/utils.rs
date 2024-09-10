@@ -42,7 +42,7 @@ pub fn get_lcd_enabled_mode(lcdc: u8) -> bool {
     is_bit_set(lcdc, LCDC_ENABLED_INDEX)
 }
 
-fn calculate_line_index(tile_data_index: u16, row_offset: u8, y_flip: bool) -> u16 {
+fn calculate_line_index(tile_data_index: u16, row_offset: u8, y_flip: bool, from_bank_one: bool) -> u16 {
     let byte_offset = if y_flip {
         0xF - ((row_offset * 2) + 1)
     }
@@ -50,14 +50,14 @@ fn calculate_line_index(tile_data_index: u16, row_offset: u8, y_flip: bool) -> u
         row_offset * 2
     } as u16;
 
-    tile_data_index + byte_offset
+    let index = tile_data_index + byte_offset;
+    if from_bank_one { index + 0x2000 } else { index }
 }
 
 pub fn get_tile_line_bytes(gpu_state: &GpuState, tile_data_index: u16, row_offset: u8, y_flip: bool, from_bank_one: bool) -> (u8, u8) {
-    let line_index = calculate_line_index(tile_data_index, row_offset, y_flip);
-    let calculated_line_index = if from_bank_one { line_index + 0x2000 } else { line_index };
-    let lsb_byte = gpu_state.video_ram[calculated_line_index as usize];
-    let msb_byte = gpu_state.video_ram[(calculated_line_index + 1) as usize];
+    let line_index = calculate_line_index(tile_data_index, row_offset, y_flip, from_bank_one);
+    let lsb_byte = gpu_state.video_ram[line_index as usize];
+    let msb_byte = gpu_state.video_ram[(line_index + 1) as usize];
     (lsb_byte, msb_byte)
 }
 
