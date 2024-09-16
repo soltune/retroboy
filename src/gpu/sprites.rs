@@ -1,5 +1,6 @@
 use crate::emulator::{Emulator, Mode};
-use crate::gpu::colors::{as_cgb_obj_color_rgb, as_obj_color_rgb, WHITE, Color};
+use crate::gpu::colors::{as_cgb_obj_color_rgb, as_obj_color_rgb, Color};
+use crate::gpu::prioritization::SpritePixel;
 use crate::gpu::utils::{get_obj_enabled_mode, get_obj_size_mode, get_tile_line_bytes};
 use crate::utils::is_bit_set;
 
@@ -26,11 +27,12 @@ pub struct Sprite {
 }
 
 impl Sprite {
-    fn has_higher_priority_than(&self, compared_sprite: &Sprite) -> bool {
+    fn has_higher_priority_than(&self, compared_sprite: &Sprite, cgb_mode: bool) -> bool {
         let has_lower_x = self.x_pos < compared_sprite.x_pos;
         let has_same_x = self.x_pos == compared_sprite.x_pos;
         let located_earlier_in_oam = self.oam_index < compared_sprite.oam_index;
-        has_lower_x || (has_same_x && located_earlier_in_oam)
+        (cgb_mode && located_earlier_in_oam) ||
+            (!cgb_mode && (has_lower_x || (has_same_x && located_earlier_in_oam)))
     }
 }
 
@@ -129,7 +131,7 @@ fn lookup_possible_sprites(emulator: &Emulator, x: u8, y: u8, eight_by_sixteen_m
     found_sprites
 }
 
-pub fn calculate_sprite_pixel_color(emulator: &Emulator, sprite: &Sprite, x: u8, y: u8, bg_color: Color) -> Option<Color> {
+pub fn calculate_sprite_pixel_color(emulator: &Emulator, sprite: &Sprite, x: u8, y: u8) -> Option<Color> {
     let y_int = y as i16;
     let x_int  = x as i16;
 
@@ -142,19 +144,14 @@ pub fn calculate_sprite_pixel_color(emulator: &Emulator, sprite: &Sprite, x: u8,
     let column_offset = x_int - sprite.x_pos;
 
     if column_offset >= 0 {
-        if (sprite.priority && bg_color == WHITE) || !sprite.priority {
-            if emulator.mode == Mode::CGB {
-                let (lsb_byte, msb_byte) = get_tile_line_bytes(&emulator.gpu, tile_data_index, row_offset, sprite.y_flip, sprite.cgb_from_bank_one);
-                as_cgb_obj_color_rgb(&emulator.gpu.registers.palettes, column_offset as u8, sprite.cgb_palette, msb_byte, lsb_byte, sprite.x_flip)
-            }
-            else {
-                let (lsb_byte, msb_byte) = get_tile_line_bytes(&emulator.gpu, tile_data_index, row_offset, sprite.y_flip, false);
-                let palette = get_sprite_palette(sprite.dmg_palette, emulator.gpu.registers.palettes.obp0, emulator.gpu.registers.palettes.obp1);
-                as_obj_color_rgb(column_offset as u8, palette, msb_byte, lsb_byte, sprite.x_flip) 
-            }
+        if emulator.mode == Mode::CGB {
+            let (lsb_byte, msb_byte) = get_tile_line_bytes(&emulator.gpu, tile_data_index, row_offset, sprite.y_flip, sprite.cgb_from_bank_one);
+            as_cgb_obj_color_rgb(&emulator.gpu.registers.palettes, column_offset as u8, sprite.cgb_palette, msb_byte, lsb_byte, sprite.x_flip)
         }
         else {
-           None
+            let (lsb_byte, msb_byte) = get_tile_line_bytes(&emulator.gpu, tile_data_index, row_offset, sprite.y_flip, false);
+            let palette = get_sprite_palette(sprite.dmg_palette, emulator.gpu.registers.palettes.obp0, emulator.gpu.registers.palettes.obp1);
+            as_obj_color_rgb(column_offset as u8, palette, msb_byte, lsb_byte, sprite.x_flip) 
         }
     }
     else {
@@ -162,8 +159,9 @@ pub fn calculate_sprite_pixel_color(emulator: &Emulator, sprite: &Sprite, x: u8,
     } 
 }
 
-fn resolve_highest_priority_pixel_color(emulator: &Emulator, sprites: Vec<&Sprite>, x: u8, y: u8, bg_color: Color) -> Option<Color> {
-    let mut maybe_highest_priority: Option<(&Sprite, Option<Color>)> = None;
+fn resolve_highest_priority_sprite<'a>(emulator: &Emulator, sprites: Vec<&'a Sprite>, x: u8, y: u8) -> Option<(&'a Sprite, Option<Color>)> {
+    let mut maybe_highest_priority: Option<(&'a Sprite, Option<Color>)> = None;
+    let cgb_mode = emulator.mode == Mode::CGB;
 
     for sprite in sprites {
         match maybe_highest_priority {
@@ -171,10 +169,10 @@ fn resolve_highest_priority_pixel_color(emulator: &Emulator, sprites: Vec<&Sprit
                 let current_highest_priority_sprite = highest_priority.0;
                 let maybe_current_highest_priority_color = highest_priority.1;
 
-                let maybe_color = calculate_sprite_pixel_color(emulator, sprite, x, y, bg_color);
+                let maybe_color = calculate_sprite_pixel_color(emulator, sprite, x, y);
  
                 match (maybe_color, maybe_current_highest_priority_color) {
-                    (Some(color), Some(_)) if sprite.has_higher_priority_than(current_highest_priority_sprite) => {
+                    (Some(color), Some(_)) if sprite.has_higher_priority_than(current_highest_priority_sprite, cgb_mode) => {
                         maybe_highest_priority = Some((sprite, Some(color)));
                     }
                     (Some(color), None) => {
@@ -184,13 +182,13 @@ fn resolve_highest_priority_pixel_color(emulator: &Emulator, sprites: Vec<&Sprit
                 }
             }
             None => {
-                let maybe_color = calculate_sprite_pixel_color(emulator, sprite, x, y, bg_color);
+                let maybe_color = calculate_sprite_pixel_color(emulator, sprite, x, y);
                 maybe_highest_priority = Some((sprite, maybe_color));
             }
         }
     }
 
-    maybe_highest_priority.map(|(_, color)| color).flatten()
+    maybe_highest_priority
 }
 
 fn calculate_tile_index(sprite: &Sprite, y_int: i16, eight_by_sixteen_mode: bool) -> u8 {
@@ -205,7 +203,7 @@ fn calculate_tile_index(sprite: &Sprite, y_int: i16, eight_by_sixteen_mode: bool
     }
 }
 
-pub fn read_sprite_pixel_color(emulator: &Emulator, x: u8, y: u8, bg_color: Color) -> Option<Color> {
+pub fn read_sprite_pixel_color(emulator: &Emulator, x: u8, y: u8) -> Option<SpritePixel> {
     let lcdc = emulator.gpu.registers.lcdc;
 
     let eight_by_sixteen_mode = get_obj_size_mode(lcdc);
@@ -214,7 +212,13 @@ pub fn read_sprite_pixel_color(emulator: &Emulator, x: u8, y: u8, bg_color: Colo
     let possible_sprites = lookup_possible_sprites(emulator, x, y, eight_by_sixteen_mode);
     
     if sprites_enabled {
-        resolve_highest_priority_pixel_color(emulator, possible_sprites, x, y, bg_color)
+        match resolve_highest_priority_sprite(emulator, possible_sprites, x, y) {
+            Some((highest_priority_sprite, maybe_color)) => {
+                let prioritize_bg = highest_priority_sprite.priority;
+                maybe_color.map(|color| SpritePixel { color, prioritize_bg })
+            },
+            _ => None
+        }
     }
     else {
         None

@@ -278,6 +278,7 @@ mod constants;
 mod line_addressing;
 mod background;
 mod window;
+mod prioritization;
 pub mod scanline;
 pub mod sprites;
 pub mod utils;
