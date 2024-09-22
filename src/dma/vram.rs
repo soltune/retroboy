@@ -1,4 +1,4 @@
-use crate::emulator::Emulator;
+use crate::emulator::{is_cgb, Emulator};
 use crate::utils::is_bit_set;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -13,7 +13,10 @@ pub struct VRAMDMAState {
     pub hdma2: u8,
     pub hdma3: u8,
     pub hdma4: u8,
-    pub hdma5: u8
+    pub offset: u8,
+    pub transfer_length: u8,
+    pub transfer_mode: VRAMTransferMode,
+    pub in_progress: bool
 }
 
 pub fn initialize_vram_dma() -> VRAMDMAState {
@@ -22,51 +25,84 @@ pub fn initialize_vram_dma() -> VRAMDMAState {
         hdma2: 0x0,
         hdma3: 0x0,
         hdma4: 0x0,
-        hdma5: 0x0
+        offset: 0x0,
+        transfer_length: 0x0,
+        transfer_mode: VRAMTransferMode::GeneralPurpose,
+        in_progress: false
     }
 }
 
+const VRAM_TRANSFER_INDEX: u8 = 7;
+
 pub fn set_hdma1(emulator: &mut Emulator, value: u8) {
-    emulator.dma.vram.hdma1 = value;
+    if is_cgb(emulator) {
+        emulator.dma.vram.hdma1 = value;
+    }
 }
 
 pub fn set_hdma2(emulator: &mut Emulator, value: u8) {
-    emulator.dma.vram.hdma2 = value;
-}
-
-pub fn get_vram_dma_source(emulator: &Emulator) -> u16 {
-    ((emulator.dma.vram.hdma1 as u16) << 8) | ((emulator.dma.vram.hdma2 as u16) & 0b11110000)
+    if is_cgb(emulator) {
+        emulator.dma.vram.hdma2 = value;
+    }
 }
 
 pub fn set_hdma3(emulator: &mut Emulator, value: u8) {
-    emulator.dma.vram.hdma3 = value;
+    if is_cgb(emulator) {
+        emulator.dma.vram.hdma3 = value;
+    }
 }
 
 pub fn set_hdma4(emulator: &mut Emulator, value: u8) {
-    emulator.dma.vram.hdma4 = value;
+    if is_cgb(emulator) {
+        emulator.dma.vram.hdma4 = value;
+    }
 }
 
 pub fn set_hdma5(emulator: &mut Emulator, value: u8) {
-    emulator.dma.vram.hdma5 = value;
+    if is_cgb(emulator) {
+        if emulator.dma.vram.in_progress && !is_bit_set(value, VRAM_TRANSFER_INDEX) {
+            emulator.dma.vram.in_progress = false;
+       }
+       else {
+           emulator.dma.vram.transfer_length = value & 0b01111111;
+   
+           let transfer_bit_set = is_bit_set(value, VRAM_TRANSFER_INDEX);
+           let mode = if transfer_bit_set { VRAMTransferMode::HBlank } else { VRAMTransferMode::GeneralPurpose };
+           emulator.dma.vram.transfer_mode = mode;
+   
+           emulator.dma.vram.in_progress = true;
+       }
+    }
 }
 
-pub fn get_vram_dma_destination(emulator: &Emulator) -> u16 {
+pub fn get_hdma5(emulator: &Emulator) -> u8 {
+    if is_cgb(emulator) {
+        if emulator.dma.vram.in_progress {
+            emulator.dma.vram.transfer_length & 0b01111111
+        } else if emulator.dma.vram.transfer_length == 0 {
+            0xFF
+        } else {
+            0b10000000 | (emulator.dma.vram.transfer_length & 0b01111111)
+        }
+    }
+    else {
+        0xFF
+    }
+}
+
+fn get_vram_dma_source(emulator: &Emulator) -> u16 {
+    ((emulator.dma.vram.hdma1 as u16) << 8) | ((emulator.dma.vram.hdma2 as u16) & 0b11110000)
+}
+
+fn get_vram_dma_destination(emulator: &Emulator) -> u16 {
     let offset = (((emulator.dma.vram.hdma3 as u16) & 0b00011111) << 8) |
         ((emulator.dma.vram.hdma4 as u16) & 0b11110000);
 
     0x8000 + offset
 }
 
-const VRAM_TRANSFER_INDEX: u8 = 7;
-
-pub fn get_vram_dma_transfer_mode(emulator: &Emulator) -> VRAMTransferMode {
-    let transfer_bit_set = is_bit_set(emulator.dma.vram.hdma5, VRAM_TRANSFER_INDEX);
-    if transfer_bit_set { VRAMTransferMode::HBlank } else { VRAMTransferMode::GeneralPurpose }
-}
-
-pub fn calculate_vram_dma_transfer_length(emulator: &Emulator) -> u16 {
-    let length = (emulator.dma.vram.hdma5 & 0b01111111) as u16;
-    (length + 1) * 0x10
+fn calculate_vram_dma_transfer_length(emulator: &Emulator) -> u16 {
+    (emulator.dma.vram.transfer_length as u16 + 1) * 0x10
 }
 
 pub fn step(emulator: &mut Emulator) {
@@ -75,12 +111,13 @@ pub fn step(emulator: &mut Emulator) {
 
 #[cfg(test)]
 mod tests {
-    use crate::emulator::initialize_screenless_emulator;
+    use crate::emulator::{initialize_screenless_emulator, Mode};
     use super::*;
 
     #[test]
     fn should_calculate_vram_dma_source() {
         let mut emulator = initialize_screenless_emulator();
+        emulator.mode = Mode::CGB;
         set_hdma1(&mut emulator, 0x71);
         set_hdma2(&mut emulator, 0xA2);
         let vram_source = get_vram_dma_source(&emulator);
@@ -90,6 +127,7 @@ mod tests {
     #[test]
     fn should_calculate_vram_dma_destination() {
         let mut emulator = initialize_screenless_emulator();
+        emulator.mode = Mode::CGB;
         set_hdma3(&mut emulator, 0x71);
         set_hdma4(&mut emulator, 0xA2);
         let vram_destination = get_vram_dma_destination(&emulator);
@@ -99,24 +137,55 @@ mod tests {
     #[test]
     fn should_get_general_purpose_for_vram_transfer_mode() {
         let mut emulator = initialize_screenless_emulator();
+        emulator.mode = Mode::CGB;
         set_hdma5(&mut emulator, 0x71);
-        let mode = get_vram_dma_transfer_mode(&emulator);
-        assert_eq!(mode, VRAMTransferMode::GeneralPurpose);
+        assert_eq!(emulator.dma.vram.transfer_mode, VRAMTransferMode::GeneralPurpose);
     }
 
     #[test]
     fn should_get_hblank_for_vram_transfer_mode() {
         let mut emulator = initialize_screenless_emulator();
+        emulator.mode = Mode::CGB;
         set_hdma5(&mut emulator, 0xF1);
-        let mode = get_vram_dma_transfer_mode(&emulator);
-        assert_eq!(mode, VRAMTransferMode::HBlank);
+        assert_eq!(emulator.dma.vram.transfer_mode, VRAMTransferMode::HBlank);
     }
 
     #[test]
     fn should_calculate_vram_dma_transfer_length() {
         let mut emulator = initialize_screenless_emulator();
+        emulator.mode = Mode::CGB;
         set_hdma5(&mut emulator, 0xF1);
         let length = calculate_vram_dma_transfer_length(&emulator);
         assert_eq!(length, 0x720);
+    }
+
+    #[test]
+    fn should_get_hdma5_when_transfer_is_not_active() {
+        let mut emulator = initialize_screenless_emulator();
+        emulator.mode = Mode::CGB;
+        let hdma5 = get_hdma5(&emulator);
+        assert_eq!(hdma5, 0xFF);
+    }
+
+    #[test]
+    fn should_get_hdma5_when_transfer_is_active() {
+        let mut emulator = initialize_screenless_emulator();
+        emulator.mode = Mode::CGB;
+        emulator.dma.vram.in_progress = true;
+        emulator.dma.vram.transfer_length = 0b01010110;
+        let hdma5 = get_hdma5(&emulator);
+        assert_eq!(hdma5, 0b01010110);
+    }
+
+    #[test]
+    fn should_terminate_active_vram_dma_transfer() {
+        let mut emulator = initialize_screenless_emulator();
+        emulator.mode = Mode::CGB;
+        emulator.dma.vram.in_progress = true;
+        emulator.dma.vram.transfer_length = 0b01010110;
+        set_hdma5(&mut emulator, 0x0);
+        assert_eq!(emulator.dma.vram.in_progress, false);
+        let hdma5 = get_hdma5(&emulator);
+        assert_eq!(hdma5, 0b11010110);
     }
 }
