@@ -26,7 +26,7 @@ pub fn add_value_to_register_pair(emulator: &mut Emulator, register_pair: Regist
     microops::set_flag_h(&mut emulator.cpu, (value & 0xFFF) + (word & 0xFFF) > 0xFFF);
     microops::set_flag_c(&mut emulator.cpu, (value as u32 + word as u32) > 0xFFFF);
 
-    microops::run_extra_machine_cycle(emulator);
+    microops::step_one_machine_cycle(emulator);
 }
 
 pub fn add_value_and_carry_to_register(cpu_state: &mut CpuState, register: Register, value: u8) {
@@ -163,14 +163,14 @@ pub fn increment_register_pair(emulator: &mut Emulator, register_pair: RegisterP
     let word = microops::read_from_register_pair(&mut emulator.cpu, &register_pair);
     let sum = word.wrapping_add(1);
     microops::store_in_register_pair(&mut emulator.cpu, register_pair, sum);
-    microops::run_extra_machine_cycle(emulator);
+    microops::step_one_machine_cycle(emulator);
 }
 
 pub fn decrement_register_pair(emulator: &mut Emulator, register_pair: RegisterPair) {
     let word = microops::read_from_register_pair(&mut emulator.cpu, &register_pair);
     let sum = word.wrapping_sub(1);
     microops::store_in_register_pair(&mut emulator.cpu, register_pair, sum);
-    microops::run_extra_machine_cycle(emulator);
+    microops::step_one_machine_cycle(emulator);
 }
 
 pub fn bcd_adjust(cpu_state: &mut CpuState) {

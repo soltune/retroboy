@@ -124,7 +124,7 @@ fn execute_opcode(emulator: &mut Emulator) {
             let byte = read_next_instruction_byte(emulator) as i8;
             let original_program_counter = emulator.cpu.registers.program_counter;
             emulator.cpu.registers.program_counter = original_program_counter.wrapping_add_signed(byte.into());
-            microops::run_extra_machine_cycle(emulator);
+            microops::step_one_machine_cycle(emulator);
         },
         0x19 => {
             let word = microops::read_from_register_pair(&mut emulator.cpu, &REGISTER_DE);
@@ -207,7 +207,7 @@ fn execute_opcode(emulator: &mut Emulator) {
         },
         0x33 => {
             emulator.cpu.registers.stack_pointer = emulator.cpu.registers.stack_pointer.wrapping_add(1);
-            microops::run_extra_machine_cycle(emulator);
+            microops::step_one_machine_cycle(emulator);
         },
         0x34 =>
             alu::increment_memory_byte(emulator),
@@ -234,7 +234,7 @@ fn execute_opcode(emulator: &mut Emulator) {
         },
         0x3B => {
             emulator.cpu.registers.stack_pointer = emulator.cpu.registers.stack_pointer.wrapping_sub(1);
-            microops::run_extra_machine_cycle(emulator);
+            microops::step_one_machine_cycle(emulator);
         },
         0x3C =>
             alu::increment_register(&mut emulator.cpu, Register::A),
@@ -687,7 +687,7 @@ fn execute_opcode(emulator: &mut Emulator) {
             jumps::conditional_jump_using_immediate_word(emulator, !microops::is_z_flag_set(&emulator.cpu)),
         0xC3 => {
             emulator.cpu.registers.program_counter = read_next_instruction_word(emulator);
-            microops::run_extra_machine_cycle(emulator);
+            microops::step_one_machine_cycle(emulator);
         },
         0xC4 =>
             jumps::conditional_call_using_immediate_word(emulator, !microops::is_z_flag_set(&emulator.cpu)),
@@ -789,8 +789,8 @@ fn execute_opcode(emulator: &mut Emulator) {
 
             emulator.cpu.registers.stack_pointer = sum;
 
-            microops::run_extra_machine_cycle(emulator);
-            microops::run_extra_machine_cycle(emulator);
+            microops::step_one_machine_cycle(emulator);
+            microops::step_one_machine_cycle(emulator);
         },
         0xE9 => {
             let address = microops::read_from_register_pair(&mut emulator.cpu, &REGISTER_HL);
@@ -849,12 +849,12 @@ fn execute_opcode(emulator: &mut Emulator) {
             microops::set_flag_h(&mut emulator.cpu, (sum & 0xF) < (stack_pointer & 0xF));
             microops::set_flag_c(&mut emulator.cpu, (sum & 0xFF) < (stack_pointer & 0xFF));
 
-            microops::run_extra_machine_cycle(emulator);
+            microops::step_one_machine_cycle(emulator);
         },
         0xF9 => {
             let word = microops::read_from_register_pair(&mut emulator.cpu, &REGISTER_HL);
             emulator.cpu.registers.stack_pointer = word;
-            microops::run_extra_machine_cycle(emulator);
+            microops::step_one_machine_cycle(emulator);
         },
         0xFA => {
             let address = read_next_instruction_word(emulator);

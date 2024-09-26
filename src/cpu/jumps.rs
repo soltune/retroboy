@@ -6,7 +6,7 @@ use crate::emulator::Emulator;
 fn conditional_jump(emulator: &mut Emulator, new_address: u16, condition: bool) {
     if condition {
         emulator.cpu.registers.program_counter = new_address;
-        microops::run_extra_machine_cycle(emulator);
+        microops::step_one_machine_cycle(emulator);
     }   
 }
 
@@ -41,11 +41,11 @@ pub fn conditional_call_using_immediate_word(emulator: &mut Emulator, condition:
 pub fn stack_return(emulator: &mut Emulator) {
     let word = loads::pop_word_from_stack(emulator);
     emulator.cpu.registers.program_counter = word;
-    microops::run_extra_machine_cycle(emulator);
+    microops::step_one_machine_cycle(emulator);
 }
 
 pub fn conditional_stack_return(emulator: &mut Emulator, condition: bool) {
-    microops::run_extra_machine_cycle(emulator);
+    microops::step_one_machine_cycle(emulator);
     if condition {
         stack_return(emulator);
     }

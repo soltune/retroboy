@@ -4,7 +4,7 @@ use crate::emulator::Emulator;
 use crate::emulator;
 use crate::utils::T_CYCLE_INCREMENT;
 
-fn step_one_machine_cycle(emulator: &mut Emulator) {
+pub fn step_one_machine_cycle(emulator: &mut Emulator) {
     emulator.cpu.clock.total_clock_cycles = emulator.cpu.clock.total_clock_cycles.wrapping_add(T_CYCLE_INCREMENT as u32);
     emulator.cpu.clock.instruction_clock_cycles = emulator.cpu.clock.instruction_clock_cycles.wrapping_add(T_CYCLE_INCREMENT);
     emulator::sync(emulator);
@@ -128,8 +128,4 @@ pub fn is_h_flag_set(cpu_state: &CpuState) -> bool {
 pub fn is_c_flag_set(cpu_state: &CpuState) -> bool {
     let value = read_from_register(cpu_state, &Register::F);
     (value & 0x10) == 0x10
-}
-
-pub fn run_extra_machine_cycle(emulator: &mut Emulator) {
-    step_one_machine_cycle(emulator);
 }
