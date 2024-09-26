@@ -3,6 +3,7 @@ use crate::apu::{initialize_apu, ApuState};
 use crate::cpu::{self, at_end_of_boot_rom, initialize_cpu, timers, CpuState};
 use crate::cpu::interrupts::InterruptRegisters;
 use crate::cpu::timers::TimerRegisters;
+use crate::cpu::hdma::{HDMAState, initialize_hdma};
 use crate::dma;
 use crate::dma::{initialize_dma, DMAState};
 use crate::gpu::{self, initialize_gpu, GpuState};
@@ -27,6 +28,7 @@ pub struct Emulator {
     pub keys: KeyState,
     pub apu: ApuState,
     pub dma: DMAState,
+    pub hdma: HDMAState,
     pub render: fn(&[u8]),
     pub mode: Mode
 }
@@ -52,6 +54,7 @@ pub fn initialize_emulator(render: fn(&[u8])) -> Emulator {
         keys: initialize_keys(),
         apu: initialize_apu(),
         dma: initialize_dma(),
+        hdma: initialize_hdma(),
         render,
         mode: Mode::DMG
     }

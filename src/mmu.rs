@@ -1,5 +1,6 @@
 use crate::bios::DMG_BOOTIX;
 use crate::{apu, dma, gpu};
+use crate::cpu::hdma;
 use crate::emulator::Emulator;
 use crate::keys;
 
@@ -69,7 +70,7 @@ pub fn initialize_memory() -> Memory {
 
 fn address_accessible(emulator: &Emulator, address: u16) -> bool {
     let accessing_oam = address >= 0xFE00 && address < 0xFEA0;
-    (emulator.dma.oam.in_progress && !accessing_oam) || !emulator.dma.oam.in_progress
+    (emulator.dma.in_progress && !accessing_oam) || !emulator.dma.in_progress
 }
 
 pub fn read_byte(emulator: &Emulator, address: u16) -> u8 {
@@ -124,7 +125,7 @@ pub fn read_byte(emulator: &Emulator, address: u16) -> u8 {
                     0x43 => emulator.gpu.registers.scx,
                     0x44 => emulator.gpu.registers.ly,
                     0x45 => emulator.gpu.registers.lyc,
-                    0x46 => dma::oam::get_source(emulator),
+                    0x46 => dma::get_source(emulator),
                     0x47 => emulator.gpu.registers.palettes.bgp,
                     0x48 => emulator.gpu.registers.palettes.obp0,
                     0x49 => emulator.gpu.registers.palettes.obp1,
@@ -241,15 +242,15 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
                     0x43 => emulator.gpu.registers.scx = value,
                     0x44 => emulator.gpu.registers.ly = value,
                     0x45 => emulator.gpu.registers.lyc = value,
-                    0x46 => dma::oam::start_dma(emulator, value),
+                    0x46 => dma::start_dma(emulator, value),
                     0x47 => emulator.gpu.registers.palettes.bgp = value,
                     0x48 => emulator.gpu.registers.palettes.obp0 = value,
                     0x49 => emulator.gpu.registers.palettes.obp1 = value,
-                    0x51 => dma::vram::set_hdma1(emulator, value),
-                    0x52 => dma::vram::set_hdma2(emulator, value),
-                    0x53 => dma::vram::set_hdma3(emulator, value),
-                    0x54 => dma::vram::set_hdma4(emulator, value),
-                    0x55 => dma::vram::set_hdma5(emulator, value),
+                    0x51 => hdma::set_hdma1(emulator, value),
+                    0x52 => hdma::set_hdma2(emulator, value),
+                    0x53 => hdma::set_hdma3(emulator, value),
+                    0x54 => hdma::set_hdma4(emulator, value),
+                    0x55 => hdma::set_hdma5(emulator, value),
                     0x4A => emulator.gpu.registers.wy = value,
                     0x4B => emulator.gpu.registers.wx = value,
                     0x4F => gpu::set_cgb_vbk(emulator, value),

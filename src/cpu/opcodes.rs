@@ -2,6 +2,7 @@ use crate::cpu::{CpuState, Register, REGISTER_AF, REGISTER_BC, REGISTER_DE, REGI
 use crate::cpu::microops;
 use crate::cpu::alu;
 use crate::cpu::bitops;
+use crate::cpu::hdma;
 use crate::cpu::interrupts;
 use crate::cpu::jumps;
 use crate::cpu::loads;
@@ -35,6 +36,16 @@ fn reset_instruction_clock_cycles(cpu: &mut CpuState) {
 }
 
 pub fn step(emulator: &mut Emulator) {
+    if emulator.hdma.in_progress {
+        hdma::step(emulator);
+    }
+
+    execute_opcode(emulator);
+
+    interrupts::step(emulator);
+}
+
+fn execute_opcode(emulator: &mut Emulator) {
     reset_instruction_clock_cycles(&mut emulator.cpu);
 
     let opcode = read_next_instruction_byte(emulator);
@@ -865,9 +876,6 @@ pub fn step(emulator: &mut Emulator) {
         _ =>
             (),
     }
-
-    interrupts::step(emulator);
-
 }
 
 fn execute_cb_opcode(emulator: &mut Emulator) {
