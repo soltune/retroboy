@@ -147,7 +147,7 @@ pub fn step(emulator: &mut Emulator) {
             transfer_block(emulator, source, destination);
             emulator.hdma.hblank_started = false;
         }
-        else if !is_hblank_mode{
+        else if !is_hblank_mode {
             while !emulator.hdma.completed {
                 transfer_block(emulator, source, destination);
             }
