@@ -1,5 +1,6 @@
 use crate::emulator::Emulator;
 use crate::emulator::Mode;
+use crate::cpu::hdma;
 use crate::gpu::colors::{initialize_palettes, Palettes};
 use crate::gpu::constants::{GB_SCREEN_HEIGHT, GB_SCREEN_WIDTH, BYTES_PER_COLOR};
 use crate::gpu::scanline::write_scanline;
@@ -130,6 +131,7 @@ pub fn step(emulator: &mut Emulator) {
             if emulator.gpu.mode_clock >= VRAM_TIME {
                 emulator.gpu.mode_clock = 0;
                 update_mode(emulator, HBLANK_MODE);
+                hdma::set_hblank_started(emulator, true);
                 write_scanline(emulator);
             }
         }
