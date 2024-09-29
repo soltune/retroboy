@@ -1,4 +1,5 @@
 use crate::emulator::initialize_screenless_emulator;
+use crate::emulator::Mode;
 
 use super::*;
 
@@ -36,9 +37,13 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.memory.working_ram[0] = 0xF1;
     emulator.memory.working_ram[1] = 0x22;
     emulator.memory.working_ram[2] = 0x2B;
+    
+    emulator.memory.working_ram[0x1001] = 0x11;
 
     emulator.memory.working_ram[0x15F0] = 0x2B;
     emulator.memory.working_ram[0x15F1] = 0x7C;
+
+    emulator.memory.working_ram[0x2001] = 0x22;
 
     emulator.gpu.object_attribute_memory[0x7A] = 0x44;
     emulator.gpu.object_attribute_memory[0x7B] = 0x45;
@@ -167,6 +172,17 @@ fn reads_from_working_ram_shadow() {
 fn reads_from_working_ram_shadow_scenario_two() {
     let emulator = setup_emulator_with_test_memory();
     assert_eq!(read_byte(&emulator, 0xF5F0), 0x2B);
+}
+
+#[test]
+fn reads_from_separate_working_ram_bank() {
+    let mut emulator = setup_emulator_with_test_memory();
+    emulator.mode = Mode::CGB;
+
+    write_byte(&mut emulator, 0xFF70, 0x02);
+
+    assert_eq!(read_byte(&emulator, 0xD001), 0x22);
+    assert_eq!(read_byte(&emulator, 0xF001), 0x22); 
 }
 
 #[test]
