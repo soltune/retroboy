@@ -19,6 +19,11 @@ pub enum Mode {
     CGB
 }
 
+pub struct SpeedSwitch {
+    pub cgb_double_speed: bool,
+    pub armed: bool
+}
+
 pub struct Emulator {
     pub cpu: CpuState,
     pub interrupts: InterruptRegisters,
@@ -30,7 +35,8 @@ pub struct Emulator {
     pub dma: DMAState,
     pub hdma: HDMAState,
     pub render: fn(&[u8]),
-    pub mode: Mode
+    pub mode: Mode,
+    pub speed_switch: SpeedSwitch
 }
 
 pub fn initialize_emulator(render: fn(&[u8])) -> Emulator {
@@ -56,7 +62,11 @@ pub fn initialize_emulator(render: fn(&[u8])) -> Emulator {
         dma: initialize_dma(),
         hdma: initialize_hdma(),
         render,
-        mode: Mode::DMG
+        mode: Mode::DMG,
+        speed_switch: SpeedSwitch {
+            cgb_double_speed: false,
+            armed: false
+        }
     }
 }
 
@@ -79,6 +89,16 @@ pub fn load_rom(emulator: &mut RefMut<Emulator>, rom: &[u8]) -> io::Result<()> {
         let error_message  = format!("Unsupported cartridge type {cartridge_type}."); 
         Err(io::Error::new(io::ErrorKind::Other, error_message)) 
     }
+}
+
+pub fn get_speed_switch(emulator: &Emulator) -> u8 {
+    let double_speed_bit = if emulator.speed_switch.cgb_double_speed { 1 } else { 0 };
+    let speed_switch_armed_bit = if emulator.speed_switch.armed { 1 } else { 0 };
+    double_speed_bit << 7 | speed_switch_armed_bit
+}
+
+pub fn set_speed_switch(emulator: &mut Emulator, value: u8) {
+    emulator.speed_switch.armed = value & 0x01 != 0;
 }
 
 fn transfer_to_game_rom(memory: &mut Memory) {

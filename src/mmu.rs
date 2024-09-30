@@ -1,6 +1,7 @@
 use crate::bios::DMG_BOOTIX;
 use crate::{apu, dma, gpu};
 use crate::cpu::hdma;
+use crate::emulator;
 use crate::emulator::{is_cgb, Emulator};
 use crate::keys;
 
@@ -155,6 +156,7 @@ pub fn read_byte(emulator: &Emulator, address: u16) -> u8 {
                     0x49 => emulator.gpu.registers.palettes.obp1,
                     0x4A => emulator.gpu.registers.wy,
                     0x4B => emulator.gpu.registers.wx,
+                    0x4D => emulator::get_speed_switch(emulator),
                     0x4F => gpu::get_cgb_vbk(emulator),
                     0x68 => gpu::get_cgb_bcps(emulator),
                     0x69 => gpu::get_cgb_bcpd(emulator),
@@ -275,6 +277,7 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
                     0x47 => emulator.gpu.registers.palettes.bgp = value,
                     0x48 => emulator.gpu.registers.palettes.obp0 = value,
                     0x49 => emulator.gpu.registers.palettes.obp1 = value,
+                    0x4D => emulator::set_speed_switch(emulator, value),
                     0x51 => hdma::set_hdma1(emulator, value),
                     0x52 => hdma::set_hdma2(emulator, value),
                     0x53 => hdma::set_hdma3(emulator, value),
