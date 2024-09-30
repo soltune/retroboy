@@ -164,7 +164,7 @@ pub fn calculate_sprite_pixel_color(emulator: &Emulator, sprite: &Sprite, x: u8,
 fn resolve_highest_priority_sprite<'a>(emulator: &Emulator, sprites: Vec<&'a Sprite>, x: u8, y: u8) -> Option<(&'a Sprite, Option<Color>)> {
     let mut maybe_highest_priority: Option<(&'a Sprite, Option<Color>)> = None;
     let cgb_mode = emulator.mode == Mode::CGB;
-    let oam_location_prioritization = cgb_mode && is_bit_set(emulator.gpu.registers.cgb_opri, CGB_OPRI_PRIORITY_BIT);
+    let oam_location_prioritization = cgb_mode && !is_bit_set(emulator.gpu.registers.cgb_opri, CGB_OPRI_PRIORITY_BIT);
 
     for sprite in sprites {
         match maybe_highest_priority {
