@@ -12,6 +12,8 @@ const SPRITE_BYTE_SIZE: u16 = 4;
 
 const SPRITE_WIDTH: i16 = 8;
 
+const CGB_OPRI_PRIORITY_BIT: u8 = 0;
+
 #[derive(Debug)]
 pub struct Sprite {
     pub y_pos: i16,
@@ -27,12 +29,12 @@ pub struct Sprite {
 }
 
 impl Sprite {
-    fn has_higher_priority_than(&self, compared_sprite: &Sprite, cgb_mode: bool) -> bool {
+    fn has_higher_priority_than(&self, compared_sprite: &Sprite, oam_location_prioritization: bool) -> bool {
         let has_lower_x = self.x_pos < compared_sprite.x_pos;
         let has_same_x = self.x_pos == compared_sprite.x_pos;
         let located_earlier_in_oam = self.oam_index < compared_sprite.oam_index;
-        (cgb_mode && located_earlier_in_oam) ||
-            (!cgb_mode && (has_lower_x || (has_same_x && located_earlier_in_oam)))
+        (oam_location_prioritization && located_earlier_in_oam) ||
+            (!oam_location_prioritization && (has_lower_x || (has_same_x && located_earlier_in_oam)))
     }
 }
 
@@ -162,6 +164,7 @@ pub fn calculate_sprite_pixel_color(emulator: &Emulator, sprite: &Sprite, x: u8,
 fn resolve_highest_priority_sprite<'a>(emulator: &Emulator, sprites: Vec<&'a Sprite>, x: u8, y: u8) -> Option<(&'a Sprite, Option<Color>)> {
     let mut maybe_highest_priority: Option<(&'a Sprite, Option<Color>)> = None;
     let cgb_mode = emulator.mode == Mode::CGB;
+    let oam_location_prioritization = cgb_mode && is_bit_set(emulator.gpu.registers.cgb_opri, CGB_OPRI_PRIORITY_BIT);
 
     for sprite in sprites {
         match maybe_highest_priority {
@@ -172,7 +175,7 @@ fn resolve_highest_priority_sprite<'a>(emulator: &Emulator, sprites: Vec<&'a Spr
                 let maybe_color = calculate_sprite_pixel_color(emulator, sprite, x, y);
  
                 match (maybe_color, maybe_current_highest_priority_color) {
-                    (Some(color), Some(_)) if sprite.has_higher_priority_than(current_highest_priority_sprite, cgb_mode) => {
+                    (Some(color), Some(_)) if sprite.has_higher_priority_than(current_highest_priority_sprite, oam_location_prioritization) => {
                         maybe_highest_priority = Some((sprite, Some(color)));
                     }
                     (Some(color), None) => {

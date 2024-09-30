@@ -18,7 +18,8 @@ pub struct GpuRegisters {
     pub lyc: u8,
     pub stat: u8,
     pub palettes: Palettes,
-    pub cgb_vbk: u8
+    pub cgb_vbk: u8,
+    pub cgb_opri: u8
 }
 
 #[derive(Debug)]
@@ -67,7 +68,8 @@ pub fn initialize_gpu() -> GpuState {
             lyc: 0,
             stat: 0,
             palettes: initialize_palettes(),
-            cgb_vbk: 0
+            cgb_vbk: 0,
+            cgb_opri: 0
         },
         frame_buffer: vec![0xFF; (GB_SCREEN_WIDTH * GB_SCREEN_HEIGHT * BYTES_PER_COLOR) as usize],
         sprite_buffer: Vec::new(),
@@ -269,6 +271,21 @@ pub fn get_cgb_vbk(emulator: &Emulator) -> u8 {
 pub fn set_cgb_vbk(emulator: &mut Emulator, value: u8) {
     if emulator.mode == Mode::CGB {
         emulator.gpu.registers.cgb_vbk = value;
+    }
+}
+
+pub fn get_cgb_opri(emulator: &Emulator) -> u8 {
+    if emulator.mode == Mode::CGB {
+        emulator.gpu.registers.cgb_opri & 0b1
+    }
+    else {
+        0xFF
+    }
+}
+
+pub fn set_cgb_opri(emulator: &mut Emulator, value: u8) {
+    if emulator.mode == Mode::CGB {
+        emulator.gpu.registers.cgb_opri = value & 0b1;
     }
 }
 
