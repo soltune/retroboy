@@ -10,6 +10,7 @@ use crate::gpu::{self, initialize_gpu, GpuState};
 use crate::keys::{initialize_keys, KeyState};
 use crate::mmu;
 use crate::mmu::{Memory, initialize_memory};
+use crate::utils::is_bit_set;
 use std::cell::RefMut;
 use std::io;
 
@@ -70,6 +71,8 @@ pub fn initialize_emulator(render: fn(&[u8])) -> Emulator {
     }
 }
 
+const SPEED_SWITCH_ARMED_INDEX: u8 = 0;
+
 pub fn initialize_screenless_emulator() -> Emulator {
     initialize_emulator(|_| {})
 }
@@ -104,7 +107,7 @@ pub fn get_speed_switch(emulator: &Emulator) -> u8 {
 
 pub fn set_speed_switch(emulator: &mut Emulator, value: u8) {
     if is_cgb(emulator) {
-        emulator.speed_switch.armed = value & 0x01 != 0;
+        emulator.speed_switch.armed = is_bit_set(value, SPEED_SWITCH_ARMED_INDEX);
     }
 }
 
