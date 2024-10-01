@@ -101,9 +101,8 @@ fn execute_opcode(emulator: &mut Emulator) {
             bitops::rotate_register_right(&mut emulator.cpu, Register::A);
             microops::set_flag_z(&mut emulator.cpu, false);
         },
-        0x10 => {
-            speed_switch::toggle(emulator);
-        },
+        0x10 =>
+            speed_switch::toggle(emulator),
         0x11 => {
             let word = read_next_instruction_word(emulator);
             microops::store_in_register_pair(&mut emulator.cpu, REGISTER_DE, word);
