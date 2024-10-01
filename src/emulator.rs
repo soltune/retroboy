@@ -92,13 +92,20 @@ pub fn load_rom(emulator: &mut RefMut<Emulator>, rom: &[u8]) -> io::Result<()> {
 }
 
 pub fn get_speed_switch(emulator: &Emulator) -> u8 {
-    let double_speed_bit = if emulator.speed_switch.cgb_double_speed { 1 } else { 0 };
-    let speed_switch_armed_bit = if emulator.speed_switch.armed { 1 } else { 0 };
-    double_speed_bit << 7 | speed_switch_armed_bit
+    if is_cgb(emulator) {
+        let double_speed_bit = if emulator.speed_switch.cgb_double_speed { 1 } else { 0 };
+        let speed_switch_armed_bit = if emulator.speed_switch.armed { 1 } else { 0 };
+        double_speed_bit << 7 | speed_switch_armed_bit
+    }
+    else {
+        0xFF
+    }
 }
 
 pub fn set_speed_switch(emulator: &mut Emulator, value: u8) {
-    emulator.speed_switch.armed = value & 0x01 != 0;
+    if is_cgb(emulator) {
+        emulator.speed_switch.armed = value & 0x01 != 0;
+    }
 }
 
 fn transfer_to_game_rom(memory: &mut Memory) {
