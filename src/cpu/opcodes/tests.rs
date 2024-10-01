@@ -1,5 +1,5 @@
 use super::*;
-use crate::emulator::initialize_screenless_emulator;
+use crate::emulator::{initialize_screenless_emulator, Mode};
 use crate::mmu;
 
 fn init_emulator_with_test_instructions(mut test_instructions: Vec<u8>) -> Emulator {
@@ -1406,4 +1406,14 @@ fn runs_joypad_press_isr() {
     assert_eq!(emulator.cpu.registers.program_counter, 0x60);
     assert_eq!(emulator.interrupts.enabled, 0x1F);
     assert_eq!(emulator.interrupts.flags, 0x00);
+}
+
+#[test]
+fn toggles_cgb_double_speed_mode() {
+    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x10]);
+    emulator.mode = Mode::CGB;
+    emulator.speed_switch.armed = true;
+    step(&mut emulator);
+    assert_eq!(emulator.speed_switch.armed, false);
+    assert_eq!(emulator.speed_switch.cgb_double_speed, true);
 }

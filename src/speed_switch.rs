@@ -32,13 +32,20 @@ pub fn set_key1(emulator: &mut Emulator, value: u8) {
     }
 }
 
+pub fn toggle(emulator: &mut Emulator) {
+    if is_cgb(emulator) && emulator.speed_switch.armed {
+        emulator.speed_switch.armed = false;
+        emulator.speed_switch.cgb_double_speed = !emulator.speed_switch.cgb_double_speed;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::emulator::{initialize_screenless_emulator, Mode};
     use super::*;
 
     #[test]
-    fn reads_from_key1_in_double_seed_mode() {
+    fn should_read_from_key1_in_double_seed_mode() {
         let mut emulator = initialize_screenless_emulator();
         emulator.mode = Mode::CGB;
         emulator.speed_switch.cgb_double_speed = true;
@@ -46,7 +53,7 @@ mod tests {
     }
 
     #[test]
-    fn reads_from_key1_while_speed_switch_is_armed() {
+    fn should_read_from_key1_while_speed_switch_is_armed() {
         let mut emulator = initialize_screenless_emulator();
         emulator.mode = Mode::CGB;
         emulator.speed_switch.armed = true;
@@ -54,10 +61,32 @@ mod tests {
     }
 
     #[test]
-    fn writes_to_key1() {
+    fn should_write_to_key1() {
         let mut emulator = initialize_screenless_emulator();
         emulator.mode = Mode::CGB;
         set_key1(&mut emulator, 0x1);
         assert_eq!(emulator.speed_switch.armed, true);
+    }
+
+    #[test]
+    fn should_toggle_speed_switch() {
+        let mut emulator = initialize_screenless_emulator();
+        emulator.mode = Mode::CGB;
+        emulator.speed_switch.armed = true;
+        emulator.speed_switch.cgb_double_speed = false;
+        toggle(&mut emulator);
+        assert_eq!(emulator.speed_switch.armed, false);
+        assert_eq!(emulator.speed_switch.cgb_double_speed, true);
+    }
+
+    #[test]
+    fn should_not_toggle_if_not_armed() {
+        let mut emulator = initialize_screenless_emulator();
+        emulator.mode = Mode::CGB;
+        emulator.speed_switch.armed = false;
+        emulator.speed_switch.cgb_double_speed = false;
+        toggle(&mut emulator);
+        assert_eq!(emulator.speed_switch.armed, false);
+        assert_eq!(emulator.speed_switch.cgb_double_speed, false);
     }
 }

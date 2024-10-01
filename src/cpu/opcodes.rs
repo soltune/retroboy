@@ -7,6 +7,7 @@ use crate::cpu::interrupts;
 use crate::cpu::jumps;
 use crate::cpu::loads;
 use crate::emulator::Emulator;
+use crate::speed_switch;
 
 fn emulate_halt_bug(cpu: &mut CpuState) {
     // Mimics halt bug behavior, which runs the instruction after HALT twice.
@@ -99,6 +100,9 @@ fn execute_opcode(emulator: &mut Emulator) {
         0x0F => {
             bitops::rotate_register_right(&mut emulator.cpu, Register::A);
             microops::set_flag_z(&mut emulator.cpu, false);
+        },
+        0x10 => {
+            speed_switch::toggle(emulator);
         },
         0x11 => {
             let word = read_next_instruction_word(emulator);
@@ -873,8 +877,6 @@ fn execute_opcode(emulator: &mut Emulator) {
         },
         0xFF =>
             jumps::restart(emulator, 0x38),
-        _ =>
-            (),
     }
 }
 
