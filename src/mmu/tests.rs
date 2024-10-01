@@ -645,27 +645,3 @@ fn reads_from_key1() {
     emulator.mode = Mode::CGB;
     assert_eq!(read_byte(&emulator, 0xFF4D), 0x0);
 }
-
-#[test]
-fn reads_from_key1_in_double_seed_mode() {
-    let mut emulator = setup_emulator_with_test_memory();
-    emulator.mode = Mode::CGB;
-    emulator.speed_switch.cgb_double_speed = true;
-    assert_eq!(read_byte(&emulator, 0xFF4D), 0x80);
-}
-
-#[test]
-fn reads_from_key1_while_speed_switch_is_armed() {
-    let mut emulator = setup_emulator_with_test_memory();
-    emulator.mode = Mode::CGB;
-    emulator.speed_switch.armed = true;
-    assert_eq!(read_byte(&emulator, 0xFF4D), 0x1);
-}
-
-#[test]
-fn writes_to_key1() {
-    let mut emulator = setup_emulator_with_test_memory();
-    emulator.mode = Mode::CGB;
-    write_byte(&mut emulator, 0xFF4D, 0x1);
-    assert_eq!(emulator.speed_switch.armed, true);
-}

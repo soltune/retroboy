@@ -10,7 +10,7 @@ use crate::gpu::{self, initialize_gpu, GpuState};
 use crate::keys::{initialize_keys, KeyState};
 use crate::mmu;
 use crate::mmu::{Memory, initialize_memory};
-use crate::utils::is_bit_set;
+use crate::speed_switch::{initialize_speed_switch, SpeedSwitch};
 use std::cell::RefMut;
 use std::io;
 
@@ -18,11 +18,6 @@ use std::io;
 pub enum Mode {
     DMG,
     CGB
-}
-
-pub struct SpeedSwitch {
-    pub cgb_double_speed: bool,
-    pub armed: bool
 }
 
 pub struct Emulator {
@@ -64,14 +59,9 @@ pub fn initialize_emulator(render: fn(&[u8])) -> Emulator {
         hdma: initialize_hdma(),
         render,
         mode: Mode::DMG,
-        speed_switch: SpeedSwitch {
-            cgb_double_speed: false,
-            armed: false
-        }
+        speed_switch: initialize_speed_switch()
     }
 }
-
-const SPEED_SWITCH_ARMED_INDEX: u8 = 0;
 
 pub fn initialize_screenless_emulator() -> Emulator {
     initialize_emulator(|_| {})
@@ -91,23 +81,6 @@ pub fn load_rom(emulator: &mut RefMut<Emulator>, rom: &[u8]) -> io::Result<()> {
     else {
         let error_message  = format!("Unsupported cartridge type {cartridge_type}."); 
         Err(io::Error::new(io::ErrorKind::Other, error_message)) 
-    }
-}
-
-pub fn get_speed_switch(emulator: &Emulator) -> u8 {
-    if is_cgb(emulator) {
-        let double_speed_bit = if emulator.speed_switch.cgb_double_speed { 1 } else { 0 };
-        let speed_switch_armed_bit = if emulator.speed_switch.armed { 1 } else { 0 };
-        double_speed_bit << 7 | speed_switch_armed_bit
-    }
-    else {
-        0xFF
-    }
-}
-
-pub fn set_speed_switch(emulator: &mut Emulator, value: u8) {
-    if is_cgb(emulator) {
-        emulator.speed_switch.armed = is_bit_set(value, SPEED_SWITCH_ARMED_INDEX);
     }
 }
 

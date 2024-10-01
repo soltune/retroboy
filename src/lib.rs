@@ -7,4 +7,5 @@ pub mod utils;
 pub mod keys;
 pub mod emulator;
 pub mod wasm;
+pub mod speed_switch;
 mod bios;
