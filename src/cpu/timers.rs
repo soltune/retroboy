@@ -1,6 +1,5 @@
 use crate::cpu::interrupts::InterruptRegisters;
 use crate::emulator::Emulator;
-use crate::utils::T_CYCLE_INCREMENT;
 
 const BASE_SPEED_RATE: u8 = 4;
 const DIVIDER_RATE: u8 = 16;
@@ -56,10 +55,8 @@ fn increment_counter_register(timer_registers: &mut TimerRegisters,
 
 pub fn step(emulator: &mut Emulator) {
     let timer_registers = &mut emulator.timers;
-    let instruction_cycles = T_CYCLE_INCREMENT;
-    let machine_cycles = instruction_cycles / 4;
-    
-    timer_registers.m_cycles_clock += machine_cycles;
+    timer_registers.m_cycles_clock += 1;
+
     if timer_registers.m_cycles_clock >= BASE_SPEED_RATE {
         timer_registers.m_cycles_clock -= BASE_SPEED_RATE;
 

@@ -2,11 +2,15 @@ use crate::{mmu, utils};
 use crate::cpu::{Register, RegisterPair, CpuState};
 use crate::emulator::Emulator;
 use crate::emulator;
-use crate::utils::T_CYCLE_INCREMENT;
+use crate::utils::get_t_cycle_increment;
 
 pub fn step_one_machine_cycle(emulator: &mut Emulator) {
-    emulator.cpu.clock.total_clock_cycles = emulator.cpu.clock.total_clock_cycles.wrapping_add(T_CYCLE_INCREMENT as u32);
-    emulator.cpu.clock.instruction_clock_cycles = emulator.cpu.clock.instruction_clock_cycles.wrapping_add(T_CYCLE_INCREMENT);
+    let double_speed_mode = emulator.speed_switch.cgb_double_speed;
+    let t_cycle_increment = get_t_cycle_increment(double_speed_mode);
+
+    emulator.cpu.clock.total_clock_cycles = emulator.cpu.clock.total_clock_cycles.wrapping_add(t_cycle_increment as u32);
+    emulator.cpu.clock.instruction_clock_cycles = emulator.cpu.clock.instruction_clock_cycles.wrapping_add(t_cycle_increment);
+    
     emulator::sync(emulator);
 }
 

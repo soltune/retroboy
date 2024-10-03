@@ -79,7 +79,7 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.apu.enabled = true;
     emulator.apu.sound_panning = 0xF2;
     emulator.apu.master_volume = 0xC1;
-    emulator.apu.instruction_cycles = 84;
+    emulator.apu.audio_buffer_clock = 84;
 
     emulator.apu.channel1.sweep.initial_settings = 0xDD;
     emulator.apu.channel1.length.initial_settings = 0xB0;

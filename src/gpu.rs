@@ -5,7 +5,8 @@ use crate::gpu::colors::{initialize_palettes, Palettes};
 use crate::gpu::constants::{GB_SCREEN_HEIGHT, GB_SCREEN_WIDTH, BYTES_PER_COLOR};
 use crate::gpu::scanline::write_scanline;
 use crate::gpu::sprites::{collect_scanline_sprites, Sprite};
-use crate::utils::{is_bit_set, T_CYCLE_INCREMENT};
+use crate::utils::get_t_cycle_increment;
+use crate::utils::is_bit_set;
 
 #[derive(Debug)]
 pub struct GpuRegisters {
@@ -119,7 +120,8 @@ fn compare_ly_and_lyc(emulator: &mut Emulator) {
 }
 
 pub fn step(emulator: &mut Emulator) {
-    emulator.gpu.mode_clock += T_CYCLE_INCREMENT as u16;
+    let double_speed_mode = emulator.speed_switch.cgb_double_speed;
+    emulator.gpu.mode_clock += get_t_cycle_increment(double_speed_mode) as u16;
 
     match emulator.gpu.mode {
         OAM_MODE => {

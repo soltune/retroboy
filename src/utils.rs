@@ -1,4 +1,4 @@
-pub const T_CYCLE_INCREMENT: u8 = 4;
+const T_CYCLE_INCREMENT: u8 = 4;
 
 pub fn is_bit_set(byte: u8, bit_index: u8) -> bool {
     let mask = 1 << bit_index;
@@ -30,6 +30,10 @@ pub fn as_bytes(word: u16) -> (u8, u8) {
     (low_byte, high_byte)
 }
 
+pub fn get_t_cycle_increment(double_speed_mode: bool) -> u8 {
+    if double_speed_mode { T_CYCLE_INCREMENT / 2 } else { T_CYCLE_INCREMENT }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -57,5 +61,17 @@ mod tests {
     fn should_split_word_into_bytes() {
         let word = 0x2BA1 as u16;
         assert_eq!(as_bytes(word), (0xA1, 0x2B));
+    }
+
+    #[test]
+    fn should_get_t_cycle_increment_in_normal_speed_mode() {
+        let double_speed_mode = false;
+        assert_eq!(get_t_cycle_increment(double_speed_mode), 4);
+    }
+
+    #[test]
+    fn should_get_t_cycle_increment_in_double_speed_mode() {
+        let double_speed_mode = true;
+        assert_eq!(get_t_cycle_increment(double_speed_mode), 2);
     }
 }
