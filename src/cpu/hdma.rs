@@ -124,8 +124,10 @@ fn transfer_block(emulator: &mut Emulator, source: u16, destination: u16) {
             emulator.hdma.offset += 1 as u8;
         }
 
-        // Takes one machine cycle to transfer two bytes during VRAM DMA
-        microops::step_one_machine_cycle(emulator);
+        // Takes one machine cycle (or two "fast" machine cycles in double speed mode)
+        // to transfer two bytes during VRAM DMA.
+        let cycle_count = if emulator.speed_switch.cgb_double_speed { 2 } else { 1 };
+        microops::step_machine_cycles(emulator, cycle_count);
     }
 
     if emulator.hdma.transfer_length == 0 {

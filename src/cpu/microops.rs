@@ -14,6 +14,12 @@ pub fn step_one_machine_cycle(emulator: &mut Emulator) {
     emulator::sync(emulator);
 }
 
+pub fn step_machine_cycles(emulator: &mut Emulator, cycles: u8) {
+    for _ in 0..cycles {
+        step_one_machine_cycle(emulator);
+    }
+}
+
 pub fn read_byte_from_memory(emulator: &mut Emulator, address: u16) -> u8 {
     step_one_machine_cycle(emulator);
     let byte = mmu::read_byte(emulator, address);
