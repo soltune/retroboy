@@ -15,7 +15,7 @@ pub struct HDMAState {
     pub hdma2: u8,
     pub hdma3: u8,
     pub hdma4: u8,
-    pub offset: u8,
+    pub offset: u16,
     pub transfer_length: u8,
     pub transfer_mode: VRAMTransferMode,
     pub in_progress: bool,
@@ -119,9 +119,9 @@ fn transfer_block(emulator: &mut Emulator, source: u16, destination: u16) {
     for _ in (0..BLOCK_SIZE).step_by(2) {
         for _ in 0..2 {
             let offset = emulator.hdma.offset;
-            let source_byte = mmu::read_byte(&emulator, source + offset as u16);
-            mmu::write_byte(emulator, destination + offset as u16, source_byte);
-            emulator.hdma.offset += 1 as u8;
+            let source_byte = mmu::read_byte(&emulator, source + offset);
+            mmu::write_byte(emulator, destination + offset, source_byte);
+            emulator.hdma.offset += 1;
         }
 
         // Takes one machine cycle (or two "fast" machine cycles in double speed mode)
