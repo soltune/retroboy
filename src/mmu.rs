@@ -167,6 +167,7 @@ pub fn read_byte(emulator: &mut Emulator, address: u16) -> u8 {
                     0x69 => gpu::get_cgb_bcpd(emulator),
                     0x6A => gpu::get_cgb_ocps(emulator),
                     0x6B => gpu::get_cgb_ocpd(emulator),
+                    0x6C => gpu::get_cgb_opri(emulator),
                     0x70 => if is_cgb(emulator) { emulator.memory.svbk } else { 0xFF },
                     0x0F => emulator.interrupts.flags,
                     0x04 => emulator.timers.divider,
@@ -295,6 +296,7 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
                     0x69 => gpu::set_cgb_bcpd(emulator, value),
                     0x6A => gpu::set_cgb_ocps(emulator, value),
                     0x6B => gpu::set_cgb_ocpd(emulator, value),
+                    0x6C => gpu::set_cgb_opri(emulator, value),
                     0x70 => {
                         if is_cgb(emulator) {
                             emulator.memory.svbk = value;
