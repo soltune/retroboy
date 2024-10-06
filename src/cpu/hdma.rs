@@ -69,17 +69,17 @@ pub fn set_hdma5(emulator: &mut Emulator, value: u8) {
     if is_cgb(emulator) {
         if emulator.hdma.in_progress && !is_bit_set(value, VRAM_TRANSFER_INDEX) {
             emulator.hdma.in_progress = false;
-       }
-       else {
-           emulator.hdma.transfer_length = value & 0b01111111;
+        }
+        else {
+            emulator.hdma.transfer_length = value & 0b01111111;
    
-           let transfer_bit_set = is_bit_set(value, VRAM_TRANSFER_INDEX);
-           let mode = if transfer_bit_set { VRAMTransferMode::HBlank } else { VRAMTransferMode::GeneralPurpose };
-           emulator.hdma.transfer_mode = mode;
+            let transfer_bit_set = is_bit_set(value, VRAM_TRANSFER_INDEX);
+            let mode = if transfer_bit_set { VRAMTransferMode::HBlank } else { VRAMTransferMode::GeneralPurpose };
+            emulator.hdma.transfer_mode = mode;
    
-           emulator.hdma.in_progress = true;
-           emulator.hdma.completed = false;
-       }
+            emulator.hdma.in_progress = true;
+            emulator.hdma.completed = false;
+        }
     }
 }
 
@@ -133,6 +133,7 @@ fn transfer_block(emulator: &mut Emulator, source: u16, destination: u16) {
     if emulator.hdma.transfer_length == 0 {
         emulator.hdma.completed = true;
         emulator.hdma.in_progress = false;
+        emulator.hdma.offset = 0;
     }
     else {
         emulator.hdma.transfer_length -= 1;
