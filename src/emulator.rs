@@ -93,6 +93,7 @@ pub fn sync(emulator: &mut Emulator) {
 
 pub fn set_mode(emulator: &mut Emulator, mode: Mode) {
     emulator.mode = mode;
+    mmu::load_bios(emulator);
 }
 
 pub fn step(emulator: &mut Emulator) {

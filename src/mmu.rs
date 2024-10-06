@@ -1,4 +1,4 @@
-use crate::bios::DMG_BOOTIX;
+use crate::bios::{CGB_BOOT, DMG_BOOTIX};
 use crate::{apu, dma, gpu};
 use crate::cpu::hdma;
 use crate::emulator::{is_cgb, Emulator};
@@ -15,7 +15,7 @@ pub enum MBCMode {
 #[derive(Debug)]
 pub struct Memory {
     pub in_bios: bool,
-    pub bios: [u8; 0x100],
+    pub bios: Vec<u8>,
     pub rom: Vec<u8>,
     pub working_ram: [u8; 0x10000],
     pub external_ram: [u8; 0x8000],
@@ -53,7 +53,7 @@ pub const SUPPORTED_CARTRIDGE_TYPES: [u8; 4] = [CART_TYPE_ROM_ONLY,
 pub fn initialize_memory() -> Memory {
     Memory {
         in_bios: true,
-        bios: DMG_BOOTIX,
+        bios: [0; 0x100].to_vec(),
         rom: Vec::new(),
         working_ram: [0; 0x10000],
         external_ram: [0; 0x8000],
@@ -70,6 +70,15 @@ pub fn initialize_memory() -> Memory {
         svbk: 0
     }
 }
+
+pub fn load_bios(emulator: &mut Emulator) {
+    emulator.memory.bios = if is_cgb(emulator) {
+        CGB_BOOT.to_vec()
+    }
+    else {
+        DMG_BOOTIX.to_vec()
+    }
+}   
 
 fn address_accessible(emulator: &Emulator, address: u16) -> bool {
     let accessing_oam = address >= 0xFE00 && address < 0xFEA0;
@@ -101,6 +110,9 @@ pub fn read_byte(emulator: &mut Emulator, address: u16) -> u8 {
                 if address == 0x00FE {
                     emulator.memory.in_bios = false;
                 }
+                emulator.memory.bios[address as usize]
+            },
+            0x0000 if address >= 0x0200 && address <= 0x08FF && is_cgb(emulator) && emulator.memory.in_bios => {
                 emulator.memory.bios[address as usize]
             },
             0x0000..=0x3FFF => emulator.memory.rom[address as usize],
@@ -189,7 +201,6 @@ pub fn read_byte(emulator: &mut Emulator, address: u16) -> u8 {
 pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
     if address_accessible(emulator, address) {
         match address & 0xF000 {
-            0x0000 if address < 0x0100 && emulator.memory.in_bios => emulator.memory.bios[address as usize] = value,
             0x0000..=0x1FFF => {
                 match emulator.memory.cartridge_header.type_code {
                     CART_TYPE_MBC1_WITH_RAM | CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY => {
