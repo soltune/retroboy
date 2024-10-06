@@ -5,6 +5,7 @@ use crate::gpu::colors::{initialize_palettes, Palettes};
 use crate::gpu::constants::{GB_SCREEN_HEIGHT, GB_SCREEN_WIDTH, BYTES_PER_COLOR};
 use crate::gpu::scanline::write_scanline;
 use crate::gpu::sprites::{collect_scanline_sprites, Sprite};
+use crate::gpu::utils::get_lcd_enabled_mode;
 use crate::utils::get_t_cycle_increment;
 use crate::utils::is_bit_set;
 
@@ -55,6 +56,10 @@ const OAM_MODE_STAT_SOURCE_BIT: u8 = 5;
 const VBLANK_MODE_STAT_SOURCE_BIT: u8 = 4;
 const HBLANK_MODE_STAT_SOURCE_BIT: u8 = 3;
 
+fn initialize_blank_frame() -> Vec<u8> {
+    vec![0xFF; (GB_SCREEN_WIDTH * GB_SCREEN_HEIGHT * BYTES_PER_COLOR) as usize]
+}
+
 pub fn initialize_gpu() -> GpuState {
     GpuState {
         mode: 2,
@@ -72,7 +77,7 @@ pub fn initialize_gpu() -> GpuState {
             cgb_vbk: 0,
             cgb_opri: 0
         },
-        frame_buffer: vec![0xFF; (GB_SCREEN_WIDTH * GB_SCREEN_HEIGHT * BYTES_PER_COLOR) as usize],
+        frame_buffer: initialize_blank_frame(),
         sprite_buffer: Vec::new(),
         video_ram: [0; 0x4000],
         object_attribute_memory: [0; 0xa0]
@@ -288,6 +293,18 @@ pub fn get_cgb_opri(emulator: &Emulator) -> u8 {
 pub fn set_cgb_opri(emulator: &mut Emulator, value: u8) {
     if emulator.mode == Mode::CGB {
         emulator.gpu.registers.cgb_opri = value & 0b1;
+    }
+}
+
+pub fn get_lcdc(emulator: &Emulator) -> u8 {
+    emulator.gpu.registers.lcdc
+}
+
+pub fn set_lcdc(emulator: &mut Emulator, value: u8) {
+    emulator.gpu.registers.lcdc = value;
+    let lcd_enabled = get_lcd_enabled_mode(emulator.gpu.registers.lcdc);
+    if !lcd_enabled {
+        emulator.gpu.frame_buffer = initialize_blank_frame();
     }
 }
 
