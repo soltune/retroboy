@@ -1,6 +1,6 @@
 use crate::apu;
 use crate::apu::{initialize_apu, ApuState};
-use crate::cpu::{self, at_end_of_boot_rom, initialize_cpu, timers, CpuState};
+use crate::cpu::{self, initialize_cpu, timers, CpuState};
 use crate::cpu::interrupts::InterruptRegisters;
 use crate::cpu::timers::TimerRegisters;
 use crate::cpu::hdma::{HDMAState, initialize_hdma};
@@ -84,10 +84,6 @@ pub fn load_rom(emulator: &mut RefMut<Emulator>, rom: &[u8]) -> io::Result<()> {
     }
 }
 
-fn transfer_to_game_rom(memory: &mut Memory) {
-    memory.in_bios = false;
-}
-
 pub fn sync(emulator: &mut Emulator) {
     timers::step(emulator);
     dma::step(emulator);
@@ -100,10 +96,6 @@ pub fn set_mode(emulator: &mut Emulator, mode: Mode) {
 }
 
 pub fn step(emulator: &mut Emulator) {
-    if at_end_of_boot_rom(&mut emulator.cpu) {
-        transfer_to_game_rom(&mut emulator.memory);
-    }
-
     cpu::opcodes::step(emulator);
 }
 

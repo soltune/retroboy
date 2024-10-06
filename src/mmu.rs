@@ -94,10 +94,15 @@ fn calculate_working_ram_index(emulator: &Emulator, address: u16) -> usize {
     }
 }
 
-pub fn read_byte(emulator: &Emulator, address: u16) -> u8 {
+pub fn read_byte(emulator: &mut Emulator, address: u16) -> u8 {
     if address_accessible(emulator, address) {
         match address & 0xF000 {
-            0x0000 if address < 0x0100 && emulator.memory.in_bios => emulator.memory.bios[address as usize],
+            0x0000 if address <= 0x00FE && emulator.memory.in_bios => {
+                if address == 0x00FE {
+                    emulator.memory.in_bios = false;
+                }
+                emulator.memory.bios[address as usize]
+            },
             0x0000..=0x3FFF => emulator.memory.rom[address as usize],
             0x4000..=0x7FFF => {
                 let calculated_address = (emulator.memory.rom_bank_number as u32 * 0x4000) + (address & 0x3FFF) as u32;

@@ -116,62 +116,62 @@ fn setup_emulator_with_test_memory() -> Emulator {
 fn reads_from_bios() {
     let mut emulator = setup_emulator_with_test_memory();
     emulator.memory.in_bios = true;
-    assert_eq!(read_byte(&emulator, 0x02), 0x03);
+    assert_eq!(read_byte(&mut emulator, 0x02), 0x03);
 }
 
 #[test]
 fn reads_from_rom_in_bank_zero() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0x02), 0x01);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0x02), 0x01);
 }
 
 #[test]
 fn reads_from_rom_in_bank_zero_scenario_two() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0x20B1), 0xEE);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0x20B1), 0xEE);
 }
 
 #[test]
 fn reads_from_rom_in_subsequent_bank() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0x5ACE), 0x55);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0x5ACE), 0x55);
 }
 
 #[test]
 fn reads_from_video_ram() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0x8002), 0xAA);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0x8002), 0xAA);
 }
 
 #[test]
 fn reads_from_external_ram() {
     let mut emulator = setup_emulator_with_test_memory();
     emulator.memory.ram_enabled = true;
-    assert_eq!(read_byte(&emulator, 0xA001), 0x22);
+    assert_eq!(read_byte(&mut emulator, 0xA001), 0x22);
 }
 
 #[test]
 fn disallow_access_to_external_ram_if_not_enabled() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xA001), 0xFF);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xA001), 0xFF);
 }
 
 #[test]
 fn reads_from_working_ram() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xC002), 0x2B);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xC002), 0x2B);
 }
 
 #[test]
 fn reads_from_working_ram_shadow() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xE002), 0x2B);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xE002), 0x2B);
 }
 
 #[test]
 fn reads_from_working_ram_shadow_scenario_two() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xF5F0), 0x2B);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xF5F0), 0x2B);
 }
 
 #[test]
@@ -181,138 +181,138 @@ fn reads_from_separate_working_ram_bank() {
 
     write_byte(&mut emulator, 0xFF70, 0x02);
 
-    assert_eq!(read_byte(&emulator, 0xD001), 0x22);
-    assert_eq!(read_byte(&emulator, 0xF001), 0x22); 
+    assert_eq!(read_byte(&mut emulator, 0xD001), 0x22);
+    assert_eq!(read_byte(&mut emulator, 0xF001), 0x22); 
 }
 
 #[test]
 fn reads_from_object_attribute_memory() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFE7B), 0x45);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFE7B), 0x45);
 }
 
 #[test]
 fn reads_empty_values_outside_of_object_attribute_memory() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFEEE), 0xFF);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFEEE), 0xFF);
 }
 
 #[test]
 fn reads_from_zero_page_ram() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFFA0), 0xBB);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFFA0), 0xBB);
 }
 
 #[test]
 fn reads_from_interrupts_enabled_register() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFFFF), 0x1F);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFFFF), 0x1F);
 }
 
 #[test]
 fn reads_from_interrupt_flags_register() {
-    let emulator= setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF0F), 0xA);
+    let mut emulator= setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF0F), 0xA);
 }
 
 #[test]
 fn reads_from_timer_divider_register() {
-    let emulator= setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF04), 0x3A);
+    let mut emulator= setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF04), 0x3A);
 }
 
 #[test]
 fn reads_from_timer_counter_register() {
-    let emulator= setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF05), 0x04);
+    let mut emulator= setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF05), 0x04);
 }
 
 #[test]
 fn reads_from_timer_modulo_register() {
-    let emulator= setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF06), 0x02);
+    let mut emulator= setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF06), 0x02);
 }
 
 #[test]
 fn reads_from_timer_control_register() {
-    let emulator= setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF07), 0x07);
+    let mut emulator= setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF07), 0x07);
 }
 
 #[test]
 fn reads_lcdc_register_from_gpu() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF40), 0x80);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF40), 0x80);
 }
 
 #[test]
 fn reads_scroll_registers_from_gpu() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF42), 0x55);
-    assert_eq!(read_byte(&emulator, 0xFF43), 0xA1);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF42), 0x55);
+    assert_eq!(read_byte(&mut emulator, 0xFF43), 0xA1);
 }
 
 #[test]
 fn reads_window_position_registers_from_gpu() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF4A), 0xBB);
-    assert_eq!(read_byte(&emulator, 0xFF4B), 0xDD);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF4A), 0xBB);
+    assert_eq!(read_byte(&mut emulator, 0xFF4B), 0xDD);
 }
 
 #[test]
 fn reads_palette_from_gpu() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF47), 0xC1);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF47), 0xC1);
 }
 
 #[test]
 fn reads_ly_from_gpu() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF44), 0x2B);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF44), 0x2B);
 }
 
 #[test]
 fn reads_lyc_from_gpu() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF45), 0xAB);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF45), 0xAB);
 }
 
 #[test]
 fn reads_stat_from_gpu() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF41), 0xD2);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF41), 0xD2);
 }
 
 #[test]
 fn reads_obp0_from_gpu() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF48), 0x1B);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF48), 0x1B);
 }
 
 #[test]
 fn reads_obp1_from_gpu() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF49), 0xE4);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF49), 0xE4);
 }
 
 #[test]
 fn writes_obp0_value_to_gpu() {
     let mut emulator = setup_emulator_with_test_memory();
     write_byte(&mut emulator, 0xFF48, 0xE4);
-    assert_eq!(read_byte(&emulator, 0xFF48), 0xE4);
+    assert_eq!(read_byte(&mut emulator, 0xFF48), 0xE4);
 }
 
 #[test]
 fn writes_obp1_value_to_gpu() {
     let mut emulator = setup_emulator_with_test_memory();
     write_byte(&mut emulator, 0xFF49, 0x1B);
-    assert_eq!(read_byte(&emulator, 0xFF49), 0x1B);
+    assert_eq!(read_byte(&mut emulator, 0xFF49), 0x1B);
 }
 
 #[test]
 fn reads_joyp_register() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF00), 0x04);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF00), 0x04);
 }
 
 #[test]
@@ -332,12 +332,12 @@ fn loads_rom_buffer_into_emulator() {
 
     load_rom_buffer(&mut emulator.memory, rom_buffer);
 
-    assert_eq!(read_byte(&emulator, 0x0000), 0xA0);
-    assert_eq!(read_byte(&emulator, 0x0001), 0xCC);
-    assert_eq!(read_byte(&emulator, 0x0002), 0x3B);
-    assert_eq!(read_byte(&emulator, 0x0003), 0x4C);
-    assert_eq!(read_byte(&emulator, 0x7FFF), 0xD4);
-    assert_eq!(read_byte(&emulator, 0x8000), 0xB1);
+    assert_eq!(read_byte(&mut emulator, 0x0000), 0xA0);
+    assert_eq!(read_byte(&mut emulator, 0x0001), 0xCC);
+    assert_eq!(read_byte(&mut emulator, 0x0002), 0x3B);
+    assert_eq!(read_byte(&mut emulator, 0x0003), 0x4C);
+    assert_eq!(read_byte(&mut emulator, 0x7FFF), 0xD4);
+    assert_eq!(read_byte(&mut emulator, 0x8000), 0xB1);
 
     assert_eq!(emulator.memory.cartridge_header.sgb_support, false);
     assert_eq!(emulator.memory.cartridge_header.type_code, 0x01);
@@ -433,7 +433,7 @@ fn masks_bank_number_to_required_number_of_bits() {
     write_byte(&mut emulator, 0x2000, 0x12);
 
     assert_eq!(emulator.memory.rom_bank_number, 0x2);
-    assert_eq!(read_byte(&emulator, 0x4001), 0xD1);
+    assert_eq!(read_byte(&mut emulator, 0x4001), 0xD1);
 }
 
 #[test]
@@ -495,7 +495,7 @@ fn reads_from_different_rom_bank() {
     emulator.memory.rom_bank_number = 3;
     emulator.memory.rom.resize(0x16000, 0);
     emulator.memory.rom[0xC005] = 0xA1;
-    let result = read_byte(&emulator, 0x4005);
+    let result = read_byte(&mut emulator, 0x4005);
     assert_eq!(result, 0xA1);
 }
 
@@ -507,14 +507,14 @@ fn reads_from_different_ram_bank() {
     emulator.memory.ram_bank_number = 3;
     emulator.memory.ram_enabled = true;
     emulator.memory.external_ram[0x6005] = 0xA1;
-    let result = read_byte(&emulator, 0xA005);
+    let result = read_byte(&mut emulator, 0xA005);
     assert_eq!(result, 0xA1);
 }
 
 #[test]
 fn reads_from_audio_master_control() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF26), 0xF4);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF26), 0xF4);
 }
 
 #[test]
@@ -526,122 +526,122 @@ fn writes_to_audio_master_control() {
 
 #[test]
 fn reads_from_sound_panning() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF25), 0xF2);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF25), 0xF2);
 }
 
 #[test]
 fn reads_from_master_volume() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF24), 0xC1);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF24), 0xC1);
 }
 
 #[test]
 fn reads_from_ch1_sweep() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF10), 0xDD);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF10), 0xDD);
 }
 
 #[test]
 fn reads_from_ch1_length_and_duty() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF11), 0xBF);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF11), 0xBF);
 }
 
 #[test]
 fn reads_from_ch1_volume() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF12), 0xAA);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF12), 0xAA);
 }
 
 #[test]
 fn reads_from_ch1_period_low() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF13), 0xFF);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF13), 0xFF);
 }
 
 #[test]
 fn reads_from_ch1_period_high() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF14), 0xFF);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF14), 0xFF);
 }
 
 #[test]
 fn reads_from_ch2_length_and_duty() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF16), 0xFF);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF16), 0xFF);
 }
 
 #[test]
 fn reads_from_ch2_volume() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF17), 0xC1);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF17), 0xC1);
 }
 
 #[test]
 fn reads_from_ch2_period_low() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF18), 0xFF);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF18), 0xFF);
 }
 
 #[test]
 fn reads_from_ch2_period_high() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF19), 0xBF);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF19), 0xBF);
 }
 
 #[test]
 fn reads_from_ch3_dac_enabled() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF1A), 0xFF);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF1A), 0xFF);
 }
 
 #[test]
 fn reads_from_ch3_output() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF1C), 0xFF);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF1C), 0xFF);
 }
 
 #[test]
 fn reads_from_ch3_period_high() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF1E), 0xFF);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF1E), 0xFF);
 }
 
 #[test]
 fn reads_from_wave_pattern_ram() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF30), 0xB1);
-    assert_eq!(read_byte(&emulator, 0xFF31), 0xB1);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF30), 0xB1);
+    assert_eq!(read_byte(&mut emulator, 0xFF31), 0xB1);
 }
 
 #[test]
 fn reads_from_ch4_length() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF20), 0xFF);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF20), 0xFF);
 }
 
 #[test]
 fn reads_from_ch4_envelope() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF21), 0xD2);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF21), 0xD2);
 }
 
 #[test]
 fn reads_from_ch4_polynomial() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF22), 0xCE);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF22), 0xCE);
 }
 
 #[test]
 fn reads_from_ch4_control() {
-    let emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&emulator, 0xFF23), 0xFF);
+    let mut emulator = setup_emulator_with_test_memory();
+    assert_eq!(read_byte(&mut emulator, 0xFF23), 0xFF);
 }
 
 #[test]
 fn reads_from_key1() {
     let mut emulator = setup_emulator_with_test_memory();
     emulator.mode = Mode::CGB;
-    assert_eq!(read_byte(&emulator, 0xFF4D), 0x0);
+    assert_eq!(read_byte(&mut emulator, 0xFF4D), 0x0);
 }
