@@ -163,6 +163,7 @@ pub fn read_byte(emulator: &mut Emulator, address: u16) -> u8 {
                     0x4B => emulator.gpu.registers.wx,
                     0x4D => speed_switch::get_key1(emulator),
                     0x4F => gpu::get_cgb_vbk(emulator),
+                    0x55 => hdma::get_hdma5(emulator),
                     0x68 => gpu::get_cgb_bcps(emulator),
                     0x69 => gpu::get_cgb_bcpd(emulator),
                     0x6A => gpu::get_cgb_ocps(emulator),
