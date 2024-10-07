@@ -53,18 +53,17 @@ fn initialize_monochrome_palettes(palettes: &mut Palettes) {
 }
 
 fn initialize_color_palettes(palettes: &mut Palettes) {
-    let red: u16 = 0b1111100000000000; 
-    let green: u16 = 0b0000011111000000;
-    let blue: u16 = 0b0000000000111110;
+    // Red
+    palettes.cgb_bcpd[8] = 0b00011111;
+    palettes.cgb_bcpd[9] = 0;
 
-    // CGB Palette 1:
-    // Red: color id 0
-    // Green: color id 1
-    // Blue: color id 2
-    // Black: color id 3
-    palettes.cgb_bcpd[4] = red;
-    palettes.cgb_bcpd[5] = green;
-    palettes.cgb_bcpd[6] = blue;
+    // Green
+    palettes.cgb_bcpd[10] = 0b11100000;
+    palettes.cgb_bcpd[11] = 0b00000011;
+
+    // Blue
+    palettes.cgb_bcpd[12] = 0;
+    palettes.cgb_bcpd[13] = 0b01111100;
 }
 
 struct FrameBufferAssertion<'a> {
