@@ -39,7 +39,7 @@ const AppGrid = styled(CssGrid)`
 
 const InterfaceGrid = styled(CssGrid)`
     padding: 32px;
-    width: 550px;
+    width: 530px;
 `;
 
 const GameSelectionGrid = styled(CssGrid)`
