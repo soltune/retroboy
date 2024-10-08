@@ -13,6 +13,8 @@ import {
     Typography,
     createTheme,
     styled,
+    ToggleButton,
+    ToggleButtonGroup,
 } from "@mui/material";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -37,6 +39,12 @@ const AppGrid = styled(CssGrid)`
 
 const InterfaceGrid = styled(CssGrid)`
     padding: 32px;
+    width: 550px;
+`;
+
+const GameSelectionGrid = styled(CssGrid)`
+    height: 50px;
+    width: 100%;
 `;
 
 const Header = styled("div")`
@@ -60,8 +68,6 @@ const keys = [
     "KeyZ",
 ];
 
-const defaultMode = "DMG";
-
 const App = (): JSX.Element => {
     const [wasmInitialized, setWasmInitialized] = useState(false);
 
@@ -69,6 +75,7 @@ const App = (): JSX.Element => {
 
     const [playing, setPlaying] = useState(false);
     const [paused, setPaused] = useState(false);
+    const [mode, setMode] = useState("DMG");
 
     const [showHelpText, setShowHelpText] = useState(false);
 
@@ -84,7 +91,7 @@ const App = (): JSX.Element => {
 
     const playGame = (): void => {
         if (romBuffer) {
-            initializeEmulator(romBuffer.data, defaultMode);
+            initializeEmulator(romBuffer.data, mode);
         }
 
         if (!audioContextRef.current) {
@@ -161,6 +168,13 @@ const App = (): JSX.Element => {
             stepUntilNextAudioBuffer();
         }
     }, [playing]);
+
+    const handleModeChange = (
+        _: React.MouseEvent<HTMLElement>,
+        newMode: string,
+    ) => {
+        setMode(newMode);
+    };
 
     useEffect(() => {
         if (wasmInitialized) {
@@ -266,14 +280,36 @@ const App = (): JSX.Element => {
                                 paused={paused}
                                 ref={canvasRef}
                             />
-                            <BufferFileUpload
-                                label="Load ROM"
-                                onFileSelect={setRomBuffer}
-                                uploadedFile={romBuffer}
-                                variant="contained"
-                                accept=".gb"
-                                startIcon={<FileUploadIcon />}
-                            />
+                            <GameSelectionGrid
+                                orientation={Orientation.horizontal}
+                                alignItems={Position.center}
+                                template="1fr auto"
+                            >
+                                <BufferFileUpload
+                                    label="Load ROM"
+                                    onFileSelect={setRomBuffer}
+                                    uploadedFile={romBuffer}
+                                    variant="contained"
+                                    accept=".gb"
+                                    startIcon={<FileUploadIcon />}
+                                />
+                                <ToggleButtonGroup
+                                    color="primary"
+                                    value={mode}
+                                    exclusive
+                                    onChange={handleModeChange}
+                                    aria-label="Mode"
+                                    size="small"
+                                    disabled={playing || paused}
+                                >
+                                    <ToggleButton value="DMG">
+                                        Monochrome
+                                    </ToggleButton>
+                                    <ToggleButton value="CGB">
+                                        Color
+                                    </ToggleButton>
+                                </ToggleButtonGroup>
+                            </GameSelectionGrid>
                             <CssGrid
                                 orientation={Orientation.horizontal}
                                 gap={GapSize.medium}
