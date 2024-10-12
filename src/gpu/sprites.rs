@@ -1,4 +1,5 @@
 use crate::emulator::{Emulator, Mode};
+use crate::gpu::has_dmg_compatability;
 use crate::gpu::colors::{as_cgb_obj_color_rgb, as_obj_color_rgb, Color};
 use crate::gpu::prioritization::SpritePixel;
 use crate::gpu::utils::{get_obj_enabled_mode, get_obj_size_mode, get_tile_line_bytes};
@@ -148,7 +149,13 @@ pub fn calculate_sprite_pixel_color(emulator: &Emulator, sprite: &Sprite, x: u8,
     if column_offset >= 0 {
         if emulator.mode == Mode::CGB {
             let (lsb_byte, msb_byte) = get_tile_line_bytes(&emulator.gpu, tile_data_index, row_offset, sprite.y_flip, sprite.cgb_from_bank_one);
-            as_cgb_obj_color_rgb(&emulator.gpu.registers.palettes, column_offset as u8, sprite.cgb_palette, msb_byte, lsb_byte, sprite.x_flip)
+            let palette_number = if has_dmg_compatability(emulator) {
+                if sprite.dmg_palette { 1 } else { 0 }
+            }
+            else {
+                sprite.cgb_palette
+            };
+            as_cgb_obj_color_rgb(&emulator.gpu.registers.palettes, column_offset as u8, palette_number, msb_byte, lsb_byte, sprite.x_flip)
         }
         else {
             let (lsb_byte, msb_byte) = get_tile_line_bytes(&emulator.gpu, tile_data_index, row_offset, sprite.y_flip, false);

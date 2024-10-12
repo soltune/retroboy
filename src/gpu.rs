@@ -21,7 +21,8 @@ pub struct GpuRegisters {
     pub stat: u8,
     pub palettes: Palettes,
     pub cgb_vbk: u8,
-    pub cgb_opri: u8
+    pub cgb_opri: u8,
+    pub key0: u8
 }
 
 #[derive(Debug)]
@@ -75,7 +76,8 @@ pub fn initialize_gpu() -> GpuState {
             stat: 0,
             palettes: initialize_palettes(),
             cgb_vbk: 0,
-            cgb_opri: 0
+            cgb_opri: 0,
+            key0: 0
         },
         frame_buffer: initialize_blank_frame(),
         sprite_buffer: Vec::new(),
@@ -306,6 +308,18 @@ pub fn set_lcdc(emulator: &mut Emulator, value: u8) {
     if !lcd_enabled {
         emulator.gpu.frame_buffer = initialize_blank_frame();
     }
+}
+
+pub fn set_key0(emulator: &mut Emulator, value: u8) {
+    emulator.gpu.registers.key0 = value;
+}
+
+pub fn get_key0(emulator: &Emulator) -> u8 {
+    emulator.gpu.registers.key0
+}
+
+pub fn has_dmg_compatability(emulator: &Emulator) -> bool {
+    emulator.gpu.registers.key0 == 0x04
 }
 
 #[cfg(test)]
