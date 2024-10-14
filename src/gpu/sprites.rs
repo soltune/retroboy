@@ -1,9 +1,9 @@
-use crate::emulator::{Emulator, Mode};
+use crate::emulator::{is_cgb, Emulator, Mode};
 use crate::gpu::has_dmg_compatability;
-use crate::gpu::colors::{as_cgb_obj_color_rgb, as_obj_color_rgb, Color};
+use crate::gpu::colors::{as_cgb_obj_color_rgb, as_dmg_obj_color_rgb, Color, calculate_color_id};
 use crate::gpu::prioritization::SpritePixel;
 use crate::gpu::utils::{get_obj_enabled_mode, get_obj_size_mode, get_tile_line_bytes};
-use crate::utils::is_bit_set;
+use crate::utils::{get_bit, is_bit_set};
 
 const SPRITE_LIMIT_PER_SCANLINE: usize = 10;
 const TOTAL_SPRITES: u16 = 40;
@@ -23,7 +23,7 @@ pub struct Sprite {
     pub priority: bool,
     pub y_flip: bool,
     pub x_flip: bool,
-    pub dmg_palette: bool,
+    pub dmg_palette: u8,
     pub oam_index: u16,
     pub cgb_from_bank_one: bool,
     pub cgb_palette: u8
@@ -58,15 +58,6 @@ fn calculate_tile_data_index(tile_index: u16) -> u16 {
     tile_index * TILE_DATA_BYTE_SIZE
 }
 
-fn get_sprite_palette(dmg_palette: bool, obp0: u8, obp1: u8) -> u8 {
-    if dmg_palette {
-        obp1
-    }
-    else {
-        obp0
-    }
-}
-
 fn pull_sprite(emulator: &Emulator, sprite_number: u16) -> Sprite {
     let oam_index = calculate_oam_index(sprite_number);
 
@@ -82,7 +73,7 @@ fn pull_sprite(emulator: &Emulator, sprite_number: u16) -> Sprite {
         priority: is_bit_set(attributes, 7),
         y_flip: is_bit_set(attributes, 6),
         x_flip: is_bit_set(attributes, 5),
-        dmg_palette: is_bit_set(attributes, 4),
+        dmg_palette: get_bit(attributes, 4),
         oam_index,
         cgb_from_bank_one: is_bit_set(attributes, 3),
         cgb_palette: attributes & 0b111
@@ -147,20 +138,20 @@ pub fn calculate_sprite_pixel_color(emulator: &Emulator, sprite: &Sprite, x: u8,
     let column_offset = x_int - sprite.x_pos;
 
     if column_offset >= 0 {
-        if emulator.mode == Mode::CGB {
-            let (lsb_byte, msb_byte) = get_tile_line_bytes(&emulator.gpu, tile_data_index, row_offset, sprite.y_flip, sprite.cgb_from_bank_one);
-            let palette_number = if has_dmg_compatability(emulator) {
-                if sprite.dmg_palette { 1 } else { 0 }
-            }
-            else {
-                sprite.cgb_palette
-            };
-            as_cgb_obj_color_rgb(&emulator.gpu.registers.palettes, column_offset as u8, palette_number, msb_byte, lsb_byte, sprite.x_flip)
+        let from_bank_one = if is_cgb(emulator) { sprite.cgb_from_bank_one } else { false };
+        let (lsb_byte, msb_byte) = get_tile_line_bytes(&emulator.gpu, tile_data_index, row_offset, sprite.y_flip, from_bank_one);
+
+        if is_cgb(emulator) {            
+            let dmg_compatible = has_dmg_compatability(emulator);
+            let palette_number = if dmg_compatible { sprite.dmg_palette } else { sprite.cgb_palette };
+            let color_id = calculate_color_id(column_offset as u8, msb_byte, lsb_byte, sprite.x_flip);
+            
+            as_cgb_obj_color_rgb(&emulator.gpu.registers.palettes, palette_number, color_id, dmg_compatible)
         }
-        else {
-            let (lsb_byte, msb_byte) = get_tile_line_bytes(&emulator.gpu, tile_data_index, row_offset, sprite.y_flip, false);
-            let palette = get_sprite_palette(sprite.dmg_palette, emulator.gpu.registers.palettes.obp0, emulator.gpu.registers.palettes.obp1);
-            as_obj_color_rgb(column_offset as u8, palette, msb_byte, lsb_byte, sprite.x_flip) 
+        else {            
+            let color_id = calculate_color_id(column_offset as u8, msb_byte, lsb_byte, sprite.x_flip);
+            
+            as_dmg_obj_color_rgb(&emulator.gpu.registers.palettes, sprite.dmg_palette, color_id) 
         }
     }
     else {
@@ -297,6 +288,6 @@ mod tests {
         assert_eq!(sprites[0].priority, true);
         assert_eq!(sprites[0].y_flip, true);
         assert_eq!(sprites[0].x_flip, false);
-        assert_eq!(sprites[0].dmg_palette, false);
+        assert_eq!(sprites[0].dmg_palette, 0);
     }
 }

@@ -11,6 +11,8 @@ pub const WHITE: Color = [0xFF, 0xFF, 0xFF, 0xFF];
 pub const COLORS_PER_PALETTE: usize = 4;
 pub const CGB_PALETTES: usize = 8;
 
+const MONOCHROME_COLORS: [Color; 4] = [WHITE, LIGHT_GRAY, DARK_GRAY, BLACK];
+
 #[derive(Debug)]
 pub struct Palettes {
     pub bgp: u8,
@@ -34,20 +36,11 @@ pub fn initialize_palettes() -> Palettes {
     }
 }
 
-fn calculate_color_id(bit_index: u8, msb_byte: u8, lsb_byte: u8, x_flip: bool) -> u8 {
+pub fn calculate_color_id(bit_index: u8, msb_byte: u8, lsb_byte: u8, x_flip: bool) -> u8 {
     let calculated_index = if x_flip { bit_index } else { 7 - bit_index };
     let msb = get_bit(msb_byte, calculated_index);
     let lsb = get_bit(lsb_byte, calculated_index);
     (msb * 2) + lsb
-}
-
-fn decode_color_key(color_key: u8) -> Color {
-    match color_key {
-        0b11 => BLACK,
-        0b10 => DARK_GRAY,
-        0b01 => LIGHT_GRAY,
-        _ => WHITE
-    }
 }
 
 fn as_bg_color_key(color_id: u8, palette: u8) -> u8 {
@@ -68,19 +61,36 @@ fn as_obj_color_key(color_id: u8, palette: u8) -> Option<u8> {
     }
 }
 
-pub fn as_bg_color_rgb(bit_index: u8, palette: u8, msb_byte: u8, lsb_byte: u8) -> Color {
-    let color_id = calculate_color_id(bit_index, msb_byte, lsb_byte, false);
-    let key = as_bg_color_key(color_id, palette); 
-    decode_color_key(key)
+fn resolve_dmg_object_palette(palettes: &Palettes, palette_number: u8) -> u8 {
+    if palette_number == 0 {
+        palettes.obp0
+    }
+    else {
+        palettes.obp1
+    }
 }
 
-pub fn as_obj_color_rgb(bit_index: u8, palette: u8, msb_byte: u8, lsb_byte: u8, x_flip: bool) -> Option<Color> {
-    let color_id = calculate_color_id(bit_index, msb_byte, lsb_byte, x_flip);
-    let maybe_key = as_obj_color_key(color_id, palette); 
-    maybe_key.map(decode_color_key)
+fn as_dmg_bg_color_key(palettes: &Palettes, color_id: u8) -> u8 {
+    let palette = palettes.bgp;
+    as_bg_color_key(color_id, palette)
 }
 
-fn calculate_palette_data_index(palette_number: u8, color_id: u8) -> usize {
+fn as_dmg_obj_color_key(palettes: &Palettes, palette_number: u8, color_id: u8) -> Option<u8> {
+    let palette = resolve_dmg_object_palette(palettes, palette_number);
+    as_obj_color_key(color_id, palette)
+}
+
+pub fn as_dmg_bg_color_rgb(palettes: &Palettes, color_id: u8) -> Color {
+    let key = as_dmg_bg_color_key(palettes, color_id);
+    MONOCHROME_COLORS[key as usize]
+}
+
+pub fn as_dmg_obj_color_rgb(palettes: &Palettes, palette_number: u8, color_id: u8) -> Option<Color> {
+    let maybe_key = as_dmg_obj_color_key(palettes, palette_number, color_id);
+    maybe_key.map(|key| MONOCHROME_COLORS[key as usize])
+}
+
+fn calculate_cgb_palette_data_index(palette_number: u8, color_id: u8) -> usize {
     ((palette_number as usize * COLORS_PER_PALETTE) + color_id as usize) * 2
 }
 
@@ -97,32 +107,41 @@ fn rgb555_as_color(rgb555: u16) -> Color {
     [scaled_red as u8, scaled_green as u8, scaled_blue as u8, 0xFF]
 }
 
-fn lookup_background_palette(palettes: &Palettes, palette_number: u8, color_id: u8) -> u16 {
-    let index = calculate_palette_data_index(palette_number, color_id);
+fn lookup_cgb_background_palette(palettes: &Palettes, palette_number: u8, color_id: u8) -> u16 {
+    let index = calculate_cgb_palette_data_index(palette_number, color_id);
     palettes.cgb_bcpd[index & !1] as u16 | ((palettes.cgb_bcpd[index | 1] as u16) << 8)
 }
 
-fn lookup_object_palette(palettes: &Palettes, palette_number: u8, color_id: u8) -> u16 {
-    let index = calculate_palette_data_index(palette_number, color_id);
+fn lookup_cgb_object_palette(palettes: &Palettes, palette_number: u8, color_id: u8) -> u16 {
+    let index = calculate_cgb_palette_data_index(palette_number, color_id);
     palettes.cgb_ocpd[index & !1] as u16 | ((palettes.cgb_ocpd[index | 1] as u16) << 8)
 }
 
-pub fn as_cgb_bg_color_rgb(palettes: &Palettes, bit_index: u8, palette_number: u8, msb_byte: u8, lsb_byte: u8, x_flip: bool) -> Color {
-    let color_id = calculate_color_id(bit_index, msb_byte, lsb_byte, x_flip);
-    let palette = lookup_background_palette(palettes, palette_number, color_id);
-    let result = rgb555_as_color(palette);
-    result
+pub fn as_cgb_bg_color_rgb(palettes: &Palettes, palette_number: u8, color_id: u8, dmg_compatible: bool) -> Color {
+    let palette = if dmg_compatible {
+        let key = as_dmg_bg_color_key(palettes, color_id);
+        lookup_cgb_background_palette(palettes, palette_number, key)
+    }
+    else {
+        lookup_cgb_background_palette(palettes, palette_number, color_id)
+    };
+    rgb555_as_color(palette)
 }
 
-pub fn as_cgb_obj_color_rgb(palettes: &Palettes, bit_index: u8, palette_number: u8, msb_byte: u8, lsb_byte: u8, x_flip: bool) -> Option<Color> {
-    let color_id = calculate_color_id(bit_index, msb_byte, lsb_byte, x_flip);
-    match color_id {
+pub fn as_cgb_obj_color_rgb(palettes: &Palettes, palette_number: u8, color_id: u8, dmg_compatible: bool) -> Option<Color> {
+    let maybe_palette = match color_id {
         0b00 => None,
         _ => {
-            let palette = lookup_object_palette(palettes, palette_number, color_id);
-            Some(rgb555_as_color(palette))
+            if dmg_compatible {
+                let maybe_key = as_dmg_obj_color_key(palettes, palette_number, color_id);
+                maybe_key.map(|key| lookup_cgb_object_palette(palettes, palette_number, key)) 
+            }
+            else {
+                Some(lookup_cgb_object_palette(palettes, palette_number, color_id))
+            }
         }
-    }
+    };
+    maybe_palette.map(rgb555_as_color)
 }
 
 pub fn get_cgb_bcps(palettes: &Palettes) -> u8 {
@@ -257,7 +276,7 @@ mod tests {
 
         let palette_number = 3;
         let color_id = 1;
-        let palette = lookup_background_palette(&palettes, palette_number, color_id);
+        let palette = lookup_cgb_background_palette(&palettes, palette_number, color_id);
 
         assert_eq!(palette, 0xEEEE);
     }
@@ -270,7 +289,7 @@ mod tests {
 
         let palette_number = 2;
         let color_id = 2;
-        let palette = lookup_object_palette(&palettes, palette_number, color_id);
+        let palette = lookup_cgb_object_palette(&palettes, palette_number, color_id);
 
         assert_eq!(palette, 0xBBBB);
     }
@@ -378,7 +397,8 @@ mod tests {
         let msb_byte = 0b00101010;
         let lsb_byte = 0b11010101;
 
-        let color = as_cgb_bg_color_rgb(&palettes, 0, palette_number, msb_byte, lsb_byte, false);
+        let color_id = calculate_color_id(0, msb_byte, lsb_byte, false);
+        let color = as_cgb_bg_color_rgb(&palettes, palette_number, color_id, false);
 
         // Palette will be 0b1110111011101110.
         assert_eq!(color, [0x73, 0xBD, 0xDE, 0xFF]);
@@ -395,7 +415,8 @@ mod tests {
         let msb_byte = 0b00101010;
         let lsb_byte = 0b11010101;
 
-        let color = as_cgb_obj_color_rgb(&palettes, 0, palette_number, msb_byte, lsb_byte, false);
+        let color_id = calculate_color_id(0, msb_byte, lsb_byte, false);
+        let color = as_cgb_obj_color_rgb(&palettes, palette_number, color_id, false);
 
         // Palette will be 0b1110111011101110.
         assert_eq!(color, Some([0x73, 0xBD, 0xDE, 0xFF])); 
@@ -413,7 +434,8 @@ mod tests {
         let msb_byte = 0b00101010;
         let lsb_byte = 0b01010101;
 
-        let color = as_cgb_obj_color_rgb(&palettes, 0, palette_number, msb_byte, lsb_byte, false);
+        let color_id = calculate_color_id(0, msb_byte, lsb_byte, false);
+        let color = as_cgb_obj_color_rgb(&palettes, palette_number, color_id, false);
 
         assert_eq!(color, None);
     }
