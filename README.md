@@ -49,7 +49,7 @@ This emulator is still a work in progress and not all features are supported.
 | CPU               | ✅        |
 | Basic Graphics    | ✅        |
 | Audio             | ✅        |
-| Color Support     | ❌        |
+| Color Support     | ✅        |
 | GameShark Support | ❌        |
 
 ### MBC Support
