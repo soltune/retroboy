@@ -30,10 +30,10 @@ To run the web frontend:
 ## Screenshots
 
 <p float="left">
-  <img src="screenshots/kirby.png" width="160" margin-right="32px" />
-  <img src="screenshots/pacman.png" width="160" margin-right="32px" />
-  <img src="screenshots/super-mario-land.png" width="160" margin-right="32px" />  
-  <img src="screenshots/tetris.png" width="160" margin-right="32px" />
+  <img src="screenshots/kirby-color.png" width="160" margin-right="32px" />
+  <img src="screenshots/pacman-color.png" width="160" margin-right="32px" />
+  <img src="screenshots/super-mario-land-color.png" width="160" margin-right="32px" />  
+  <img src="screenshots/tetris-color.png" width="160" margin-right="32px" />
 </p>
 
 ## Test Suite
