@@ -71,6 +71,10 @@ pub fn is_cgb(emulator: &Emulator) -> bool {
     emulator.mode == Mode::CGB
 }
 
+pub fn in_color_bios(emulator: &Emulator) -> bool {
+    emulator.memory.in_bios && is_cgb(emulator)
+}
+
 pub fn load_rom(emulator: &mut RefMut<Emulator>, rom: &[u8]) -> io::Result<()> {
     let buffer = rom.to_vec();
     mmu::load_rom_buffer(&mut emulator.memory, buffer);

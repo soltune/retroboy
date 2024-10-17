@@ -14,8 +14,14 @@ pub const DMG_BOOTIX: [u8; 256] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 62, 1, 224, 80,
 ];
 
-// Borrowing Boytacean's CGB boot ROM until I customize my own: 
-// https://github.com/joamag/boytacean/blob/8c4301a18d8e81a1c87425692bd8e5ad587364a1/src/data.rs#L177
+/*
+    This is a custom CGB boot ROM originally used in the Boytacean project (my emulator however
+    speeds through the BIOS without rendering anything so it actually appears like it skips the BIOS):
+    
+    https://github.com/joamag/boytacean/blob/8c4301a18d8e81a1c87425692bd8e5ad587364a1/src/data.rs#L177
+
+    Credit should go to joamag and the makers of SameBoy for this boot ROM.
+*/
 pub const CGB_BOOT: [u8; 2304] = [
     49, 254, 255, 205, 166, 5, 38, 254, 14, 160, 34, 13, 32, 252, 14, 16, 33, 48, 255, 34, 47, 13,
     32, 251, 224, 193, 224, 128, 62, 128, 224, 38, 224, 17, 62, 243, 224, 18, 224, 37, 62, 119,

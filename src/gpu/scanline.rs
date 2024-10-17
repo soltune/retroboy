@@ -1,4 +1,4 @@
-use crate::emulator::{Emulator, Mode};
+use crate::emulator::{Emulator, Mode, in_color_bios};
 use crate::gpu::constants::{GB_SCREEN_WIDTH, BYTES_PER_COLOR};
 use crate::gpu::sprites::read_sprite_pixel_color;
 use crate::gpu::background::read_bg_color;
@@ -14,7 +14,7 @@ pub fn write_scanline(emulator: &mut Emulator) {
 
     let y = scy.wrapping_add(ly);
 
-    let lcd_enabled = get_lcd_enabled_mode(lcdc);
+    let lcd_enabled = !in_color_bios(emulator) && get_lcd_enabled_mode(lcdc);
 
     if lcd_enabled {
         for viewport_x in 0..GB_SCREEN_WIDTH as u8 {

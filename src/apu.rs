@@ -4,7 +4,7 @@ use crate::apu::noise::{initialize_noise_channel, reset_noise_channel, NoiseChan
 use crate::apu::wave::{initialize_wave_channel, reset_wave_channel, WaveChannel};
 use crate::apu::pulse::{initialize_pulse_channel, reset_pulse_channel, PulseChannel};
 use crate::apu::utils::bounded_wrapping_add;
-use crate::emulator::Emulator;
+use crate::emulator::{Emulator, in_color_bios};
 use crate::utils::{get_bit, get_t_cycle_increment, is_bit_set};
 
 #[derive(Debug)]
@@ -115,7 +115,16 @@ pub fn get_right_sample_queue(emulator: &Emulator) -> &[f32] {
 }
 
 fn enqueue_audio_samples(emulator: &mut Emulator) {
-    if emulator.apu.audio_buffer_clock as u32 >= ENQUEUE_RATE {
+    /*
+        This emulator uses audio syncing. It steps the emulator until the audio buffer is full, then 
+        briefly pauses while it plays the audio in the buffer. Once the audio plays, the emulator
+        resumes.
+        
+        The purpose of the BIOS check here is that I want my emulator to speed through the
+        initial GBC BIOS so it appears as if it's skipping the BIOS altogether (even though it still
+        runs it; it's just hidden).
+    */
+    if !in_color_bios(emulator) && emulator.apu.audio_buffer_clock as u32 >= ENQUEUE_RATE {
         emulator.apu.audio_buffer_clock = 0;
 
         let sound_panning = emulator.apu.sound_panning;
