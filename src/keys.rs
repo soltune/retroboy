@@ -1,3 +1,4 @@
+use crate::emulator::Emulator;
 use crate::utils::{reset_bit, set_bit};
 
 #[derive(Debug)]
@@ -52,50 +53,58 @@ pub fn read_joyp_byte(key_state: &KeyState) -> u8 {
     }
 }
 
-pub fn handle_key_press(key_state: &mut KeyState, key: &Key) {
-    match key {
-        Key::Down =>
-            key_state.directional_buttons = reset_bit(key_state.directional_buttons, DOWN_BIT),
-        Key::Up =>
-            key_state.directional_buttons = reset_bit(key_state.directional_buttons, UP_BIT),
-        Key::Left =>
-            key_state.directional_buttons = reset_bit(key_state.directional_buttons, LEFT_BIT),
-        Key::Right =>
-            key_state.directional_buttons = reset_bit(key_state.directional_buttons, RIGHT_BIT),
-        Key::Enter =>
-            key_state.select_buttons = reset_bit(key_state.select_buttons, START_BIT),
-        Key::Space =>
-            key_state.select_buttons = reset_bit(key_state.select_buttons, SELECT_BIT),
-        Key::X =>
-            key_state.select_buttons = reset_bit(key_state.select_buttons, B_BIT),
-        Key::Z =>
-            key_state.select_buttons = reset_bit(key_state.select_buttons, A_BIT),
-    }
+fn fire_joyp_interrupt(emulator: &mut Emulator) {
+    emulator.interrupts.flags |= 0x10;
 }
 
-pub fn handle_key_release(key_state: &mut KeyState, key: &Key) {
+pub fn handle_key_press(emulator: &mut Emulator, key: &Key) {
     match key {
         Key::Down =>
-            key_state.directional_buttons = set_bit(key_state.directional_buttons, DOWN_BIT),
+            emulator.keys.directional_buttons = reset_bit(emulator.keys.directional_buttons, DOWN_BIT),
         Key::Up =>
-            key_state.directional_buttons = set_bit(key_state.directional_buttons, UP_BIT),
+            emulator.keys.directional_buttons = reset_bit(emulator.keys.directional_buttons, UP_BIT),
         Key::Left =>
-            key_state.directional_buttons = set_bit(key_state.directional_buttons, LEFT_BIT),
+            emulator.keys.directional_buttons = reset_bit(emulator.keys.directional_buttons, LEFT_BIT),
         Key::Right =>
-            key_state.directional_buttons = set_bit(key_state.directional_buttons, RIGHT_BIT),
+            emulator.keys.directional_buttons = reset_bit(emulator.keys.directional_buttons, RIGHT_BIT),
         Key::Enter =>
-            key_state.select_buttons = set_bit(key_state.select_buttons, START_BIT),
+            emulator.keys.select_buttons = reset_bit(emulator.keys.select_buttons, START_BIT),
         Key::Space =>
-            key_state.select_buttons = set_bit(key_state.select_buttons, SELECT_BIT),
+            emulator.keys.select_buttons = reset_bit(emulator.keys.select_buttons, SELECT_BIT),
         Key::X =>
-            key_state.select_buttons = set_bit(key_state.select_buttons, B_BIT),
+            emulator.keys.select_buttons = reset_bit(emulator.keys.select_buttons, B_BIT),
         Key::Z =>
-            key_state.select_buttons = set_bit(key_state.select_buttons, A_BIT),
+            emulator.keys.select_buttons = reset_bit(emulator.keys.select_buttons, A_BIT),
+    }
+    
+    fire_joyp_interrupt(emulator);
+}
+
+pub fn handle_key_release(emulator: &mut Emulator, key: &Key) {
+    match key {
+        Key::Down =>
+            emulator.keys.directional_buttons = set_bit(emulator.keys.directional_buttons, DOWN_BIT),
+        Key::Up =>
+            emulator.keys.directional_buttons = set_bit(emulator.keys.directional_buttons, UP_BIT),
+        Key::Left =>
+            emulator.keys.directional_buttons = set_bit(emulator.keys.directional_buttons, LEFT_BIT),
+        Key::Right =>
+            emulator.keys.directional_buttons = set_bit(emulator.keys.directional_buttons, RIGHT_BIT),
+        Key::Enter =>
+            emulator.keys.select_buttons = set_bit(emulator.keys.select_buttons, START_BIT),
+        Key::Space =>
+            emulator.keys.select_buttons = set_bit(emulator.keys.select_buttons, SELECT_BIT),
+        Key::X =>
+            emulator.keys.select_buttons = set_bit(emulator.keys.select_buttons, B_BIT),
+        Key::Z =>
+            emulator.keys.select_buttons = set_bit(emulator.keys.select_buttons, A_BIT),
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::emulator::initialize_screenless_emulator;
+
     use super::*;
 
     #[test]
@@ -121,113 +130,129 @@ mod tests {
 
     #[test]
     fn stores_down_key_press() {
-        let mut state = KeyState { column: 0x0, directional_buttons: 0xF, select_buttons: 0xF };
-        handle_key_press(&mut state, &Key::Down);
-        assert_eq!(state.directional_buttons, 0x7);
+        let mut emulator = initialize_screenless_emulator();
+        emulator.keys = KeyState { column: 0x0, directional_buttons: 0xF, select_buttons: 0xF };
+        handle_key_press(&mut emulator, &Key::Down);
+        assert_eq!(emulator.keys.directional_buttons, 0x7);
     }
 
     #[test]
     fn stores_down_key_release() {
-        let mut state = KeyState { column: 0x0, directional_buttons: 0x7, select_buttons: 0xF };
-        handle_key_release(&mut state, &Key::Down);
-        assert_eq!(state.directional_buttons, 0xF); 
+        let mut emulator = initialize_screenless_emulator();
+        emulator.keys = KeyState { column: 0x0, directional_buttons: 0x7, select_buttons: 0xF };
+        handle_key_release(&mut emulator, &Key::Down);
+        assert_eq!(emulator.keys.directional_buttons, 0xF); 
     }
 
     #[test]
     fn stores_up_key_press() {
-        let mut state = KeyState { column: 0x0, directional_buttons: 0xF, select_buttons: 0xF };
-        handle_key_press(&mut state, &Key::Up);
-        assert_eq!(state.directional_buttons, 0xB);
+        let mut emulator = initialize_screenless_emulator();
+        emulator.keys = KeyState { column: 0x0, directional_buttons: 0xF, select_buttons: 0xF };
+        handle_key_press(&mut emulator, &Key::Up);
+        assert_eq!(emulator.keys.directional_buttons, 0xB);
     }
 
     #[test]
     fn stores_up_key_release() {
-        let mut state = KeyState { column: 0x0, directional_buttons: 0xB, select_buttons: 0xF };
-        handle_key_release(&mut state, &Key::Up);
-        assert_eq!(state.directional_buttons, 0xF); 
+        let mut emulator = initialize_screenless_emulator();
+        emulator.keys = KeyState { column: 0x0, directional_buttons: 0xB, select_buttons: 0xF };
+        handle_key_release(&mut emulator, &Key::Up);
+        assert_eq!(emulator.keys.directional_buttons, 0xF); 
     }
 
     #[test]
     fn stores_left_key_press() {
-        let mut state = KeyState { column: 0x0, directional_buttons: 0xF, select_buttons: 0xF };
-        handle_key_press(&mut state, &Key::Left);
-        assert_eq!(state.directional_buttons, 0xD);
+        let mut emulator = initialize_screenless_emulator();
+        emulator.keys = KeyState { column: 0x0, directional_buttons: 0xF, select_buttons: 0xF };
+        handle_key_press(&mut emulator, &Key::Left);
+        assert_eq!(emulator.keys.directional_buttons, 0xD);
     }
 
     #[test]
     fn stores_left_key_release() {
-        let mut state = KeyState { column: 0x0, directional_buttons: 0xD, select_buttons: 0xF };
-        handle_key_release(&mut state, &Key::Left);
-        assert_eq!(state.directional_buttons, 0xF); 
+        let mut emulator = initialize_screenless_emulator();
+        emulator.keys = KeyState { column: 0x0, directional_buttons: 0xD, select_buttons: 0xF };
+        handle_key_release(&mut emulator, &Key::Left);
+        assert_eq!(emulator.keys.directional_buttons, 0xF); 
     }
 
     #[test]
     fn stores_right_key_press() {
-        let mut state = KeyState { column: 0x0, directional_buttons: 0xF, select_buttons: 0xF };
-        handle_key_press(&mut state, &Key::Right);
-        assert_eq!(state.directional_buttons, 0xE);
+        let mut emulator = initialize_screenless_emulator();
+        emulator.keys = KeyState { column: 0x0, directional_buttons: 0xF, select_buttons: 0xF };
+        handle_key_press(&mut emulator, &Key::Right);
+        assert_eq!(emulator.keys.directional_buttons, 0xE);
     }
 
     #[test]
     fn stores_right_key_release() {
-        let mut state = KeyState { column: 0x0, directional_buttons: 0xE, select_buttons: 0xF };
-        handle_key_release(&mut state, &Key::Right);
-        assert_eq!(state.directional_buttons, 0x0F); 
+        let mut emulator = initialize_screenless_emulator();
+        emulator.keys = KeyState { column: 0x0, directional_buttons: 0xE, select_buttons: 0xF };
+        handle_key_release(&mut emulator, &Key::Right);
+        assert_eq!(emulator.keys.directional_buttons, 0x0F); 
     }
 
     #[test]
     fn stores_start_key_press() {
-        let mut state = KeyState { column: 0x0, directional_buttons: 0xF, select_buttons: 0xF };
-        handle_key_press(&mut state, &Key::Enter);
-        assert_eq!(state.select_buttons, 0x7);
+        let mut emulator = initialize_screenless_emulator();
+        emulator.keys = KeyState { column: 0x0, directional_buttons: 0xF, select_buttons: 0xF };
+        handle_key_press(&mut emulator, &Key::Enter);
+        assert_eq!(emulator.keys.select_buttons, 0x7);
     }
 
     #[test]
     fn stores_start_key_release() {
-        let mut state = KeyState { column: 0x0, directional_buttons: 0xF, select_buttons: 0x7 };
-        handle_key_release(&mut state, &Key::Enter);
-        assert_eq!(state.select_buttons, 0xF);
+        let mut emulator = initialize_screenless_emulator();
+        emulator.keys = KeyState { column: 0x0, directional_buttons: 0xF, select_buttons: 0x7 };
+        handle_key_release(&mut emulator, &Key::Enter);
+        assert_eq!(emulator.keys.select_buttons, 0xF);
     }
 
     #[test]
     fn stores_select_key_press() {
-        let mut state = KeyState { column: 0x0, directional_buttons: 0xF, select_buttons: 0xF };
-        handle_key_press(&mut state, &Key::Space);
-        assert_eq!(state.select_buttons, 0xB);
+        let mut emulator = initialize_screenless_emulator();
+        emulator.keys = KeyState { column: 0x0, directional_buttons: 0xF, select_buttons: 0xF };
+        handle_key_press(&mut emulator, &Key::Space);
+        assert_eq!(emulator.keys.select_buttons, 0xB);
     }
 
     #[test]
     fn stores_select_key_release() {
-        let mut state = KeyState { column: 0x0, directional_buttons: 0xF, select_buttons: 0xB };
-        handle_key_release(&mut state, &Key::Space);
-        assert_eq!(state.select_buttons, 0xF);
+        let mut emulator = initialize_screenless_emulator();
+        emulator.keys = KeyState { column: 0x0, directional_buttons: 0xF, select_buttons: 0xB };
+        handle_key_release(&mut emulator, &Key::Space);
+        assert_eq!(emulator.keys.select_buttons, 0xF);
     }
 
     #[test]
     fn stores_b_key_press() {
-        let mut state = KeyState { column: 0x0, directional_buttons: 0xF, select_buttons: 0xF };
-        handle_key_press(&mut state, &Key::X);
-        assert_eq!(state.select_buttons, 0xD);
+        let mut emulator = initialize_screenless_emulator();
+        emulator.keys = KeyState { column: 0x0, directional_buttons: 0xF, select_buttons: 0xF };
+        handle_key_press(&mut emulator, &Key::X);
+        assert_eq!(emulator.keys.select_buttons, 0xD);
     }
 
     #[test]
     fn stores_b_key_release() {
-        let mut state = KeyState { column: 0x0, directional_buttons: 0xF, select_buttons: 0xD };
-        handle_key_release(&mut state, &Key::X);
-        assert_eq!(state.select_buttons, 0xF);
+        let mut emulator = initialize_screenless_emulator();
+        emulator.keys = KeyState { column: 0x0, directional_buttons: 0xF, select_buttons: 0xD };
+        handle_key_release(&mut emulator, &Key::X);
+        assert_eq!(emulator.keys.select_buttons, 0xF);
     }
 
     #[test]
     fn stores_a_key_press() {
-        let mut state = KeyState { column: 0x0, directional_buttons: 0xF, select_buttons: 0xF };
-        handle_key_press(&mut state, &Key::Z);
-        assert_eq!(state.select_buttons, 0xE);
+        let mut emulator = initialize_screenless_emulator();
+        emulator.keys = KeyState { column: 0x0, directional_buttons: 0xF, select_buttons: 0xF };
+        handle_key_press(&mut emulator, &Key::Z);
+        assert_eq!(emulator.keys.select_buttons, 0xE);
     }
 
     #[test]
     fn stores_a_key_release() {
-        let mut state = KeyState { column: 0x0, directional_buttons: 0xF, select_buttons: 0xE };
-        handle_key_release(&mut state, &Key::Z);
-        assert_eq!(state.select_buttons, 0xF);
+        let mut emulator = initialize_screenless_emulator();
+        emulator.keys = KeyState { column: 0x0, directional_buttons: 0xF, select_buttons: 0xE };
+        handle_key_release(&mut emulator, &Key::Z);
+        assert_eq!(emulator.keys.select_buttons, 0xF);
     }
 }

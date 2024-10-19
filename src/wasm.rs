@@ -104,7 +104,7 @@ pub fn press_key(key_code: &str) {
         |key| {
             EMULATOR.with(|emulator_cell| {
                 let mut emulator = emulator_cell.borrow_mut();
-                keys::handle_key_press(&mut emulator.keys, &key);
+                keys::handle_key_press(&mut emulator, &key);
             })
         }
     );
@@ -118,7 +118,7 @@ pub fn release_key(key_code: &str) {
         |key| {
             EMULATOR.with(|emulator_cell| {
                 let mut emulator = emulator_cell.borrow_mut();
-                keys::handle_key_release(&mut emulator.keys, &key);
+                keys::handle_key_release(&mut emulator, &key);
             })
         }
     );
