@@ -624,19 +624,6 @@ fn should_not_decrement_period_divider_for_channel_4_if_only_four_instruction_cy
     assert_eq!(emulator.apu.channel4.period_divider, 742);
 }
 
-
-#[test]
-fn should_decrement_period_divider_for_channel_4_after_sixteen_instruction_cycles() {
-    let mut emulator = initialize_screenless_emulator();
-    initialize_noise_channel(&mut emulator);
-
-    emulator.apu.channel4.period_divider = 742;
-
-    step_apu_multiple_times(&mut emulator, 4);
-    
-    assert_eq!(emulator.apu.channel4.period_divider, 741); 
-}
-
 #[test]
 fn should_reload_period_divider_for_channel_4_once_it_decrements_to_zero() {
     let mut emulator = initialize_screenless_emulator();

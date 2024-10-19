@@ -15,7 +15,7 @@ pub struct NoiseChannel {
     pub lfsr: u16,
     pub control: u8,
     pub period_divider: u16,
-    pub instruction_cycles: u8
+    pub instruction_cycles: u16
 }
 
 pub fn initialize_noise_channel() -> NoiseChannel {
@@ -38,11 +38,6 @@ pub fn reset_noise_channel(original_noise_channel: &NoiseChannel) -> NoiseChanne
     new_noise_channel.length = length::reset_initial_settings(&original_noise_channel.length);
     new_noise_channel
 }
-
-// Divider for noise channel clocked at 266,144 Hz. Four times slower
-// than pulse channel. Therefore, we should only decrement the period
-// divider every 16 T-cycles.
-const PERIOD_DIVIDER_RATE_IN_T_CYCLES: u8 = 16;
 
 const WIDTH_MODE_INDEX: u8 = 3;
 const CONTROL_TRIGGER_INDEX: u8 = 7;
@@ -77,14 +72,11 @@ fn calculate_next_lfsr(channel: &NoiseChannel) -> u16 {
 }
 
 pub fn step(channel: &mut NoiseChannel, last_instruction_clock_cycles: u8) {
-    channel.instruction_cycles += last_instruction_clock_cycles;
-    if channel.instruction_cycles >= PERIOD_DIVIDER_RATE_IN_T_CYCLES {
+    channel.instruction_cycles += last_instruction_clock_cycles as u16;
+    if channel.instruction_cycles >= channel.period_divider {
         channel.instruction_cycles = 0;
-        channel.period_divider -= 1;
-        if channel.period_divider == 0 {
-            channel.period_divider = calculate_period_divider(channel);
-            channel.lfsr = calculate_next_lfsr(channel);
-        }
+        channel.period_divider = calculate_period_divider(channel);
+        channel.lfsr = calculate_next_lfsr(channel);
     }
 }
 
