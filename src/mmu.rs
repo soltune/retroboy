@@ -246,10 +246,12 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
                 }
             },
             0x8000..=0x9FFF => gpu::set_video_ram_byte(emulator, address & 0x1FFF, value),
-            0xA000..=0xBFFF => 
+            0xA000..=0xBFFF => {
+                let calculated_address = (emulator.memory.ram_bank_number as u16 * 0x2000) + (address & 0x1FFF);
                 if emulator.memory.ram_enabled {
-                    emulator.memory.external_ram[(address & 0x1FFF) as usize] = value
-                },
+                    emulator.memory.external_ram[calculated_address as usize] = value
+                }
+            },
             0xC000..=0xEFFF => {
                 let index = calculate_working_ram_index(emulator, address);
                 emulator.memory.working_ram[index] = value;
