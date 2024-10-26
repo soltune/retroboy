@@ -1,4 +1,5 @@
 use crate::cpu::jumps;
+use crate::cpu::microops;
 use crate::emulator::Emulator;
 
 pub enum InterruptType {
@@ -80,6 +81,7 @@ pub fn step(emulator: &mut Emulator) -> bool {
                 emulator.cpu.interrupts.enabled = false;
                 turn_off_interrupt_flag(emulator, &interrupt_type);
                 let isr_address = get_interrupt_isr(&interrupt_type);
+                microops::step_machine_cycles(emulator, 2);
                 jumps::restart(emulator, isr_address as u16);
                 true
             },

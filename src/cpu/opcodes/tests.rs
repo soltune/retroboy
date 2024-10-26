@@ -1282,7 +1282,7 @@ fn halts_the_cpu_until_interrupt() {
     step(&mut emulator);
     assert_eq!(emulator.cpu.halted, false);
     assert_eq!(emulator.cpu.registers.program_counter, 0x40);
-    assert_eq!(emulator.cpu.clock.total_clock_cycles, 28);
+    assert_eq!(emulator.cpu.clock.total_clock_cycles, 36);
 }
 
 #[test]
