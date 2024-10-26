@@ -113,26 +113,6 @@ fn initialize_test_emulator() -> Emulator {
 }
 
 #[test]
-fn should_render_nothing_if_lcd_enable_flag_is_off() {
-    let mut emulator = initialize_test_emulator();
-
-    initialize_monochrome_palettes(&mut emulator.gpu.registers.palettes);
-
-    write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
-    
-    emulator.gpu.registers.ly = 0;
-    emulator.gpu.registers.lcdc = 0b00000011;
-    
-    write_scanline(&mut emulator);
-
-    let frame_buffer = &emulator.gpu.frame_buffer;
-
-    assert_that(frame_buffer)
-        .at_starting_coordinates((0, 0))
-        .has_pixels(&[WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE]);
-}
-
-#[test]
 fn should_render_tile_line() {
     let mut emulator = initialize_test_emulator();
 

@@ -4,7 +4,7 @@ use crate::gpu::sprites::read_sprite_pixel_color;
 use crate::gpu::background::read_bg_color;
 use crate::gpu::prioritization::resolve_highest_priority_pixel;
 use crate::gpu::window::read_window_color;
-use crate::gpu::utils::{get_bg_and_window_enabled_mode, get_lcd_enabled_mode};
+use crate::gpu::utils::get_bg_and_window_enabled_mode;
 
 pub fn write_scanline(emulator: &mut Emulator) {
     let ly = emulator.gpu.registers.ly;
@@ -14,9 +14,7 @@ pub fn write_scanline(emulator: &mut Emulator) {
 
     let y = scy.wrapping_add(ly);
 
-    let lcd_enabled = !in_color_bios(emulator) && get_lcd_enabled_mode(lcdc);
-
-    if lcd_enabled {
+    if !in_color_bios(emulator) {
         for viewport_x in 0..GB_SCREEN_WIDTH as u8 {
             let x = scx.wrapping_add(viewport_x);
 

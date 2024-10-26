@@ -127,57 +127,62 @@ fn compare_ly_and_lyc(emulator: &mut Emulator) {
 }
 
 pub fn step(emulator: &mut Emulator) {
-    let double_speed_mode = emulator.speed_switch.cgb_double_speed;
-    emulator.gpu.mode_clock += get_t_cycle_increment(double_speed_mode) as u16;
+    let lcdc = emulator.gpu.registers.lcdc;
+    let lcd_enabled = get_lcd_enabled_mode(lcdc);
 
-    match emulator.gpu.mode {
-        OAM_MODE => {
-            if emulator.gpu.mode_clock >= OAM_TIME {
-                emulator.gpu.sprite_buffer = collect_scanline_sprites(emulator);
-                emulator.gpu.mode_clock = 0;
-                update_mode(emulator, VRAM_MODE);
-            }
-        }
-        VRAM_MODE => {
-            if emulator.gpu.mode_clock >= VRAM_TIME {
-                emulator.gpu.mode_clock = 0;
-                update_mode(emulator, HBLANK_MODE);
-                hdma::set_hblank_started(emulator, true);
-                write_scanline(emulator);
-            }
-        }
-        HBLANK_MODE => {
-            if emulator.gpu.mode_clock >= HBLANK_TIME {
-                if emulator.gpu.registers.ly == FRAME_SCANLINE_COUNT - VBLANK_SCANLINE_COUNT - 1 {
-                    update_mode(emulator, VBLANK_MODE);
-                    (emulator.render)(&emulator.gpu.frame_buffer);
-                    fire_vblank_interrupt(emulator);
+    if lcd_enabled {
+        let double_speed_mode = emulator.speed_switch.cgb_double_speed;
+        emulator.gpu.mode_clock += get_t_cycle_increment(double_speed_mode) as u16;
+    
+        match emulator.gpu.mode {
+            OAM_MODE => {
+                if emulator.gpu.mode_clock >= OAM_TIME {
+                    emulator.gpu.sprite_buffer = collect_scanline_sprites(emulator);
+                    emulator.gpu.mode_clock = 0;
+                    update_mode(emulator, VRAM_MODE);
                 }
-                else {
-                    update_mode(emulator, OAM_MODE);
-                }
-
-                emulator.gpu.registers.ly += 1;
-                emulator.gpu.mode_clock = 0;
-
-                compare_ly_and_lyc(emulator);
             }
-        }
-        VBLANK_MODE => {
-            if emulator.gpu.mode_clock >= SCANLINE_RENDER_TIME {
-                emulator.gpu.mode_clock = 0;
-                emulator.gpu.registers.ly += 1;
-
-                if emulator.gpu.registers.ly > FRAME_SCANLINE_COUNT - 1 {
-                    emulator.gpu.registers.ly = 0;
-                    update_mode(emulator, OAM_MODE);
+            VRAM_MODE => {
+                if emulator.gpu.mode_clock >= VRAM_TIME {
+                    emulator.gpu.mode_clock = 0;
+                    update_mode(emulator, HBLANK_MODE);
+                    hdma::set_hblank_started(emulator, true);
+                    write_scanline(emulator);
                 }
-
-                compare_ly_and_lyc(emulator);
             }
-        }
-        _ => ()
-    }    
+            HBLANK_MODE => {
+                if emulator.gpu.mode_clock >= HBLANK_TIME {
+                    if emulator.gpu.registers.ly == FRAME_SCANLINE_COUNT - VBLANK_SCANLINE_COUNT - 1 {
+                        update_mode(emulator, VBLANK_MODE);
+                        (emulator.render)(&emulator.gpu.frame_buffer);
+                        fire_vblank_interrupt(emulator);
+                    }
+                    else {
+                        update_mode(emulator, OAM_MODE);
+                    }
+    
+                    emulator.gpu.registers.ly += 1;
+                    emulator.gpu.mode_clock = 0;
+    
+                    compare_ly_and_lyc(emulator);
+                }
+            }
+            VBLANK_MODE => {
+                if emulator.gpu.mode_clock >= SCANLINE_RENDER_TIME {
+                    emulator.gpu.mode_clock = 0;
+                    emulator.gpu.registers.ly += 1;
+    
+                    if emulator.gpu.registers.ly > FRAME_SCANLINE_COUNT - 1 {
+                        emulator.gpu.registers.ly = 0;
+                        update_mode(emulator, OAM_MODE);
+                    }
+    
+                    compare_ly_and_lyc(emulator);
+                }
+            }
+            _ => ()
+        }   
+    }
 }
 
 pub fn get_cgb_bcpd(emulator: &Emulator) -> u8 {
