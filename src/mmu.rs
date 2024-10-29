@@ -2,72 +2,28 @@ use crate::bios::{CGB_BOOT, DMG_BOOTIX};
 use crate::{apu, dma, gpu};
 use crate::cpu::hdma;
 use crate::emulator::{is_cgb, Emulator};
+use crate::mmu::cartridge::{Cartridge, initialize_cartridge};
 use crate::speed_switch;
 use crate::keys;
+use std::io;
 
-#[derive(Debug)]
-#[derive(PartialEq)]
-pub enum MBCMode {
-    ROM,
-    RAM
-}
-
-#[derive(Debug)]
 pub struct Memory {
     pub in_bios: bool,
     pub bios: Vec<u8>,
-    pub rom: Vec<u8>,
     pub working_ram: [u8; 0x10000],
-    pub external_ram: [u8; 0x8000],
     pub zero_page_ram: [u8; 0x80],
-    pub cartridge_header: CartridgeHeader,
-    pub ram_enabled: bool,
-    pub rom_bank_number: u8,
-    pub ram_bank_number: u8,
-    pub mbc_mode: MBCMode,
-    pub svbk: u8
+    pub svbk: u8,
+    pub cartridge: Cartridge
 }
-
-#[derive(Debug)]
-pub struct CartridgeHeader {
-    pub sgb_support: bool,
-    pub type_code: u8,
-    pub max_banks: u16
-}
-
-const ENTRY_POINT_ADDRESS: usize = 0x100;
-const SGB_SUPPORT_ADDRESS: usize = 0x146;
-const CARTRIDGE_TYPE_ADDRESS: usize = 0x147;
-const ROM_SIZE_ADDRESS: usize = 0x148;
-
-pub const CART_TYPE_ROM_ONLY: u8 = 0;
-pub const CART_TYPE_MBC1: u8 = 1;
-pub const CART_TYPE_MBC1_WITH_RAM: u8 = 2;
-pub const CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY: u8 = 3;
-
-pub const SUPPORTED_CARTRIDGE_TYPES: [u8; 4] = [CART_TYPE_ROM_ONLY,
-    CART_TYPE_MBC1,
-    CART_TYPE_MBC1_WITH_RAM,
-    CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY]; 
 
 pub fn initialize_memory() -> Memory {
     Memory {
         in_bios: true,
         bios: [0; 0x100].to_vec(),
-        rom: Vec::new(),
         working_ram: [0; 0x10000],
-        external_ram: [0; 0x8000],
         zero_page_ram: [0; 0x80],
-        cartridge_header: CartridgeHeader {
-            sgb_support: false,
-            type_code: 0,
-            max_banks: 0
-        },
-        ram_enabled: false,
-        rom_bank_number: 1,
-        ram_bank_number: 0,
-        mbc_mode: MBCMode::ROM,
-        svbk: 0
+        svbk: 0,
+        cartridge: initialize_cartridge()
     }
 }
 
@@ -115,21 +71,12 @@ pub fn read_byte(emulator: &mut Emulator, address: u16) -> u8 {
             0x0000 if address >= 0x0200 && address <= 0x08FF && is_cgb(emulator) && emulator.memory.in_bios => {
                 emulator.memory.bios[address as usize]
             },
-            0x0000..=0x3FFF => emulator.memory.rom[address as usize],
-            0x4000..=0x7FFF => {
-                let calculated_address = (emulator.memory.rom_bank_number as u32 * 0x4000) + (address & 0x3FFF) as u32;
-                emulator.memory.rom[calculated_address as usize]
-            },
-            0x8000..=0x9FFF => gpu::get_video_ram_byte(emulator, address & 0x1FFF),
-            0xA000..=0xBFFF => {
-                let calculated_address = (emulator.memory.ram_bank_number as u16 * 0x2000) + (address & 0x1FFF);
-                if emulator.memory.ram_enabled {
-                    emulator.memory.external_ram[calculated_address as usize] 
-                }
-                else {
-                    0xFF
-                }
-            },
+            0x0000..=0x7FFF =>
+                cartridge::read_rom(&emulator.memory.cartridge, address),
+            0x8000..=0x9FFF =>
+                gpu::get_video_ram_byte(emulator, address & 0x1FFF),
+            0xA000..=0xBFFF =>
+                cartridge::read_ram(&emulator.memory.cartridge, address & 0x1FFF),
             0xC000..=0xEFFF => {
                 let index = calculate_working_ram_index(emulator, address);
                 emulator.memory.working_ram[index]
@@ -202,56 +149,12 @@ pub fn read_byte(emulator: &mut Emulator, address: u16) -> u8 {
 pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
     if address_accessible(emulator, address) {
         match address & 0xF000 {
-            0x0000..=0x1FFF => {
-                match emulator.memory.cartridge_header.type_code {
-                    CART_TYPE_MBC1_WITH_RAM | CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY => {
-                        emulator.memory.ram_enabled = (value & 0xF) == 0xA;
-                    }
-                    _ => ()
-                }
-            },
-            0x2000..=0x3FFF => {
-                match emulator.memory.cartridge_header.type_code {
-                    CART_TYPE_MBC1 | CART_TYPE_MBC1_WITH_RAM | CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY => {
-                        let masked_value = value & 0x1F;
-                        let mut bank_value = if masked_value == 0 { 1 as u8 } else { masked_value };
- 
-                        let max_bank_mask = ((emulator.memory.cartridge_header.max_banks - 1) & 0x1F) as u8;
-                        bank_value &= max_bank_mask;
-                        
-                        emulator.memory.rom_bank_number = (emulator.memory.rom_bank_number & 0x60) + (bank_value & 0x1F);
-                    },
-                    _ => ()
-                }
-            },
-            0x4000..=0x5FFF => {
-                match emulator.memory.cartridge_header.type_code {
-                    CART_TYPE_MBC1 | CART_TYPE_MBC1_WITH_RAM | CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY => {
-                        if emulator.memory.mbc_mode == MBCMode::RAM {
-                            emulator.memory.ram_bank_number = value & 0x3;
-                        }
-                        else if emulator.memory.cartridge_header.max_banks >= 64 {
-                            emulator.memory.rom_bank_number = ((value & 0x3) << 5) + (emulator.memory.rom_bank_number & 0x1F);
-                        }
-                    },
-                    _ => ()
-                }
-            },
-            0x6000..=0x7FFF => {
-                match emulator.memory.cartridge_header.type_code {
-                    CART_TYPE_MBC1_WITH_RAM | CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY => {
-                        emulator.memory.mbc_mode = if value == 1 { MBCMode::RAM } else { MBCMode::ROM };
-                    }
-                    _ => ()
-                }
-            },
-            0x8000..=0x9FFF => gpu::set_video_ram_byte(emulator, address & 0x1FFF, value),
-            0xA000..=0xBFFF => {
-                let calculated_address = (emulator.memory.ram_bank_number as u16 * 0x2000) + (address & 0x1FFF);
-                if emulator.memory.ram_enabled {
-                    emulator.memory.external_ram[calculated_address as usize] = value
-                }
-            },
+            0x0000..=0x7FFF =>
+                cartridge::write_rom(&mut emulator.memory.cartridge, address, value),
+            0x8000..=0x9FFF =>
+                gpu::set_video_ram_byte(emulator, address & 0x1FFF, value),
+            0xA000..=0xBFFF =>
+                cartridge::write_ram(&mut emulator.memory.cartridge, address & 0x1FFF, value),
             0xC000..=0xEFFF => {
                 let index = calculate_working_ram_index(emulator, address);
                 emulator.memory.working_ram[index] = value;
@@ -335,22 +238,20 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
     }
 }
 
-pub fn cartridge_type_supported(type_code: u8) -> bool {
-    SUPPORTED_CARTRIDGE_TYPES.contains(&type_code)
-}
-
-fn as_max_banks(rom_size_index: u8) -> u16 {
-    (2 as u16).pow(rom_size_index as u32 + 1)
-}
-
-pub fn load_rom_buffer(memory: &mut Memory, buffer: Vec<u8>) {
-    if buffer.len() > ENTRY_POINT_ADDRESS {
-        memory.cartridge_header.sgb_support = buffer[SGB_SUPPORT_ADDRESS] == 0x03;
-        memory.cartridge_header.type_code = buffer[CARTRIDGE_TYPE_ADDRESS];
-        memory.cartridge_header.max_banks = as_max_banks(buffer[ROM_SIZE_ADDRESS]);
-    } 
-    memory.rom = buffer;
+pub fn load_rom_buffer(memory: &mut Memory, buffer: Vec<u8>) -> io::Result<()> {
+    let cartridge_result = cartridge::load_rom_buffer(buffer);
+    match cartridge_result {
+        Ok(cartridge) => {
+            memory.cartridge = cartridge;
+            Ok(())
+        },
+        Err(e) => Err(e)
+    }
 }
 
 #[cfg(test)]
 mod tests;
+
+mod cartridge;
+mod mbc1;
+mod mbc_rom_only;

@@ -88,12 +88,12 @@ mod tests {
 
         let mut test_instructions: Vec<u8> = vec![0; 0x8000];
         test_instructions.resize(0x8000, 0);
-        mmu::load_rom_buffer(&mut emulator.memory, test_instructions);
+        mmu::load_rom_buffer(&mut emulator.memory, test_instructions).unwrap();
 
         emulator.dma.source = 0x1200;
         emulator.dma.offset = 0x0;
         emulator.dma.in_progress = true;
-        emulator.memory.rom[0x1200] = 0x12;
+        emulator.memory.cartridge.rom[0x1200] = 0x12;
         
         step(&mut emulator);
         
@@ -109,12 +109,12 @@ mod tests {
 
         let mut test_instructions: Vec<u8> = vec![0; 0x8000];
         test_instructions.resize(0x8000, 0);
-        mmu::load_rom_buffer(&mut emulator.memory, test_instructions);
+        mmu::load_rom_buffer(&mut emulator.memory, test_instructions).unwrap();
 
         emulator.dma.source = 0x1200;
         emulator.dma.offset = 0x0;
         emulator.dma.in_progress = true;
-        emulator.memory.rom[0x129F] = 0x12;
+        emulator.memory.cartridge.rom[0x129F] = 0x12;
         
         for _ in 0..DMA_TRANSFER_BYTES {
             step(&mut emulator);

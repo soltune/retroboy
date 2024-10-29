@@ -238,10 +238,10 @@ mod tests {
 
         let mut test_instructions = Vec::new();
         test_instructions.resize(0x8000, 0);
-        mmu::load_rom_buffer(&mut emulator.memory, test_instructions);
+        mmu::load_rom_buffer(&mut emulator.memory, test_instructions).unwrap();
 
         for i in 0..32 {
-            emulator.memory.rom[0x71A0 + i] = 0xA1;
+            emulator.memory.cartridge.rom[0x71A0 + i] = 0xA1;
         }
 
         set_hdma1(&mut emulator, 0x71);
@@ -274,10 +274,10 @@ mod tests {
 
         let mut test_instructions = Vec::new();
         test_instructions.resize(0x8000, 0);
-        mmu::load_rom_buffer(&mut emulator.memory, test_instructions);
+        mmu::load_rom_buffer(&mut emulator.memory, test_instructions).unwrap();
 
         for i in 0..32 {
-            emulator.memory.rom[0x71A0 + i] = 0xA1;
+            emulator.memory.cartridge.rom[0x71A0 + i] = 0xA1;
         }
 
         set_hdma1(&mut emulator, 0x71);
