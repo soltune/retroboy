@@ -77,15 +77,7 @@ pub fn in_color_bios(emulator: &Emulator) -> bool {
 
 pub fn load_rom(emulator: &mut RefMut<Emulator>, rom: &[u8]) -> io::Result<()> {
     let buffer = rom.to_vec();
-    mmu::load_rom_buffer(&mut emulator.memory, buffer);
-    let cartridge_type = emulator.memory.cartridge_header.type_code;
-    if mmu::cartridge_type_supported(cartridge_type) {
-        Ok(())
-    }
-    else {
-        let error_message  = format!("Unsupported cartridge type {cartridge_type}."); 
-        Err(io::Error::new(io::ErrorKind::Other, error_message)) 
-    }
+    mmu::load_rom_buffer(&mut emulator.memory, buffer)
 }
 
 pub fn sync(emulator: &mut Emulator) {
