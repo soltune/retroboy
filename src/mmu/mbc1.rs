@@ -33,7 +33,7 @@ pub fn write_rom(cartridge: &mut Cartridge, address: u16, value: u8) {
     match address {
         0x0000..=0x1FFF => {
             if ram_supported(cartridge) {
-                cartridge.mbc1.ram_enabled = value & 0x0F == 0x0A;
+                cartridge.mbc1.ram_enabled = (value & 0xF) == 0x0A;
             }
         },
         0x2000..=0x3FFF => {
@@ -53,7 +53,9 @@ pub fn write_rom(cartridge: &mut Cartridge, address: u16, value: u8) {
             }
         },
         0x6000..=0x7FFF => {
-            cartridge.mbc1.mode = if value & 0x01 == 0 { MBCMode::ROM } else { MBCMode::RAM };
+            if ram_supported(cartridge) {
+                cartridge.mbc1.mode = if value == 1 { MBCMode::RAM } else { MBCMode::ROM };
+            }
         },
         _ => panic!("Invalid ROM address: {:#X}", address),
     }
@@ -81,7 +83,11 @@ pub fn write_ram(cartridge: &mut Cartridge, address: u16, value: u8) {
 
 pub fn read_ram(cartridge: &Cartridge, address: u16) -> u8 {
     let calculated_address = (cartridge.mbc1.ram_bank_number as u16 * 0x2000) + address;
-    cartridge.ram[calculated_address as usize]
+    if cartridge.mbc1.ram_enabled {
+        cartridge.ram[calculated_address as usize]
+    } else {
+        0xFF
+    }
 }
 
 #[cfg(test)]
