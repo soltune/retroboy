@@ -254,4 +254,5 @@ mod tests;
 
 mod cartridge;
 mod mbc1;
+mod mbc3;
 mod mbc_rom_only;
