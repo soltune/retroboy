@@ -2,16 +2,17 @@ use crate::emulator::Emulator;
 
 #[derive(Debug)]
 pub struct Registers {
-    a: u8,
-    b: u8,
-    c: u8,
-    d: u8,
-    e: u8,
-    h: u8,
-    l: u8,
-    f: u8,
-    program_counter: u16,
-    stack_pointer: u16
+    pub a: u8,
+    pub b: u8,
+    pub c: u8,
+    pub d: u8,
+    pub e: u8,
+    pub h: u8,
+    pub l: u8,
+    pub f: u8,
+    pub opcode: u8,
+    pub program_counter: u16,
+    pub stack_pointer: u16
 }
 
 #[derive(Debug)]
@@ -28,12 +29,28 @@ pub struct Interrupts {
 }
 
 #[derive(Debug)]
+#[derive(PartialEq)]
+pub enum BusActivityType {
+    Read,
+    Write
+}
+
+#[derive(Debug)]
+#[derive(PartialEq)]
+pub struct BusActivityEntry {
+    pub address: u16,
+    pub value: u8,
+    pub activity_type: BusActivityType
+}
+
+#[derive(Debug)]
 pub struct CpuState {
     pub registers: Registers,
     pub clock: Clock,
     pub halted: bool,
     pub halt_bug: bool,
-    pub interrupts: Interrupts
+    pub interrupts: Interrupts,
+    pub opcode_bus_activity: Vec<Option<BusActivityEntry>>
 }
 
 pub enum Register {
@@ -68,6 +85,7 @@ pub fn initialize_cpu() -> CpuState {
             h: 0,
             l: 0,
             f: 0,
+            opcode: 0,
             program_counter: 0,
             stack_pointer: 0
         },
@@ -81,7 +99,8 @@ pub fn initialize_cpu() -> CpuState {
             enable_delay: 0,
             disable_delay: 0,
             enabled: false
-        }
+        },
+        opcode_bus_activity: Vec::new()
     }
 }
 

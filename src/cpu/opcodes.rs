@@ -36,6 +36,17 @@ fn reset_instruction_clock_cycles(cpu: &mut CpuState) {
     cpu.clock.instruction_clock_cycles = 0;
 }
 
+fn reset_last_opcode_bus_activity(emulator: &mut Emulator) {
+    if emulator.processor_test_mode {
+        emulator.cpu.opcode_bus_activity.clear();
+    }
+}
+
+fn prefetch_next_opcode(emulator: &mut Emulator) {
+    let next_opcode= read_next_instruction_byte(emulator);
+    emulator.cpu.registers.opcode = next_opcode;
+}
+
 pub fn step(emulator: &mut Emulator) {
     if emulator.hdma.in_progress {
         hdma::step(emulator);
@@ -44,12 +55,15 @@ pub fn step(emulator: &mut Emulator) {
     execute_opcode(emulator);
 
     interrupts::step(emulator);
+
+    prefetch_next_opcode(emulator);
 }
 
-fn execute_opcode(emulator: &mut Emulator) {
+fn execute_opcode(mut emulator: &mut Emulator) {
     reset_instruction_clock_cycles(&mut emulator.cpu);
+    reset_last_opcode_bus_activity(&mut emulator);
 
-    let opcode = read_next_instruction_byte(emulator);
+    let opcode = emulator.cpu.registers.opcode;
 
     emulate_halt_bug(&mut emulator.cpu);
     update_interrupt_flag_after_delay(&mut emulator.cpu);

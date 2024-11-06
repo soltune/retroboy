@@ -32,7 +32,8 @@ pub struct Emulator {
     pub hdma: HDMAState,
     pub render: fn(&[u8]),
     pub mode: Mode,
-    pub speed_switch: SpeedSwitch
+    pub speed_switch: SpeedSwitch,
+    pub processor_test_mode: bool
 }
 
 pub fn initialize_emulator(render: fn(&[u8])) -> Emulator {
@@ -59,7 +60,8 @@ pub fn initialize_emulator(render: fn(&[u8])) -> Emulator {
         hdma: initialize_hdma(),
         render,
         mode: Mode::DMG,
-        speed_switch: initialize_speed_switch()
+        speed_switch: initialize_speed_switch(),
+        processor_test_mode: false
     }
 }
 
