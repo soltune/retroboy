@@ -79,6 +79,13 @@ For convenience, here is a list of the resources I used:
 
 ## Future Plans
 
-Eventually, I plan to test this emulator using [Mooneye test ROM collection](https://github.com/Gekkio/mooneye-test-suite).
+From testing, the following games work pretty well with this emulator:
 
-This emulator can reliably run Tetris and Tic-Tac-Toe, however I need to test it with other games as well.
+1. Tic-Tac-Toe
+2. Tetris
+3. Kirby's Dream Land
+4. Pac-Man
+5. Super Mario Land
+
+Pokemon Red works for the most part but has a couple minor glitches (from what I've seen so far). Pokemon
+Silver works from what I can tell, however the clock does not work properly due to there being no RTC support.
