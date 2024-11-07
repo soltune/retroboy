@@ -12,8 +12,8 @@ This emulator passes the following test suites from Blargg's test ROM collection
 4. [Memory timing tests 2](https://github.com/retrio/gb-test-roms/tree/master/mem_timing-2)
 5. [APU tests (DMG)](https://github.com/retrio/gb-test-roms/tree/master/dmg_sound)
 
-This emulator also passes all [JSON CPU tests](https://github.com/adtennant/GameboyCPUTests), and passes
-only some tests from the Mooneye test ROM collection(https://github.com/Gekkio/mooneye-test-suite).
+Additionally, this emulator asses all [JSON CPU tests](https://github.com/adtennant/GameboyCPUTests), and
+only some tests from the [Mooneye test ROM collection](https://github.com/Gekkio/mooneye-test-suite).
 
 ## How to Compile to WebAssembly
 
