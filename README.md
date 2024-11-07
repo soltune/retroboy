@@ -60,11 +60,12 @@ At the moment, only MBC1 is supported.
 | ---- | --------- |
 | MBC1 | ✅        |
 | MBC2 | ❌        |
-| MBC3 | ❌        |
-| MBC4 | ❌        |
+| MBC3 | ✅        |
 | MBC5 | ❌        |
 | MBC6 | ❌        |
 | MBC7 | ❌        |
+
+(For MBC3, no RTC support yet.)
 
 ## Helpful Resources
 
