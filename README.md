@@ -54,8 +54,6 @@ This emulator is still a work in progress and not all features are supported.
 
 ### MBC Support
 
-At the moment, only MBC1 is supported.
-
 | Type | Supported |
 | ---- | --------- |
 | MBC1 | ✅        |
