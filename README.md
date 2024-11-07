@@ -79,7 +79,7 @@ For convenience, here is a list of the resources I used:
 
 ## Future Plans
 
-From testing, the following games work pretty well with this emulator:
+The following games work pretty well with this emulator:
 
 1. Tic-Tac-Toe
 2. Tetris
