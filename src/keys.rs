@@ -43,13 +43,13 @@ pub fn write_joyp_byte(key_state: &mut KeyState, value: u8) {
 
 pub fn read_joyp_byte(key_state: &KeyState) -> u8 {
     if key_state.column == 0x20 {
-        key_state.directional_buttons
+        0x20 | key_state.directional_buttons
     }
     else if key_state.column == 0x10 {
-        key_state.select_buttons
+        0x10 | key_state.select_buttons
     }
     else {
-        0x0
+        0x3F
     }
 }
 
@@ -111,14 +111,14 @@ mod tests {
     fn reads_from_directional_keys() {
         let state = KeyState { column: 0x20, directional_buttons: 0x4, select_buttons: 0x2 };
         let result = read_joyp_byte(&state);
-        assert_eq!(result, 0x4);
+        assert_eq!(result, 0x24);
     }
 
     #[test]
     fn reads_from_select_keys() {
         let state = KeyState { column: 0x10, directional_buttons: 0x4, select_buttons: 0x2 };
         let result = read_joyp_byte(&state);
-        assert_eq!(result, 0x2);
+        assert_eq!(result, 0x12);
     }
 
     #[test]

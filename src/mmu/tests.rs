@@ -305,7 +305,7 @@ fn writes_obp1_value_to_gpu() {
 #[test]
 fn reads_joyp_register() {
     let mut emulator = setup_emulator_with_test_memory();
-    assert_eq!(read_byte(&mut emulator, 0xFF00), 0x04);
+    assert_eq!(read_byte(&mut emulator, 0xFF00), 0x14);
 }
 
 #[test]
