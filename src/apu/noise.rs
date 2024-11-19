@@ -55,20 +55,19 @@ fn calculate_period_divider(channel: &NoiseChannel) -> u16 {
 }
 
 fn calculate_next_lfsr(channel: &NoiseChannel) -> u16 {
-    let width_mode = is_bit_set(channel.polynomial, WIDTH_MODE_INDEX);
+    let narrow_width = is_bit_set(channel.polynomial, WIDTH_MODE_INDEX);
 
     let first_lfsr_bit = channel.lfsr & 0b1;
     let second_lfsr_bit = (channel.lfsr & 0b10) >> 1;
-    let xor_result = first_lfsr_bit ^ second_lfsr_bit;
+    let xor_result = (!(first_lfsr_bit ^ second_lfsr_bit)) & 0b1;
 
-    let mut next_lfsr = (channel.lfsr >> 1) | (xor_result << 14);
+    let mut next_lfsr = channel.lfsr | (xor_result << 15);
 
-    if width_mode {
-        next_lfsr &= !(1 << 6);
-        next_lfsr |= xor_result << 6;
+    if narrow_width {
+        next_lfsr |= xor_result << 7;
     }
 
-    next_lfsr
+    next_lfsr >> 1
 }
 
 pub fn step(channel: &mut NoiseChannel, last_instruction_clock_cycles: u8) {
@@ -107,7 +106,7 @@ pub fn step_length(channel: &mut NoiseChannel) {
 
 pub fn dac_output(channel: &NoiseChannel) -> f32 {
     if channel.enabled {
-        let amplitude = (!channel.lfsr & 0x01) as u8;
+        let amplitude = (channel.lfsr & 0x01) as u8;
         let current_volume = channel.envelope.current_volume;
 
         let dac_input = amplitude * current_volume;
@@ -129,7 +128,7 @@ pub fn trigger(channel: &mut NoiseChannel) {
         channel.enabled = true;
     }
     channel.period_divider = calculate_period_divider(channel);
-    channel.lfsr = 0xFFFF;
+    channel.lfsr = 0;
     length::reload_timer_with_maximum(&mut channel.length);
     envelope::trigger(&mut channel.envelope);
 }
@@ -156,7 +155,7 @@ mod tests {
         let mut channel = initialize_noise_channel();
         enable_noise_channel(&mut channel);
 
-        channel.lfsr = 0xFFFF;
+        channel.lfsr = 0xFFFE;
         channel.envelope.current_volume = 0xA;
 
         assert_eq!(dac_output(&channel), -1.0);
@@ -167,7 +166,7 @@ mod tests {
         let mut channel = initialize_noise_channel();
         enable_noise_channel(&mut channel);
 
-        channel.lfsr = 0;
+        channel.lfsr = 0xFFFF;
         channel.envelope.current_volume = 0xA;
 
         assert_eq!(dac_output(&channel), 0.33333337);

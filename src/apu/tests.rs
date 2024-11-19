@@ -647,11 +647,11 @@ fn should_calculate_next_lfsr_value_correctly_for_channel_4() {
 
     emulator.apu.channel4.period_divider = 1;
     emulator.apu.channel4.polynomial = 0b00110110;
-    emulator.apu.channel4.lfsr = 0b110010100101101;
+    emulator.apu.channel4.lfsr = 0b0010010000101100;
 
     step_apu_multiple_times(&mut emulator, 4);
     
-    assert_eq!(emulator.apu.channel4.lfsr, 0b111001010010110);
+    assert_eq!(emulator.apu.channel4.lfsr, 0b0101001000010110);
 }
 
 #[test]
@@ -661,11 +661,11 @@ fn should_calculate_next_lfsr_value_correctly_in_width_mode_for_channel_4() {
 
     emulator.apu.channel4.period_divider = 1;
     emulator.apu.channel4.polynomial = 0b00111110;
-    emulator.apu.channel4.lfsr = 0b110010100101101;
+    emulator.apu.channel4.lfsr = 0b0010010000101100;
 
     step_apu_multiple_times(&mut emulator, 4);
     
-    assert_eq!(emulator.apu.channel4.lfsr, 0b111001011010110);
+    assert_eq!(emulator.apu.channel4.lfsr, 0b0101001001010110);
 }
 
 #[test]
@@ -686,16 +686,6 @@ fn should_set_ch4_control() {
     set_ch4_control(&mut emulator, 0b10000000);
 
     assert_eq!(emulator.apu.channel4.control, 0b10000000);
-}
-
-#[test]
-fn should_set_all_bits_of_lfsr_to_one_on_channel_4_trigger() {
-    let mut emulator = initialize_screenless_emulator();
-    initialize_disabled_noise_channel(&mut emulator);
-
-    set_ch4_control(&mut emulator, 0b10000000);
-
-    assert_eq!(emulator.apu.channel4.lfsr, 0xFFFF); 
 }
 
 #[test]
