@@ -8,7 +8,6 @@ use crate::apu::sweep;
 use crate::apu::sweep::{initialize_sweep, Sweep};
 use crate::apu::utils::{as_dac_output, bounded_wrapping_add, length_enabled};
 use crate::utils::{get_bit, is_bit_set};
-use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct PulseChannel {
@@ -42,6 +41,13 @@ pub fn reset_pulse_channel(original_pulse_channel: &PulseChannel) -> PulseChanne
 
 const MAX_WAVEFORM_STEPS: u8 = 7;
 const PERIOD_HIGH_TRIGGER_INDEX: u8 = 7;
+
+const WAVEFORMS: [u8; 4] = [
+    0b00000001,
+    0b00000011,
+    0b00001111,
+    0b11111100
+];
 
 pub fn step(channel: &mut PulseChannel, last_instruction_clock_cycles: u8) {
     if channel.enabled {
@@ -77,26 +83,14 @@ pub fn step_length(channel: &mut PulseChannel) {
 }
 
 pub fn dac_output(channel: &PulseChannel) -> f32 {
-    if channel.enabled {
-        let waveforms: HashMap<u8, u8> = HashMap::from([
-            (0b00, 0b00000001),
-            (0b01, 0b00000011),
-            (0b10, 0b00001111),
-            (0b11, 0b11111100)
-        ]);
-    
+    if channel.enabled {    
         let wave_duty = (channel.length.initial_settings & 0b11000000) >> 6;
-        let waveform = waveforms[&wave_duty];
+        let waveform = WAVEFORMS[wave_duty as usize];
         let amplitude = get_bit(waveform, channel.wave_duty_position);
         let current_volume = channel.envelope.current_volume;
         let dac_input = amplitude * current_volume;
 
-        if current_volume > 0 {
-            as_dac_output(dac_input)
-        }
-        else {
-            0.0
-        }
+        as_dac_output(dac_input)
     }
     else {
         0.0
