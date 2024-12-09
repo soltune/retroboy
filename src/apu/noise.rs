@@ -111,12 +111,7 @@ pub fn dac_output(channel: &NoiseChannel) -> f32 {
 
         let dac_input = amplitude * current_volume;
 
-        if current_volume > 0 {
-            as_dac_output(dac_input)
-        }
-        else {
-            0.0
-        }
+        as_dac_output(dac_input)
     }
     else {
         0.0
