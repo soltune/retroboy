@@ -3,7 +3,7 @@ use crate::apu::envelope::should_disable_dac;
 use crate::apu::noise::{initialize_noise_channel, reset_noise_channel, NoiseChannel};
 use crate::apu::wave::{initialize_wave_channel, reset_wave_channel, WaveChannel};
 use crate::apu::pulse::{initialize_pulse_channel, reset_pulse_channel, PulseChannel};
-use crate::apu::utils::bounded_wrapping_add;
+use crate::apu::utils::{bounded_wrapping_add, as_dac_output};
 use crate::emulator::{Emulator, in_color_bios};
 use crate::utils::{get_bit, get_t_cycle_increment, is_bit_set};
 
@@ -21,7 +21,11 @@ pub struct ApuState {
     pub audio_buffer_clock: u8,
     pub channel_clock: u8,
     pub left_sample_queue: Vec<f32>,
-    pub right_sample_queue: Vec<f32>
+    pub right_sample_queue: Vec<f32>,
+    pub summed_channel1_sample: f32,
+    pub summed_channel2_sample: f32,
+    pub summed_channel3_sample: f32,
+    pub summed_channel4_sample: f32
 }
 
 pub fn initialize_apu() -> ApuState {
@@ -38,7 +42,11 @@ pub fn initialize_apu() -> ApuState {
         audio_buffer_clock: 0,
         channel_clock: 0,
         left_sample_queue: Vec::new(),
-        right_sample_queue: Vec::new()
+        right_sample_queue: Vec::new(),
+        summed_channel1_sample: 0.0,
+        summed_channel2_sample: 0.0,
+        summed_channel3_sample: 0.0,
+        summed_channel4_sample: 0.0
     }
 }
 
@@ -114,6 +122,69 @@ pub fn get_right_sample_queue(emulator: &Emulator) -> &[f32] {
     &emulator.apu.right_sample_queue.as_slice()
 }
 
+fn calculate_sample_weight(steps_per_enqueue: u8, steps_since_enqueue: u8) -> f32 {
+    let step_index = steps_per_enqueue - steps_since_enqueue;
+    ((step_index as f32).ln() + 1.0) / ((steps_per_enqueue as f32).ln() + 1.0)
+}
+
+fn generate_dac_output(summed_channel_sample: f32, steps_since_enqueue: u8) -> f32 {
+    let avg_channel_sample = summed_channel_sample / steps_since_enqueue as f32;
+    as_dac_output(avg_channel_sample)
+}
+
+fn track_digital_outputs(emulator: &mut Emulator, weight: f32) {
+    let channel1_output = pulse::digital_output(&emulator.apu.channel1);
+    let channel2_output = pulse::digital_output(&emulator.apu.channel2);
+    let channel3_output = wave::digital_output(&emulator);
+    let channel4_output = noise::digital_output(&emulator.apu.channel4);
+
+    emulator.apu.summed_channel1_sample += channel1_output * weight;
+    emulator.apu.summed_channel2_sample += channel2_output * weight;
+    emulator.apu.summed_channel3_sample += channel3_output * weight;
+    emulator.apu.summed_channel4_sample += channel4_output * weight;
+}
+
+fn clear_summed_samples(emulator: &mut Emulator) {
+    emulator.apu.summed_channel1_sample = 0.0;
+    emulator.apu.summed_channel2_sample = 0.0;
+    emulator.apu.summed_channel3_sample = 0.0;
+    emulator.apu.summed_channel4_sample = 0.0;
+}
+
+fn enqueue_left_sample(emulator: &mut Emulator,
+    channel1_dac_output: f32,
+    channel2_dac_output: f32,
+    channel3_dac_output: f32,
+    channel4_dac_output: f32) {
+    let left_master_volume = (emulator.apu.master_volume & 0b01110000) >> 4;
+
+    let left_sample = calculate_left_stereo_sample(emulator.apu.sound_panning,
+        left_master_volume,
+        channel1_dac_output,
+        channel2_dac_output,
+        channel3_dac_output,
+        channel4_dac_output);
+
+    emulator.apu.left_sample_queue.push(left_sample);
+}
+
+fn enqueue_right_sample(emulator: &mut Emulator,
+    channel1_dac_output: f32,
+    channel2_dac_output: f32,
+    channel3_dac_output: f32,
+    channel4_dac_output: f32) {
+    let right_master_volume = emulator.apu.master_volume & 0b111;
+
+    let right_sample = calculate_right_stereo_sample(emulator.apu.sound_panning,
+        right_master_volume,
+        channel1_dac_output,
+        channel2_dac_output,
+        channel3_dac_output,
+        channel4_dac_output);
+
+    emulator.apu.right_sample_queue.push(right_sample);
+}
+
 fn enqueue_audio_samples(emulator: &mut Emulator) {
     /*
         This emulator uses audio syncing. It steps the emulator until the audio buffer is full, then 
@@ -124,53 +195,54 @@ fn enqueue_audio_samples(emulator: &mut Emulator) {
         initial GBC BIOS so it appears as if it's skipping the BIOS altogether (even though it still
         runs it; it's just hidden).
     */
-    if !in_color_bios(emulator) && emulator.apu.audio_buffer_clock as u32 >= ENQUEUE_RATE {
-        emulator.apu.audio_buffer_clock = 0;
+    if !in_color_bios(emulator) {
+        let cgb_double_speed = emulator.speed_switch.cgb_double_speed;
+        let t_cycle_increment = get_t_cycle_increment(cgb_double_speed);
 
-        let sound_panning = emulator.apu.sound_panning;
+        emulator.apu.audio_buffer_clock += t_cycle_increment;
+        let steps_since_enqueue = emulator.apu.audio_buffer_clock / t_cycle_increment;
+        let steps_per_enqueue = ENQUEUE_RATE as u8 + 1 / t_cycle_increment;
 
-        let channel1_output = pulse::dac_output(&emulator.apu.channel1);
-        let channel2_output = pulse::dac_output(&emulator.apu.channel2);
-        let channel3_output = wave::dac_output(&emulator);
-        let channel4_output = noise::dac_output(&emulator.apu.channel4);
+        let weight = calculate_sample_weight(steps_per_enqueue, steps_since_enqueue);
+        track_digital_outputs(emulator, weight);
+    
+        if emulator.apu.audio_buffer_clock as u32 >= ENQUEUE_RATE {
+            emulator.apu.audio_buffer_clock = 0;
+    
+            let channel1_dac_output = generate_dac_output(emulator.apu.summed_channel1_sample, steps_since_enqueue);
+            let channel2_dac_output = generate_dac_output(emulator.apu.summed_channel2_sample, steps_since_enqueue);
+            let channel3_dac_output = generate_dac_output(emulator.apu.summed_channel3_sample, steps_since_enqueue);
+            let channel4_dac_output = generate_dac_output(emulator.apu.summed_channel4_sample, steps_since_enqueue);
 
-        let left_master_volume = (emulator.apu.master_volume & 0b01110000) >> 4;
+            enqueue_left_sample(emulator,
+                channel1_dac_output,
+                channel2_dac_output,
+                channel3_dac_output,
+                channel4_dac_output);
 
-        let left_sample = calculate_left_stereo_sample(sound_panning,
-            left_master_volume,
-            channel1_output,
-            channel2_output,
-            channel3_output,
-            channel4_output);
+            enqueue_right_sample(emulator,
+                channel1_dac_output,
+                channel2_dac_output,
+                channel3_dac_output,
+                channel4_dac_output);
 
-        emulator.apu.left_sample_queue.push(left_sample);
-
-        let right_master_volume = emulator.apu.master_volume & 0b111;
-
-        let right_sample = calculate_right_stereo_sample(sound_panning,
-            right_master_volume,
-            channel1_output,
-            channel2_output,
-            channel3_output,
-            channel4_output);
-
-        emulator.apu.right_sample_queue.push(right_sample);
+            clear_summed_samples(emulator);
+        }
     }
 }
 
 pub fn step(emulator: &mut Emulator) {
     let double_speed_mode = emulator.speed_switch.cgb_double_speed;
-    let instruction_clock_cycles = get_t_cycle_increment(double_speed_mode);
-    emulator.apu.audio_buffer_clock += instruction_clock_cycles;
-    emulator.apu.channel_clock += instruction_clock_cycles;
+    let t_cycle_increment = get_t_cycle_increment(double_speed_mode);
+    emulator.apu.channel_clock += t_cycle_increment;
     
     if emulator.apu.enabled && emulator.apu.channel_clock >= CHANNEL_STEP_RATE {
         emulator.apu.channel_clock = 0;
 
-        pulse::step(&mut emulator.apu.channel1, instruction_clock_cycles);
-        pulse::step(&mut emulator.apu.channel2, instruction_clock_cycles);
-        wave::step(&mut emulator.apu.channel3, instruction_clock_cycles);
-        noise::step(&mut emulator.apu.channel4, instruction_clock_cycles);
+        pulse::step(&mut emulator.apu.channel1, t_cycle_increment);
+        pulse::step(&mut emulator.apu.channel2, t_cycle_increment);
+        wave::step(&mut emulator.apu.channel3, t_cycle_increment);
+        noise::step(&mut emulator.apu.channel4, t_cycle_increment);
         
         step_div_apu(emulator);
     }

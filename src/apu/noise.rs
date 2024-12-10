@@ -3,7 +3,7 @@ use crate::apu::envelope::{initialize_envelope, Envelope};
 use crate::apu::length;
 use crate::apu::length::{initialize_length, Length};
 use crate::utils::is_bit_set;
-use crate::apu::utils::{as_dac_output, length_enabled};
+use crate::apu::utils::length_enabled;
 
 #[derive(Debug)]
 pub struct NoiseChannel {
@@ -104,17 +104,14 @@ pub fn step_length(channel: &mut NoiseChannel) {
     }
 }
 
-pub fn dac_output(channel: &NoiseChannel) -> f32 {
+pub fn digital_output(channel: &NoiseChannel) -> f32 {
     if channel.enabled {
         let amplitude = (channel.lfsr & 0x01) as u8;
         let current_volume = channel.envelope.current_volume;
-
-        let dac_input = amplitude * current_volume;
-
-        as_dac_output(dac_input)
+        (amplitude * current_volume) as f32
     }
     else {
-        0.0
+        7.5
     }
 }
 
@@ -153,7 +150,7 @@ mod tests {
         channel.lfsr = 0xFFFE;
         channel.envelope.current_volume = 0xA;
 
-        assert_eq!(dac_output(&channel), -1.0);
+        assert_eq!(digital_output(&channel), 0.0);
     }
 
     #[test]
@@ -164,7 +161,7 @@ mod tests {
         channel.lfsr = 0xFFFF;
         channel.envelope.current_volume = 0xA;
 
-        assert_eq!(dac_output(&channel), 0.33333337);
+        assert_eq!(digital_output(&channel), 10.0);
     }
 
     #[test]
@@ -174,6 +171,6 @@ mod tests {
         channel.lfsr = 0;
         channel.envelope.current_volume = 0xA;
 
-        assert_eq!(dac_output(&channel), 0.0);
+        assert_eq!(digital_output(&channel), 7.5);
     }
 }

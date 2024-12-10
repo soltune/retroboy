@@ -2,7 +2,7 @@ use crate::apu::period;
 use crate::apu::period::{initalize_period, Period};
 use crate::apu::length;
 use crate::apu::length::{initialize_length, Length};
-use crate::apu::utils::{as_dac_output, bounded_wrapping_add, length_enabled};
+use crate::apu::utils::{bounded_wrapping_add, length_enabled};
 use crate::emulator::Emulator;
 use crate::utils::is_bit_set;
 
@@ -79,7 +79,7 @@ pub fn write_to_wave_ram(channel: &mut WaveChannel, localized_address: u8, new_v
     channel.wave_pattern_ram[localized_address as usize] = new_value;
 }
 
-pub fn dac_output(emulator: &Emulator) -> f32 {
+pub fn digital_output(emulator: &Emulator) -> f32 {
     if emulator.apu.channel3.enabled {
         let localized_address = emulator.apu.channel3.wave_position / 2;
         let byte_offset = emulator.apu.channel3.wave_position % 2;
@@ -89,14 +89,14 @@ pub fn dac_output(emulator: &Emulator) -> f32 {
     
         let output_level = (emulator.apu.channel3.volume & 0b01100000) >> 5;
         match output_level {
-            0b01 => as_dac_output(sample),
-            0b10 => as_dac_output(sample >> 1),
-            0b11 => as_dac_output(sample >> 2),
-            _ => 0.0
+            0b01 => sample as f32,
+            0b10 => (sample >> 1) as f32,
+            0b11 => (sample >> 2) as f32,
+            _ => 7.5
         }
     }
     else {
-        0.0
+        7.5
     }
 }
 
@@ -163,7 +163,7 @@ mod tests {
         emulator.apu.channel3.wave_position = 3;
         emulator.apu.channel3.volume = 0b00100000;
 
-        assert_eq!(dac_output(&emulator), -1.0);
+        assert_eq!(digital_output(&emulator), 0.0);
     }
 
     #[test]
@@ -179,7 +179,7 @@ mod tests {
         emulator.apu.channel3.wave_position = 5;
         emulator.apu.channel3.volume = 0b00100000;
 
-        assert_eq!(dac_output(&emulator), -0.46666664); 
+        assert_eq!(digital_output(&emulator), 4.0); 
     }
 
     #[test]
@@ -195,7 +195,7 @@ mod tests {
         emulator.apu.channel3.wave_position = 5;
         emulator.apu.channel3.volume = 0;
 
-        assert_eq!(dac_output(&emulator), 0.0); 
+        assert_eq!(digital_output(&emulator), 7.5); 
     }
 
     #[test]
@@ -211,7 +211,7 @@ mod tests {
         emulator.apu.channel3.wave_position = 5;
         emulator.apu.channel3.volume = 0b01000000;
 
-        assert_eq!(dac_output(&emulator), -0.73333335); 
+        assert_eq!(digital_output(&emulator), 2.0); 
     }
 
     #[test]
@@ -226,6 +226,6 @@ mod tests {
         emulator.apu.channel3.wave_position = 5;
         emulator.apu.channel3.volume = 0b01000000;
 
-        assert_eq!(dac_output(&emulator), 0.0); 
+        assert_eq!(digital_output(&emulator), 7.5); 
     }
 }

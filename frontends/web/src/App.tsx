@@ -210,11 +210,7 @@ const App = (): JSX.Element => {
                         step();
                     };
 
-                    const gainNode = audioContext.createGain();
-                    gainNode.gain.value = 0.25;
-                    gainNode.connect(audioContext.destination);
-
-                    bufferSource.connect(gainNode);
+                    bufferSource.connect(audioContext.destination);
                     bufferSource.start();
                 }
             };

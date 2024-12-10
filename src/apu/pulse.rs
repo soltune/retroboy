@@ -6,7 +6,7 @@ use crate::apu::period;
 use crate::apu::period::{initalize_period, Period};
 use crate::apu::sweep;
 use crate::apu::sweep::{initialize_sweep, Sweep};
-use crate::apu::utils::{as_dac_output, bounded_wrapping_add, length_enabled};
+use crate::apu::utils::{bounded_wrapping_add, length_enabled};
 use crate::utils::{get_bit, is_bit_set};
 
 #[derive(Debug)]
@@ -82,18 +82,16 @@ pub fn step_length(channel: &mut PulseChannel) {
     }
 }
 
-pub fn dac_output(channel: &PulseChannel) -> f32 {
+pub fn digital_output(channel: &PulseChannel) -> f32 {
     if channel.enabled {    
         let wave_duty = (channel.length.initial_settings & 0b11000000) >> 6;
         let waveform = WAVEFORMS[wave_duty as usize];
         let amplitude = get_bit(waveform, channel.wave_duty_position);
         let current_volume = channel.envelope.current_volume;
-        let dac_input = amplitude * current_volume;
-
-        as_dac_output(dac_input)
+        (amplitude * current_volume) as f32
     }
     else {
-        0.0
+        7.5
     }
 }
 
@@ -151,7 +149,7 @@ mod tests {
         let current_volume = 5;
         initialize_amplitude_variables(&mut channel, wave_duty, wave_duty_position, current_volume);
 
-        assert_eq!(dac_output(&channel), -1.0);
+        assert_eq!(digital_output(&channel), 0.0);
     }
 
     #[test]
@@ -164,7 +162,7 @@ mod tests {
         let current_volume = 5;
         initialize_amplitude_variables(&mut channel, wave_duty, wave_duty_position, current_volume);
 
-        assert_eq!(dac_output(&channel), -0.3333333);
+        assert_eq!(digital_output(&channel), 5.0);
     }
 
     #[test]
@@ -177,7 +175,7 @@ mod tests {
         let current_volume = 10;
         initialize_amplitude_variables(&mut channel, wave_duty, wave_duty_position, current_volume);
 
-        assert_eq!(dac_output(&channel), 0.33333337);
+        assert_eq!(digital_output(&channel), 10.0);
     }
 
     #[test]
@@ -189,6 +187,6 @@ mod tests {
         let current_volume = 10;
         initialize_amplitude_variables(&mut channel, wave_duty, wave_duty_position, current_volume);
 
-        assert_eq!(dac_output(&channel), 0.0);
+        assert_eq!(digital_output(&channel), 7.5);
     }
 }
