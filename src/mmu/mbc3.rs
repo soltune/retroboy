@@ -150,9 +150,8 @@ pub fn read_ram(cartridge: &Cartridge, address: u16) -> u8 {
 
 #[cfg(test)]
 mod tests {
-    use crate::mmu::cartridge::*;
     use crate::emulator::initialize_screenless_emulator;
-    use crate::mmu::cartridge::{CART_TYPE_MBC3, CART_TYPE_MBC3_RAM, CART_TYPE_MBC3_TIMER_BATTERY, CART_TYPE_MBC3_TIMER_RAM_BATTERY};
+    use crate::mmu::cartridge::{CART_TYPE_MBC3, CART_TYPE_MBC3_RAM, CART_TYPE_MBC3_TIMER_BATTERY, CART_TYPE_MBC3_TIMER_RAM_BATTERY, RAM_SIZE_ADDRESS};
     use crate::mmu::{self, load_rom_buffer};
     use super::*;
 
