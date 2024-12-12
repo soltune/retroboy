@@ -150,6 +150,7 @@ pub fn read_ram(cartridge: &Cartridge, address: u16) -> u8 {
 
 #[cfg(test)]
 mod tests {
+    use crate::mmu::cartridge::*;
     use crate::emulator::initialize_screenless_emulator;
     use crate::mmu::cartridge::{CART_TYPE_MBC3, CART_TYPE_MBC3_RAM, CART_TYPE_MBC3_TIMER_BATTERY, CART_TYPE_MBC3_TIMER_RAM_BATTERY};
     use crate::mmu::{self, load_rom_buffer};
@@ -204,7 +205,8 @@ mod tests {
         let mut emulator = initialize_screenless_emulator();
         emulator.memory.in_bios = false;
 
-        let rom_buffer = vec![0; 0x40000];
+        let mut rom_buffer = vec![0; 0x40000];
+        rom_buffer[RAM_SIZE_ADDRESS] = 0x3;
         load_rom_buffer(&mut emulator.memory, rom_buffer).unwrap();
 
         emulator.memory.cartridge.header.type_code = CART_TYPE_MBC3_RAM;
@@ -220,7 +222,8 @@ mod tests {
         let mut emulator = initialize_screenless_emulator();
         emulator.memory.in_bios = false;
 
-        let rom_buffer = vec![0; 0x40000];
+        let mut rom_buffer = vec![0; 0x40000];
+        rom_buffer[RAM_SIZE_ADDRESS] = 0x3;
         load_rom_buffer(&mut emulator.memory, rom_buffer).unwrap();
 
         emulator.memory.cartridge.header.type_code = CART_TYPE_MBC3_TIMER_BATTERY;
@@ -236,7 +239,8 @@ mod tests {
         let mut emulator = initialize_screenless_emulator();
         emulator.memory.in_bios = false;
 
-        let rom_buffer = vec![0; 0x40000];
+        let mut rom_buffer = vec![0; 0x40000];
+        rom_buffer[RAM_SIZE_ADDRESS] = 0x3;
         load_rom_buffer(&mut emulator.memory, rom_buffer).unwrap();
 
         emulator.memory.cartridge.header.type_code = CART_TYPE_MBC3_RAM;
@@ -253,7 +257,8 @@ mod tests {
         let mut emulator = initialize_screenless_emulator();
         emulator.memory.in_bios = false;
 
-        let rom_buffer = vec![0; 0x40000];
+        let mut rom_buffer = vec![0; 0x40000];
+        rom_buffer[RAM_SIZE_ADDRESS] = 0x3;
         load_rom_buffer(&mut emulator.memory, rom_buffer).unwrap();
 
         emulator.memory.cartridge.header.type_code = CART_TYPE_MBC3_TIMER_BATTERY;
@@ -270,7 +275,8 @@ mod tests {
         let mut emulator = initialize_screenless_emulator();
         emulator.memory.in_bios = false;
 
-        let rom_buffer = vec![0; 0x40000];
+        let mut rom_buffer = vec![0; 0x40000];
+        rom_buffer[RAM_SIZE_ADDRESS] = 0x3;
         load_rom_buffer(&mut emulator.memory, rom_buffer).unwrap();
 
         emulator.memory.cartridge.header.type_code = CART_TYPE_MBC3_RAM;

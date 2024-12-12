@@ -12,6 +12,7 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.memory.bios[3] = 0x4D;
 
     emulator.memory.cartridge.rom.resize(0x8000, 0);
+    emulator.memory.cartridge.ram.resize(0x8000, 0);
 
     emulator.memory.cartridge.rom[0] = 0x1E;
     emulator.memory.cartridge.rom[1] = 0xF2;

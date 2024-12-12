@@ -249,6 +249,7 @@ mod tests {
     #[test]
     fn reads_from_different_ram_bank() {
         let mut emulator = initialize_screenless_emulator();
+        emulator.memory.cartridge.ram.resize(0x8000, 0);
         emulator.memory.cartridge.header.type_code = CART_TYPE_MBC1_WITH_RAM;
         emulator.memory.cartridge.mbc1.mode = MBCMode::RAM;
         emulator.memory.cartridge.mbc1.ram_bank_number = 3;

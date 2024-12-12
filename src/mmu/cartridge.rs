@@ -17,7 +17,7 @@ pub struct CartridgeHeader {
 #[derive(Debug)]
 pub struct Cartridge {
     pub rom: Vec<u8>,
-    pub ram: [u8; 0x8000],
+    pub ram: Vec<u8>,
     pub header: CartridgeHeader,
     pub mbc1: MBC1,
     pub mbc3: MBC3,
@@ -27,6 +27,7 @@ const ENTRY_POINT_ADDRESS: usize = 0x100;
 const SGB_SUPPORT_ADDRESS: usize = 0x146;
 const CARTRIDGE_TYPE_ADDRESS: usize = 0x147;
 const ROM_SIZE_ADDRESS: usize = 0x148;
+pub const RAM_SIZE_ADDRESS: usize = 0x149;
 
 pub const CART_TYPE_ROM_ONLY: u8 = 0x0;
 pub const CART_TYPE_MBC1: u8 = 0x1;
@@ -51,7 +52,7 @@ pub const SUPPORTED_CARTRIDGE_TYPES: [u8; 9] = [CART_TYPE_ROM_ONLY,
 pub fn initialize_cartridge() -> Cartridge {
     Cartridge {
         rom: Vec::new(),
-        ram: [0; 0x8000],
+        ram: Vec::new(),
         header: CartridgeHeader {
             sgb_support: false,
             type_code: 0,
@@ -84,6 +85,20 @@ fn is_mbc3(type_code: u8) -> bool {
         | CART_TYPE_MBC3_TIMER_RAM_BATTERY)
 }
 
+fn set_ram_size(cartridge: &mut Cartridge) {
+    let ram_size_index = cartridge.rom[RAM_SIZE_ADDRESS];
+    let ram_size = match ram_size_index {
+        0x0 => 0,
+        0x1 => 0x800,
+        0x2 => 0x2000,
+        0x3 => 0x8000,
+        0x4 => 0x20000,
+        0x5 => 0x10000,
+        _ => panic!("Unsupported RAM size index: {}", ram_size_index),
+    };
+    cartridge.ram.resize(ram_size as usize, 0);
+}
+
 pub fn load_rom_buffer(buffer: Vec<u8>) -> io::Result<Cartridge> {
     if buffer.len() > ENTRY_POINT_ADDRESS {
         let type_code = buffer[CARTRIDGE_TYPE_ADDRESS];
@@ -91,9 +106,9 @@ pub fn load_rom_buffer(buffer: Vec<u8>) -> io::Result<Cartridge> {
         let rom_size = buffer[ROM_SIZE_ADDRESS];
 
         if cartridge_type_supported(type_code) {
-            let cartridge = Cartridge {
+            let mut cartridge = Cartridge {
                 rom: buffer,
-                ram: [0; 0x8000],
+                ram: Vec::new(),
                 header: CartridgeHeader {
                     sgb_support,
                     type_code,
@@ -102,6 +117,8 @@ pub fn load_rom_buffer(buffer: Vec<u8>) -> io::Result<Cartridge> {
                 mbc1: initialize_mbc1(),
                 mbc3: initialize_mbc3(empty_clock), // TODO: Initialize with actual clock
             };
+
+            set_ram_size(&mut cartridge);
 
             Ok(cartridge)
         } else {
