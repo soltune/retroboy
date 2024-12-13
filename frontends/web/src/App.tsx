@@ -16,7 +16,7 @@ import {
     ToggleButton,
     ToggleButtonGroup,
 } from "@mui/material";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import {
     BufferFileUpload,
@@ -25,13 +25,10 @@ import {
 import { CssGrid, GapSize, Orientation, Position } from "./components/cssGrid";
 import GameScreen from "./components/gameScreen";
 import HelpModal from "./components/helpModal";
-import init, {
-    initializeEmulator,
-    pressKey,
-    releaseKey,
-    resetEmulator,
-    stepUntilNextAudioBuffer,
-} from "./core/retroboyCore";
+import { initializeEmulator, resetEmulator } from "./core/retroboyCore";
+import useAudioSync from "./hooks/useAudioSync";
+import useKeyListeners from "./hooks/useKeyListeners";
+import useWasmInitializer from "./hooks/useWasmInitializer";
 
 const AppGrid = styled(CssGrid)`
     height: 100%;
@@ -57,19 +54,8 @@ const darkTheme = createTheme({
     },
 });
 
-const keys = [
-    "ArrowDown",
-    "ArrowUp",
-    "ArrowLeft",
-    "ArrowRight",
-    "Enter",
-    "Space",
-    "KeyX",
-    "KeyZ",
-];
-
 const App = (): JSX.Element => {
-    const [wasmInitialized, setWasmInitialized] = useState(false);
+    const wasmInitialized = useWasmInitializer();
 
     const [romBuffer, setRomBuffer] = useState(null as FileBufferObject | null);
 
@@ -77,17 +63,20 @@ const App = (): JSX.Element => {
     const [paused, setPaused] = useState(false);
     const [mode, setMode] = useState("DMG");
 
+    useKeyListeners(playing);
+
     const [showHelpText, setShowHelpText] = useState(false);
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
-    const audioContextRef = useRef<AudioContext | null>(null);
-    const scheduledResetRef = useRef<boolean>(false);
 
-    const initalizeWasm = (): void => {
-        init().then(() => {
-            setWasmInitialized(true);
-        });
+    const resetGame = (): void => {
+        setPlaying(false);
+        setPaused(false);
+        resetEmulator();
+        setRomBuffer(null);
     };
+
+    const [audioContextRef, startReset] = useAudioSync(playing, resetGame);
 
     const playGame = (): void => {
         if (romBuffer) {
@@ -101,22 +90,6 @@ const App = (): JSX.Element => {
         setPlaying(true);
     };
 
-    const resetGame = (): void => {
-        setPlaying(false);
-        setPaused(false);
-        resetEmulator();
-        setRomBuffer(null);
-        scheduledResetRef.current = false;
-    };
-
-    const startReset = (): void => {
-        if (playing) {
-            scheduledResetRef.current = true;
-        } else {
-            resetGame();
-        }
-    };
-
     const pauseGame = (): void => {
         setPaused(true);
         setPlaying(false);
@@ -125,20 +98,6 @@ const App = (): JSX.Element => {
     const resumeGame = (): void => {
         setPaused(false);
         setPlaying(true);
-    };
-
-    const handleKeyDown = (event: KeyboardEvent): void => {
-        if (keys.includes(event.code)) {
-            event.preventDefault();
-            pressKey(event.code);
-        }
-    };
-
-    const handleKeyUp = (event: KeyboardEvent): void => {
-        if (keys.includes(event.code)) {
-            event.preventDefault();
-            releaseKey(event.code);
-        }
     };
 
     const setFullscreen = (): void => {
@@ -157,81 +116,12 @@ const App = (): JSX.Element => {
         }
     };
 
-    useEffect(() => {
-        initalizeWasm();
-    }, []);
-
-    const step = useCallback(() => {
-        if (scheduledResetRef.current) {
-            resetGame();
-        } else if (playing) {
-            stepUntilNextAudioBuffer();
-        }
-    }, [playing]);
-
     const handleModeChange = (
         _: React.MouseEvent<HTMLElement>,
         newMode: string,
     ) => {
         setMode(newMode);
     };
-
-    useEffect(() => {
-        if (wasmInitialized) {
-            (window as any).playAudioSamples = (
-                leftAudioSamples: number[],
-                rightAudioSamples: number[],
-            ): void => {
-                const audioContext = audioContextRef.current;
-
-                if (audioContext) {
-                    const bufferLength = leftAudioSamples.length;
-                    if (bufferLength === 0) {
-                        return;
-                    }
-                    const audioBuffer = audioContext.createBuffer(
-                        2,
-                        bufferLength,
-                        48000,
-                    );
-
-                    const leftChannel = audioBuffer.getChannelData(0);
-                    const rightChannel = audioBuffer.getChannelData(1);
-
-                    for (let i = 0; i < bufferLength; i++) {
-                        leftChannel[i] = leftAudioSamples[i];
-                        rightChannel[i] = rightAudioSamples[i];
-                    }
-
-                    const bufferSource = audioContext.createBufferSource();
-                    bufferSource.buffer = audioBuffer;
-
-                    bufferSource.onended = () => {
-                        step();
-                    };
-
-                    bufferSource.connect(audioContext.destination);
-                    bufferSource.start();
-                }
-            };
-        }
-    }, [wasmInitialized, playing]);
-
-    useEffect(() => {
-        if (playing) {
-            step();
-
-            window.addEventListener("keydown", handleKeyDown);
-            window.addEventListener("keyup", handleKeyUp);
-        }
-
-        return () => {
-            if (playing) {
-                window.removeEventListener("keydown", handleKeyDown);
-                window.removeEventListener("keyup", handleKeyUp);
-            }
-        };
-    }, [playing]);
 
     return (
         <ThemeProvider theme={darkTheme}>
