@@ -17,7 +17,7 @@ const useAudioSync = (
     const startReset = (): void => {
         if (playing) {
             scheduledResetRef.current = true;
-        } else {
+        } else if (playing) {
             resetGame();
         }
     };
@@ -31,44 +31,42 @@ const useAudioSync = (
     }, [playing]);
 
     useEffect(() => {
-        if (playing) {
-            (window as any).playAudioSamples = (
-                leftAudioSamples: number[],
-                rightAudioSamples: number[],
-            ): void => {
-                const audioContext = audioContextRef.current;
+        (window as any).playAudioSamples = (
+            leftAudioSamples: number[],
+            rightAudioSamples: number[],
+        ): void => {
+            const audioContext = audioContextRef.current;
 
-                if (audioContext) {
-                    const bufferLength = leftAudioSamples.length;
-                    if (bufferLength === 0) {
-                        return;
-                    }
-                    const audioBuffer = audioContext.createBuffer(
-                        2,
-                        bufferLength,
-                        48000,
-                    );
-
-                    const leftChannel = audioBuffer.getChannelData(0);
-                    const rightChannel = audioBuffer.getChannelData(1);
-
-                    for (let i = 0; i < bufferLength; i++) {
-                        leftChannel[i] = leftAudioSamples[i];
-                        rightChannel[i] = rightAudioSamples[i];
-                    }
-
-                    const bufferSource = audioContext.createBufferSource();
-                    bufferSource.buffer = audioBuffer;
-
-                    bufferSource.onended = () => {
-                        step();
-                    };
-
-                    bufferSource.connect(audioContext.destination);
-                    bufferSource.start();
+            if (audioContext) {
+                const bufferLength = leftAudioSamples.length;
+                if (bufferLength === 0) {
+                    return;
                 }
-            };
-        }
+                const audioBuffer = audioContext.createBuffer(
+                    2,
+                    bufferLength,
+                    48000,
+                );
+
+                const leftChannel = audioBuffer.getChannelData(0);
+                const rightChannel = audioBuffer.getChannelData(1);
+
+                for (let i = 0; i < bufferLength; i++) {
+                    leftChannel[i] = leftAudioSamples[i];
+                    rightChannel[i] = rightAudioSamples[i];
+                }
+
+                const bufferSource = audioContext.createBufferSource();
+                bufferSource.buffer = audioBuffer;
+
+                bufferSource.onended = () => {
+                    step();
+                };
+
+                bufferSource.connect(audioContext.destination);
+                bufferSource.start();
+            }
+        };
     }, [playing]);
 
     useEffect(() => {
