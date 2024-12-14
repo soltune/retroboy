@@ -33,6 +33,8 @@ pub const RAM_SIZE_ADDRESS: usize = 0x149;
 const TITLE_START_ADDRESS: usize = 0x134;
 const TITLE_END_ADDRESS: usize = 0x143;
 
+const CGB_COMPATABILITY_INDEX: usize = 15;
+
 pub const CART_TYPE_ROM_ONLY: u8 = 0x0;
 pub const CART_TYPE_MBC1: u8 = 0x1;
 pub const CART_TYPE_MBC1_WITH_RAM: u8 = 0x2;
@@ -104,6 +106,10 @@ fn set_ram_size(cartridge: &mut Cartridge) {
     cartridge.ram.resize(ram_size as usize, 0);
 }
 
+fn is_cgb_compatability_flag(index: usize, byte: u8) -> bool {
+    index == CGB_COMPATABILITY_INDEX && (byte == 0xC0 || byte == 0x80)
+}
+
 pub fn load_rom_buffer(buffer: Vec<u8>) -> io::Result<Cartridge> {
     if buffer.len() > ENTRY_POINT_ADDRESS {
         let type_code = buffer[CARTRIDGE_TYPE_ADDRESS];
@@ -111,10 +117,12 @@ pub fn load_rom_buffer(buffer: Vec<u8>) -> io::Result<Cartridge> {
         let rom_size = buffer[ROM_SIZE_ADDRESS];
 
         let title_bytes = &buffer[TITLE_START_ADDRESS..=TITLE_END_ADDRESS];
-        let title = match String::from_utf8(title_bytes.to_vec()) {
-            Ok(s) => s.trim_end_matches('\u{0}').to_string(),
-            Err(_) => "UNKNOWN".to_string(),
-        };
+        let title = title_bytes
+            .iter()
+            .enumerate()
+            .take_while(|&(i, &b)| !is_cgb_compatability_flag(i, b) && b != 0x00)
+            .map(|(_, &b)| b as char)
+            .collect::<String>();
 
         if cartridge_type_supported(type_code) {
             let mut cartridge = Cartridge {
