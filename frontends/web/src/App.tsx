@@ -80,7 +80,8 @@ const App = (): JSX.Element => {
 
     const playGame = (): void => {
         if (romBuffer) {
-            initializeEmulator(romBuffer.data, mode);
+            let metadata = initializeEmulator(romBuffer.data, mode);
+            console.log(`Game Title: ${metadata.title}`);
         }
 
         if (!audioContextRef.current) {

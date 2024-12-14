@@ -9,6 +9,7 @@ use crate::dma::{initialize_dma, DMAState};
 use crate::gpu::{self, initialize_gpu, GpuState};
 use crate::keys::{initialize_keys, KeyState};
 use crate::mmu;
+pub use crate::mmu::CartridgeHeader;
 use crate::mmu::{Memory, initialize_memory};
 use crate::speed_switch::{initialize_speed_switch, SpeedSwitch};
 use std::cell::RefMut;
@@ -77,7 +78,7 @@ pub fn in_color_bios(emulator: &Emulator) -> bool {
     emulator.memory.in_bios && is_cgb(emulator)
 }
 
-pub fn load_rom(emulator: &mut RefMut<Emulator>, rom: &[u8]) -> io::Result<()> {
+pub fn load_rom(emulator: &mut RefMut<Emulator>, rom: &[u8]) -> io::Result<CartridgeHeader> {
     let buffer = rom.to_vec();
     mmu::load_rom_buffer(&mut emulator.memory, buffer)
 }

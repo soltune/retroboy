@@ -7,11 +7,12 @@ use crate::mmu::mbc3;
 use crate::mmu::mbc3::{MBC3, empty_clock, initialize_mbc3};
 use crate::mmu::mbc_rom_only;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CartridgeHeader {
     pub sgb_support: bool,
     pub type_code: u8,
-    pub max_banks: u16
+    pub max_banks: u16,
+    pub title: String
 }
 
 #[derive(Debug)]
@@ -28,6 +29,9 @@ const SGB_SUPPORT_ADDRESS: usize = 0x146;
 const CARTRIDGE_TYPE_ADDRESS: usize = 0x147;
 const ROM_SIZE_ADDRESS: usize = 0x148;
 pub const RAM_SIZE_ADDRESS: usize = 0x149;
+
+const TITLE_START_ADDRESS: usize = 0x134;
+const TITLE_END_ADDRESS: usize = 0x143;
 
 pub const CART_TYPE_ROM_ONLY: u8 = 0x0;
 pub const CART_TYPE_MBC1: u8 = 0x1;
@@ -57,6 +61,7 @@ pub fn initialize_cartridge() -> Cartridge {
             sgb_support: false,
             type_code: 0,
             max_banks: 0,
+            title: String::from(""),
         },
         mbc1: initialize_mbc1(),
         mbc3: initialize_mbc3(empty_clock), // TODO: Initialize with actual clock
@@ -105,6 +110,12 @@ pub fn load_rom_buffer(buffer: Vec<u8>) -> io::Result<Cartridge> {
         let sgb_support = buffer[SGB_SUPPORT_ADDRESS] == 0x03;
         let rom_size = buffer[ROM_SIZE_ADDRESS];
 
+        let title_bytes = &buffer[TITLE_START_ADDRESS..=TITLE_END_ADDRESS];
+        let title = match String::from_utf8(title_bytes.to_vec()) {
+            Ok(s) => s.trim_end_matches('\u{0}').to_string(),
+            Err(_) => "UNKNOWN".to_string(),
+        };
+
         if cartridge_type_supported(type_code) {
             let mut cartridge = Cartridge {
                 rom: buffer,
@@ -113,6 +124,7 @@ pub fn load_rom_buffer(buffer: Vec<u8>) -> io::Result<Cartridge> {
                     sgb_support,
                     type_code,
                     max_banks: as_max_banks(rom_size),
+                    title
                 },
                 mbc1: initialize_mbc1(),
                 mbc3: initialize_mbc3(empty_clock), // TODO: Initialize with actual clock

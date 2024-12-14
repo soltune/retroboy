@@ -1,6 +1,7 @@
 use crate::emulator;
 use crate::emulator::Emulator;
 use crate::emulator::Mode;
+use crate::emulator::CartridgeHeader;
 use crate::keys;
 use crate::keys::Key;
 use std::cell::RefCell;
@@ -28,6 +29,19 @@ extern "C" {
     pub fn play_audio_samples(left_samples: &[f32], right_samples: &[f32]);
 }
 
+#[wasm_bindgen]
+pub struct RomMetadata {
+    title: String
+}
+
+#[wasm_bindgen]
+impl RomMetadata {
+    #[wasm_bindgen(getter)]
+    pub fn title(&self) -> String {
+        self.title.clone()
+    }
+}
+
 fn initialize_web_emulator() -> Emulator {
     emulator::initialize_emulator(canvas_render)
 }
@@ -46,19 +60,27 @@ fn as_mode(mode_text: &str) -> Mode {
     }
 }
 
+fn as_rom_metadadta(header: CartridgeHeader) -> RomMetadata {
+    RomMetadata {
+        title: header.title
+    }
+}
+
 #[wasm_bindgen(js_name = initializeEmulator)]
-pub fn initialize_emulator(rom_buffer: &[u8], mode_text: &str) {
-    EMULATOR.with(|emulator_cell| {
+pub fn initialize_emulator(rom_buffer: &[u8], mode_text: &str) -> RomMetadata {
+    EMULATOR.with(|emulator_cell: &RefCell<Emulator>| {
         console_error_panic_hook::set_once();
 
         let mut emulator = emulator_cell.borrow_mut();
 
         emulator::set_mode(&mut emulator, as_mode(mode_text));
 
-        emulator::load_rom(&mut emulator, rom_buffer)
+        let cartridge = emulator::load_rom(&mut emulator, rom_buffer)
             .expect("An error occurred when trying to load the ROM."); 
 
         log("Emulator initialized!");
+
+        as_rom_metadadta(cartridge)
     })
 }
 

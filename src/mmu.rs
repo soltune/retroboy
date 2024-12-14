@@ -2,6 +2,7 @@ use crate::bios::{CGB_BOOT, DMG_BOOTIX};
 use crate::{apu, dma, gpu};
 use crate::cpu::hdma;
 use crate::emulator::{is_cgb, Emulator};
+pub use crate::mmu::cartridge::CartridgeHeader;
 use crate::mmu::cartridge::{Cartridge, initialize_cartridge};
 use crate::speed_switch;
 use crate::keys;
@@ -250,12 +251,13 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
     }
 }
 
-pub fn load_rom_buffer(memory: &mut Memory, buffer: Vec<u8>) -> io::Result<()> {
+pub fn load_rom_buffer(memory: &mut Memory, buffer: Vec<u8>) -> io::Result<CartridgeHeader> {
     let cartridge_result = cartridge::load_rom_buffer(buffer);
     match cartridge_result {
         Ok(cartridge) => {
+            let header = cartridge.header.clone();
             memory.cartridge = cartridge;
-            Ok(())
+            Ok(header)
         },
         Err(e) => Err(e)
     }
