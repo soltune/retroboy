@@ -75,12 +75,12 @@ pub fn initialize_emulator(rom_buffer: &[u8], mode_text: &str) -> RomMetadata {
 
         emulator::set_mode(&mut emulator, as_mode(mode_text));
 
-        let cartridge = emulator::load_rom(&mut emulator, rom_buffer)
+        let cartridge_header = emulator::load_rom(&mut emulator, rom_buffer)
             .expect("An error occurred when trying to load the ROM."); 
 
         log("Emulator initialized!");
 
-        as_rom_metadadta(cartridge)
+        as_rom_metadadta(cartridge_header)
     })
 }
 
