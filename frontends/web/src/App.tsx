@@ -25,8 +25,16 @@ import {
 import { CssGrid, GapSize, Orientation, Position } from "./components/cssGrid";
 import GameScreen from "./components/gameScreen";
 import HelpModal from "./components/helpModal";
-import { initializeEmulator, resetEmulator } from "./core/retroboyCore";
+import {
+    initializeEmulator,
+    resetEmulator,
+    RomMetadata,
+} from "./core/retroboyCore";
 import useAudioSync from "./hooks/useAudioSync";
+import {
+    useCartridgeRamSaver,
+    loadCartridgeRam,
+} from "./hooks/useCartridgeRamSaver";
 import useKeyListeners from "./hooks/useKeyListeners";
 import useWasmInitializer from "./hooks/useWasmInitializer";
 
@@ -62,6 +70,7 @@ const App = (): JSX.Element => {
     const [playing, setPlaying] = useState(false);
     const [paused, setPaused] = useState(false);
     const [mode, setMode] = useState("DMG");
+    const [romMetadata, setRomMetadata] = useState(null as RomMetadata | null);
 
     useKeyListeners(playing);
 
@@ -78,10 +87,15 @@ const App = (): JSX.Element => {
 
     const [audioContextRef, startReset] = useAudioSync(playing, resetGame);
 
+    useCartridgeRamSaver(playing, romMetadata);
+
     const playGame = (): void => {
         if (romBuffer) {
             let metadata = initializeEmulator(romBuffer.data, mode);
-            console.log(`Game Title: ${metadata.title}`);
+            if (metadata.hasBattery) {
+                loadCartridgeRam(metadata.title);
+            }
+            setRomMetadata(metadata);
         }
 
         if (!audioContextRef.current) {

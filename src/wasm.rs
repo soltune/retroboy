@@ -31,7 +31,8 @@ extern "C" {
 
 #[wasm_bindgen]
 pub struct RomMetadata {
-    title: String
+    title: String,
+    has_battery: bool
 }
 
 #[wasm_bindgen]
@@ -39,6 +40,11 @@ impl RomMetadata {
     #[wasm_bindgen(getter)]
     pub fn title(&self) -> String {
         self.title.clone()
+    }
+
+    #[wasm_bindgen(getter, js_name = hasBattery)]
+    pub fn has_battery(&self) -> bool {
+        self.has_battery
     }
 }
 
@@ -62,7 +68,8 @@ fn as_mode(mode_text: &str) -> Mode {
 
 fn as_rom_metadadta(header: CartridgeHeader) -> RomMetadata {
     RomMetadata {
-        title: header.title
+        title: header.title,
+        has_battery: header.has_battery
     }
 }
 
@@ -81,6 +88,22 @@ pub fn initialize_emulator(rom_buffer: &[u8], mode_text: &str) -> RomMetadata {
         log("Emulator initialized!");
 
         as_rom_metadadta(cartridge_header)
+    })
+}
+
+#[wasm_bindgen(js_name = setCartridgeRam)]
+pub fn set_cartridge_ram(ram: &[u8]) {
+    EMULATOR.with(|emulator_cell| {
+        let mut emulator = emulator_cell.borrow_mut();
+        emulator::set_cartridge_ram(&mut emulator, ram);
+    })
+}
+
+#[wasm_bindgen(js_name = getCartridgeRam)]
+pub fn get_cartridge_ram() -> Vec<u8> {
+    EMULATOR.with(|emulator_cell| {
+        let emulator = emulator_cell.borrow();
+        emulator::get_cartridge_ram(&emulator)
     })
 }
 

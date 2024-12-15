@@ -12,7 +12,7 @@ use crate::mmu;
 pub use crate::mmu::CartridgeHeader;
 use crate::mmu::{Memory, initialize_memory};
 use crate::speed_switch::{initialize_speed_switch, SpeedSwitch};
-use std::cell::RefMut;
+use std::cell::{Ref, RefMut};
 use std::io;
 
 #[derive(PartialEq, Eq)]
@@ -81,6 +81,14 @@ pub fn in_color_bios(emulator: &Emulator) -> bool {
 pub fn load_rom(emulator: &mut RefMut<Emulator>, rom: &[u8]) -> io::Result<CartridgeHeader> {
     let buffer = rom.to_vec();
     mmu::load_rom_buffer(&mut emulator.memory, buffer)
+}
+
+pub fn set_cartridge_ram(emulator: &mut RefMut<Emulator>, ram: &[u8]) {
+    mmu::set_cartridge_ram(&mut emulator.memory, ram.to_vec());
+}
+
+pub fn get_cartridge_ram(emulator: &Ref<Emulator>) -> Vec<u8> {
+    mmu::get_cartridge_ram(&emulator.memory)
 }
 
 pub fn sync(emulator: &mut Emulator) {

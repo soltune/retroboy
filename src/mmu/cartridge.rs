@@ -12,7 +12,8 @@ pub struct CartridgeHeader {
     pub sgb_support: bool,
     pub type_code: u8,
     pub max_banks: u16,
-    pub title: String
+    pub title: String,
+    pub has_battery: bool
 }
 
 #[derive(Debug)]
@@ -64,6 +65,7 @@ pub fn initialize_cartridge() -> Cartridge {
             type_code: 0,
             max_banks: 0,
             title: String::from(""),
+            has_battery: false
         },
         mbc1: initialize_mbc1(),
         mbc3: initialize_mbc3(empty_clock), // TODO: Initialize with actual clock
@@ -90,6 +92,13 @@ fn is_mbc3(type_code: u8) -> bool {
         | CART_TYPE_MBC3_RAM_BATTERY
         | CART_TYPE_MBC3_TIMER_BATTERY
         | CART_TYPE_MBC3_TIMER_RAM_BATTERY)
+}
+
+fn is_battery_backed(type_code: u8) -> bool {
+    matches!(type_code, CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY
+        | CART_TYPE_MBC3_TIMER_BATTERY
+        | CART_TYPE_MBC3_TIMER_RAM_BATTERY
+        | CART_TYPE_MBC3_RAM_BATTERY)
 }
 
 fn set_ram_size(cartridge: &mut Cartridge) {
@@ -132,7 +141,8 @@ pub fn load_rom_buffer(buffer: Vec<u8>) -> io::Result<Cartridge> {
                     sgb_support,
                     type_code,
                     max_banks: as_max_banks(rom_size),
-                    title
+                    title,
+                    has_battery: is_battery_backed(type_code)
                 },
                 mbc1: initialize_mbc1(),
                 mbc3: initialize_mbc3(empty_clock), // TODO: Initialize with actual clock
@@ -205,4 +215,12 @@ pub fn write_ram(cartridge: &mut Cartridge, address: u16, value: u8) {
     } else {
         panic!("Unsupported cartridge type: {}", cartridge.header.type_code);
     }
+}
+
+pub fn get_cartridge_ram(cartridge: &Cartridge) -> Vec<u8> {
+    cartridge.ram.clone()
+}
+
+pub fn set_cartridge_ram(cartridge: &mut Cartridge, ram: Vec<u8>) {
+    cartridge.ram = ram;
 }

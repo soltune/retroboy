@@ -263,6 +263,14 @@ pub fn load_rom_buffer(memory: &mut Memory, buffer: Vec<u8>) -> io::Result<Cartr
     }
 }
 
+pub fn get_cartridge_ram(memory: &Memory) -> Vec<u8> {
+    cartridge::get_cartridge_ram(&memory.cartridge)
+}
+
+pub fn set_cartridge_ram(memory: &mut Memory, buffer: Vec<u8>) {
+    cartridge::set_cartridge_ram(&mut memory.cartridge, buffer);
+}
+
 #[cfg(test)]
 mod tests;
 
