@@ -1,23 +1,10 @@
 <p align="center">
-  <img src="images/logo.png" width="200px" height="200px">
+  <img src="images/logo.png" width="175px" height="175px">
 </p>
 
 <p align="center">
-  Retro Boy is a simple Game Boy emulator written in Rust that can be played on the web.
+  <strong>Retro Boy is a simple Game Boy emulator written in Rust that can be played on the web.</strong>
 </p>
-
-## Test ROMs
-
-This emulator passes the following test suites from Blargg's test ROM collection:
-
-1. [CPU instruction tests](https://github.com/retrio/gb-test-roms/tree/master/cpu_instrs)
-2. [CPU instruction timing tests](https://github.com/retrio/gb-test-roms/tree/master/instr_timing)
-3. [Memory timing tests](https://github.com/retrio/gb-test-roms/tree/master/mem_timing)
-4. [Memory timing tests 2](https://github.com/retrio/gb-test-roms/tree/master/mem_timing-2)
-5. [APU tests (DMG)](https://github.com/retrio/gb-test-roms/tree/master/dmg_sound)
-
-Additionally, this emulator passes all [JSON CPU tests](https://github.com/adtennant/GameboyCPUTests), and
-only some tests from the [Mooneye test ROM collection](https://github.com/Gekkio/mooneye-test-suite).
 
 ## How to Compile to WebAssembly
 
@@ -42,6 +29,19 @@ To run the web frontend:
   <img src="images/screenshots/super-mario-land-color.png" width="160" margin-right="32px" />  
   <img src="images/screenshots/tetris-color.png" width="160" margin-right="32px" />
 </p>
+
+## Test ROMs
+
+This emulator passes the following test suites from Blargg's test ROM collection:
+
+1. [CPU instruction tests](https://github.com/retrio/gb-test-roms/tree/master/cpu_instrs)
+2. [CPU instruction timing tests](https://github.com/retrio/gb-test-roms/tree/master/instr_timing)
+3. [Memory timing tests](https://github.com/retrio/gb-test-roms/tree/master/mem_timing)
+4. [Memory timing tests 2](https://github.com/retrio/gb-test-roms/tree/master/mem_timing-2)
+5. [APU tests (DMG)](https://github.com/retrio/gb-test-roms/tree/master/dmg_sound)
+
+Additionally, this emulator passes all [JSON CPU tests](https://github.com/adtennant/GameboyCPUTests), and
+only some tests from the [Mooneye test ROM collection](https://github.com/Gekkio/mooneye-test-suite).
 
 ## Test Suite
 
