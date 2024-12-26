@@ -1,30 +1,34 @@
 import { useEffect } from "react";
 
-import { pressKey, releaseKey } from "../core/retroboyCore";
+import { Key, pressKey, releaseKey } from "../core/retroboyCore";
 
-const keys = [
-    "ArrowDown",
-    "ArrowUp",
-    "ArrowLeft",
-    "ArrowRight",
-    "Enter",
-    "Space",
-    "KeyX",
-    "KeyZ",
-];
+const keyMap = {
+    ArrowDown: Key.Down,
+    ArrowUp: Key.Up,
+    ArrowLeft: Key.Left,
+    ArrowRight: Key.Right,
+    Enter: Key.Start,
+    Space: Key.Select,
+    KeyZ: Key.A,
+    KeyX: Key.B,
+} as Record<string, Key>;
+
+const keyCodes = Object.keys(keyMap);
 
 const useKeyListeners = (playing: boolean): void => {
     const handleKeyDown = (event: KeyboardEvent): void => {
-        if (keys.includes(event.code)) {
+        const keyCode = event.code;
+        if (keyCodes.includes(keyCode)) {
             event.preventDefault();
-            pressKey(event.code);
+            pressKey(keyMap[keyCode]);
         }
     };
 
     const handleKeyUp = (event: KeyboardEvent): void => {
-        if (keys.includes(event.code)) {
+        const keyCode = event.code;
+        if (keyCodes.includes(keyCode)) {
             event.preventDefault();
-            releaseKey(event.code);
+            releaseKey(keyMap[keyCode]);
         }
     };
 

@@ -3,19 +3,20 @@ use crate::emulator::Emulator;
 use crate::emulator::Mode;
 use crate::emulator::CartridgeHeader;
 use crate::keys;
-use crate::keys::Key;
 use std::cell::RefCell;
 use wasm_bindgen::prelude::*;
 
-const DOWN_KEY_CODE: &str = "ArrowDown";
-const UP_KEY_CODE: &str = "ArrowUp";
-const LEFT_KEY_CODE: &str = "ArrowLeft";
-const RIGHT_KEY_CODE: &str = "ArrowRight";
-
-const START_KEY_CODE: &str = "Enter";
-const SELECT_KEY_CODE: &str = "Space";
-const B_KEY_CODE: &str = "KeyX";
-const A_KEY_CODE: &str = "KeyZ";
+#[wasm_bindgen]
+pub enum Key {
+    Down,
+    Up,
+    Left,
+    Right,
+    Start,
+    Select,
+    B,
+    A
+}
 
 #[wasm_bindgen]
 extern "C" {
@@ -157,44 +158,18 @@ pub fn step_until_next_audio_buffer() {
     })
 }
 
-fn as_maybe_key(key_code: &str) -> Option<Key> {
-    match key_code {
-        DOWN_KEY_CODE => Some(Key::Down),
-        UP_KEY_CODE => Some(Key::Up),
-        LEFT_KEY_CODE => Some(Key::Left),
-        RIGHT_KEY_CODE => Some(Key::Right),
-        START_KEY_CODE => Some(Key::Enter),
-        SELECT_KEY_CODE => Some(Key::Space),
-        B_KEY_CODE => Some(Key::X),
-        A_KEY_CODE => Some(Key::Z),
-        _ => None
-    }
-}
-
 #[wasm_bindgen(js_name = pressKey)]
-pub fn press_key(key_code: &str) {
-    let maybe_key = as_maybe_key(key_code);
-
-    maybe_key.map(
-        |key| {
-            EMULATOR.with(|emulator_cell| {
-                let mut emulator = emulator_cell.borrow_mut();
-                keys::handle_key_press(&mut emulator, &key);
-            })
-        }
-    );
+pub fn press_key(key: Key) {
+    EMULATOR.with(|emulator_cell| {
+        let mut emulator = emulator_cell.borrow_mut();
+        keys::handle_key_press(&mut emulator, &key);
+    })
 }
 
 #[wasm_bindgen(js_name = releaseKey)]
-pub fn release_key(key_code: &str) {
-    let maybe_key = as_maybe_key(key_code);
-
-    maybe_key.map(
-        |key| {
-            EMULATOR.with(|emulator_cell| {
-                let mut emulator = emulator_cell.borrow_mut();
-                keys::handle_key_release(&mut emulator, &key);
-            })
-        }
-    );
+pub fn release_key(key: Key) {
+    EMULATOR.with(|emulator_cell| {
+        let mut emulator = emulator_cell.borrow_mut();
+        keys::handle_key_release(&mut emulator, &key);
+    })
 }
