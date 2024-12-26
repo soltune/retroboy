@@ -1,6 +1,8 @@
 import { CssGrid, Orientation, GapSize, Position } from "./cssGrid";
 import { FileUploadButton, FileUploadButtonProps } from "./fileUploadButton";
 
+import { useIsMobile } from "../hooks/useResponsiveBreakpoint";
+
 const processFile = (
     uploadedFile: File | null,
 ): Promise<FileBufferObject | null> =>
@@ -26,45 +28,50 @@ export const BufferFileUpload = ({
     uploadedFile,
     label,
     ...remainingProps
-}: BufferFileUploadProps): JSX.Element => (
-    <CssGrid
-        orientation={Orientation.horizontal}
-        gap={GapSize.medium}
-        alignItems={Position.center}
-        justifyContent={Position.start}
-    >
-        <FileUploadButton
-            variant="contained"
-            {...remainingProps}
-            onFileSelect={async (fileList: FileList | null) => {
-                if (!fileList) return;
-
-                const file = fileList[0];
-
-                try {
-                    const bufferObject = await processFile(file);
-                    if (bufferObject) {
-                        onFileSelect(bufferObject);
-                    }
-                } catch (err) {
-                    console.error(
-                        "An error occurred while processing the file",
-                        err,
-                    );
-                }
-            }}
+}: BufferFileUploadProps): JSX.Element => {
+    const isMobile = useIsMobile();
+    return (
+        <CssGrid
+            orientation={
+                isMobile ? Orientation.vertical : Orientation.horizontal
+            }
+            gap={GapSize.medium}
+            alignItems={Position.center}
+            justifyContent={isMobile ? Position.stretch : Position.start}
         >
-            <CssGrid
-                orientation={Orientation.horizontal}
-                gap={GapSize.medium}
-                alignItems={Position.center}
+            <FileUploadButton
+                variant="contained"
+                {...remainingProps}
+                onFileSelect={async (fileList: FileList | null) => {
+                    if (!fileList) return;
+
+                    const file = fileList[0];
+
+                    try {
+                        const bufferObject = await processFile(file);
+                        if (bufferObject) {
+                            onFileSelect(bufferObject);
+                        }
+                    } catch (err) {
+                        console.error(
+                            "An error occurred while processing the file",
+                            err,
+                        );
+                    }
+                }}
             >
-                {label || "Choose File"}
-            </CssGrid>
-        </FileUploadButton>
-        <div>{getFieldFileUploadLabel(uploadedFile)}</div>
-    </CssGrid>
-);
+                <CssGrid
+                    orientation={Orientation.horizontal}
+                    gap={GapSize.medium}
+                    alignItems={Position.center}
+                >
+                    {label || "Choose File"}
+                </CssGrid>
+            </FileUploadButton>
+            <div>{getFieldFileUploadLabel(uploadedFile)}</div>
+        </CssGrid>
+    );
+};
 
 export interface FileBufferObject {
     filename: string;

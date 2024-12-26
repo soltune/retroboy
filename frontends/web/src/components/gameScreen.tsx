@@ -5,8 +5,8 @@ const GAMEBOY_WIDTH = 160;
 const GAMEBOY_HEIGHT = 144;
 
 const Screen = styled("canvas")`
-    width: ${GAMEBOY_WIDTH * 3}px;
-    height: ${GAMEBOY_HEIGHT * 3}px;
+    width: ${GAMEBOY_WIDTH * 2}px;
+    height: ${GAMEBOY_HEIGHT * 2}px;
     border: ${({ theme }) => `1px solid ${theme.palette.text.secondary}`};
     image-rendering: pixelated;
 `;
@@ -35,7 +35,7 @@ const initializeCanvas = (canvasContext: CanvasRenderingContext2D): void => {
 };
 
 const GameScreen = forwardRef<HTMLCanvasElement, GameScreenProps>(
-    ({ wasmInitialized, playing, paused }, ref) => {
+    ({ wasmInitialized, playing, paused, ...remainingProps }, ref) => {
         const canvasRef = ref as RefObject<HTMLCanvasElement>;
 
         useEffect(() => {
@@ -63,12 +63,18 @@ const GameScreen = forwardRef<HTMLCanvasElement, GameScreenProps>(
         }, [playing, paused]);
 
         return (
-            <Screen width={GAMEBOY_WIDTH} height={GAMEBOY_HEIGHT} ref={ref} />
+            <Screen
+                width={GAMEBOY_WIDTH}
+                height={GAMEBOY_HEIGHT}
+                ref={ref}
+                {...remainingProps}
+            />
         );
     },
 );
 
-interface GameScreenProps {
+interface GameScreenProps
+    extends React.CanvasHTMLAttributes<HTMLCanvasElement> {
     wasmInitialized: boolean;
     playing: boolean;
     paused: boolean;

@@ -119,6 +119,40 @@ fn is_cgb_compatability_flag(index: usize, byte: u8) -> bool {
     index == CGB_COMPATABILITY_INDEX && (byte == 0xC0 || byte == 0x80)
 }
 
+pub fn convert_cartridge_type_to_text(type_code: u8) -> String {
+    match type_code {
+        0x00 => "ROM ONLY",
+        0x01 => "MBC1",
+        0x02 => "MBC1+RAM",
+        0x03 => "MBC1+RAM+BATTERY",
+        0x05 => "MBC2",
+        0x06 => "MBC2+BATTERY",
+        0x08 => "ROM+RAM",
+        0x09 => "ROM+RAM+BATTERY",
+        0x0B => "MMM01",
+        0x0C => "MMM01+RAM",
+        0x0D => "MMM01+RAM+BATTERY",
+        0x0F => "MBC3+TIMER+BATTERY",
+        0x10 => "MBC3+TIMER+RAM+BATTERY",
+        0x11 => "MBC3",
+        0x12 => "MBC3+RAM",
+        0x13 => "MBC3+RAM+BATTERY",
+        0x19 => "MBC5",
+        0x1A => "MBC5+RAM",
+        0x1B => "MBC5+RAM+BATTERY",
+        0x1C => "MBC5+RUMBLE",
+        0x1D => "MBC5+RUMBLE+RAM",
+        0x1E => "MBC5+RUMBLE+RAM+BATTERY",
+        0x20 => "MBC6",
+        0x22 => "MBC7+SENSOR+RUMBLE+RAM+BATTERY",
+        0xFC => "POCKET CAMERA",
+        0xFD => "BANDAI TAMA5",
+        0xFE => "HuC3",
+        0xFF => "HuC1+RAM+",
+        _ => "UNKNOWN"
+    }.to_string()
+}
+
 pub fn load_rom_buffer(buffer: Vec<u8>) -> io::Result<Cartridge> {
     if buffer.len() > ENTRY_POINT_ADDRESS {
         let type_code = buffer[CARTRIDGE_TYPE_ADDRESS];
@@ -152,7 +186,12 @@ pub fn load_rom_buffer(buffer: Vec<u8>) -> io::Result<Cartridge> {
 
             Ok(cartridge)
         } else {
-            let error_message = format!("Unsupported cartridge type {type_code}.");
+            let given_cartridge_type = convert_cartridge_type_to_text(type_code);
+
+            let error_message = format!(r#"Sorry, but Retro Boy currently only supports
+                ROM-only, MBC1, or MBC3 cartridges.
+                The cartridge you provided is of type {}."#, given_cartridge_type);
+
             Err(io::Error::new(io::ErrorKind::Other, error_message))
         }
     } else {

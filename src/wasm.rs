@@ -29,6 +29,7 @@ extern "C" {
     pub fn play_audio_samples(left_samples: &[f32], right_samples: &[f32]);
 }
 
+#[derive(Clone)]
 #[wasm_bindgen]
 pub struct RomMetadata {
     title: String,
@@ -45,6 +46,25 @@ impl RomMetadata {
     #[wasm_bindgen(getter, js_name = hasBattery)]
     pub fn has_battery(&self) -> bool {
         self.has_battery
+    }
+}
+
+#[wasm_bindgen]
+pub struct RomMetadataResult {
+    error: Option<String>,
+    metadata: Option<RomMetadata>
+}
+
+#[wasm_bindgen]
+impl RomMetadataResult {
+    #[wasm_bindgen(getter)]
+    pub fn error(&self) -> Option<String> {
+        self.error.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn metadata(&self) -> Option<RomMetadata> {
+        self.metadata.clone()
     }
 }
 
@@ -66,7 +86,7 @@ fn as_mode(mode_text: &str) -> Mode {
     }
 }
 
-fn as_rom_metadadta(header: CartridgeHeader) -> RomMetadata {
+fn as_rom_metadata(header: CartridgeHeader) -> RomMetadata {
     RomMetadata {
         title: header.title,
         has_battery: header.has_battery
@@ -74,7 +94,7 @@ fn as_rom_metadadta(header: CartridgeHeader) -> RomMetadata {
 }
 
 #[wasm_bindgen(js_name = initializeEmulator)]
-pub fn initialize_emulator(rom_buffer: &[u8], mode_text: &str) -> RomMetadata {
+pub fn initialize_emulator(rom_buffer: &[u8], mode_text: &str) -> RomMetadataResult {
     EMULATOR.with(|emulator_cell: &RefCell<Emulator>| {
         console_error_panic_hook::set_once();
 
@@ -82,12 +102,22 @@ pub fn initialize_emulator(rom_buffer: &[u8], mode_text: &str) -> RomMetadata {
 
         emulator::set_mode(&mut emulator, as_mode(mode_text));
 
-        let cartridge_header = emulator::load_rom(&mut emulator, rom_buffer)
-            .expect("An error occurred when trying to load the ROM."); 
-
-        log("Emulator initialized!");
-
-        as_rom_metadadta(cartridge_header)
+        match emulator::load_rom(&mut emulator, rom_buffer) {
+            Ok(result) => {
+                log("Emulator initialized!");
+                RomMetadataResult {
+                    error: None,
+                    metadata: Some(as_rom_metadata(result))
+                }
+            }
+            Err(error) => {
+                log(&format!("Error loading ROM: {}", error.to_string()));
+                RomMetadataResult {
+                    error: Some(error.to_string()),
+                    metadata: None
+                }
+            }
+        }
     })
 }
 

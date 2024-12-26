@@ -6,6 +6,10 @@ const HiddenFileInput = styled("input")`
     display: none;
 `;
 
+const UploadButton = styled(Button)`
+    width: 100%;
+`;
+
 export const openFileDialog = (
     fileInputRef: React.RefObject<HTMLInputElement>,
 ): void => {
@@ -34,7 +38,7 @@ export const FileUploadButton = ({
                     }
                 }}
             />
-            <Button
+            <UploadButton
                 onClick={() => openFileDialog(fileInputRef)}
                 type="button"
                 {...buttonProps}
