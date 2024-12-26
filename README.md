@@ -1,8 +1,12 @@
-# Retro Boy
+<p align="center">
+  <img src="images/logo.png" width="200px" height="200px">
+</p>
 
-This repo holds the core logic for Retro Boy: a Game Boy emulator written in Rust.
+<p align="center">
+  Retro Boy is a simple Game Boy emulator written in Rust that can be played on the web.
+</p>
 
-The code can also be compiled down to WebAssembly so it can be played on the web.
+## Test ROMs
 
 This emulator passes the following test suites from Blargg's test ROM collection:
 
@@ -33,10 +37,10 @@ To run the web frontend:
 ## Screenshots
 
 <p float="left">
-  <img src="screenshots/kirby-color.png" width="160" margin-right="32px" />
-  <img src="screenshots/pacman-color.png" width="160" margin-right="32px" />
-  <img src="screenshots/super-mario-land-color.png" width="160" margin-right="32px" />  
-  <img src="screenshots/tetris-color.png" width="160" margin-right="32px" />
+  <img src="images/screenshots/kirby-color.png" width="160" margin-right="32px" />
+  <img src="images/screenshots/pacman-color.png" width="160" margin-right="32px" />
+  <img src="images/screenshots/super-mario-land-color.png" width="160" margin-right="32px" />  
+  <img src="images/screenshots/tetris-color.png" width="160" margin-right="32px" />
 </p>
 
 ## Test Suite
