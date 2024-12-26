@@ -1,8 +1,6 @@
 <p align="center">
   <img src="images/logo.png" width="175px" height="175px">
-</p>
-
-<p align="center">
+  <br />
   <strong>Retro Boy is a simple Game Boy emulator written in Rust that can be played on the web.</strong>
 </p>
 
