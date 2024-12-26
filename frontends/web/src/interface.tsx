@@ -36,6 +36,7 @@ import {
     ResponsiveBreakpoint,
     useResponsiveBreakpoint,
 } from "./hooks/useResponsiveBreakpoint";
+import { useTopLevelRenderer } from "./hooks/useTopLevelRenderer";
 import useWasmInitializer from "./hooks/useWasmInitializer";
 
 const AppGrid = styled(CssGrid)`
@@ -69,11 +70,16 @@ const Logo = (): JSX.Element => (
     <img src="/logo.png" width="150" height="150" />
 );
 
+const errorModalKey = "error-modal";
+
 const Interface = (): JSX.Element => {
     const wasmInitialized = useWasmInitializer();
     const breakpoint = useResponsiveBreakpoint();
     const isMobile = breakpoint === ResponsiveBreakpoint.xs;
     const isTablet = breakpoint === ResponsiveBreakpoint.sm;
+
+    const { displayTopLevelComponent, removeTopLevelComponent } =
+        useTopLevelRenderer();
 
     const [romBuffer, setRomBuffer] = useState(null as FileBufferObject | null);
 
@@ -83,8 +89,6 @@ const Interface = (): JSX.Element => {
     const [romMetadata, setRomMetadata] = useState(null as RomMetadata | null);
 
     useKeyListeners(playing);
-
-    const [error, setError] = useState(null as string | null);
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -106,7 +110,17 @@ const Interface = (): JSX.Element => {
                 mode,
             );
             if (error) {
-                setError(error);
+                displayTopLevelComponent(
+                    errorModalKey,
+                    <Modal
+                        heading="Error"
+                        open={!!error}
+                        onClose={() => removeTopLevelComponent(errorModalKey)}
+                    >
+                        {error}
+                    </Modal>,
+                );
+
                 resetGame();
             } else if (metadata) {
                 if (metadata.hasBattery) {
@@ -297,15 +311,6 @@ const Interface = (): JSX.Element => {
                 </CssGrid>
             ) : (
                 <div>Loading...</div>
-            )}
-            {error && (
-                <Modal
-                    heading="Error"
-                    open={!!error}
-                    onClose={() => setError(null)}
-                >
-                    {error}
-                </Modal>
             )}
         </AppGrid>
     );
