@@ -1,23 +1,26 @@
-import {
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useState,
-} from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
-import { Key } from "../core/retroboyCore";
+const gameControls = {
+    up: "Up",
+    down: "Down",
+    left: "Left",
+    right: "Right",
+    start: "Start",
+    select: "Select",
+    b: "B",
+    a: "A",
+};
 
 const initialKeyMap = {
-    ArrowDown: Key.Down,
-    ArrowUp: Key.Up,
-    ArrowLeft: Key.Left,
-    ArrowRight: Key.Right,
-    Enter: Key.Start,
-    Space: Key.Select,
-    KeyZ: Key.A,
-    KeyX: Key.B,
-} as Record<string, Key>;
+    [gameControls.up]: "ArrowUp",
+    [gameControls.down]: "ArrowDown",
+    [gameControls.left]: "ArrowLeft",
+    [gameControls.right]: "ArrowRight",
+    [gameControls.start]: "Enter",
+    [gameControls.select]: "Space",
+    [gameControls.b]: "x",
+    [gameControls.a]: "z",
+} as Record<string, string>;
 
 const initialSettings = {
     keyMap: initialKeyMap,
@@ -33,24 +36,25 @@ const SettingsStoreContext = createContext(initialSettingsStoreState);
 export const SettingsStoreProvider = ({
     children,
 }: SettingsStoreProviderProps): JSX.Element => {
-    const [settings, setSettings] = useState(initialSettings);
+    const [settingsStoreState, setSettingsStoreState] = useState({
+        settings: initialSettings,
+        storeSettings,
+    } as SettingsStoreState);
 
     useEffect(() => {
         const storedSettings = localStorage.getItem("settings");
         if (storedSettings) {
-            setSettings(JSON.parse(storedSettings));
+            setSettingsStoreState({
+                settings: JSON.parse(storedSettings),
+                storeSettings,
+            });
         }
     }, []);
 
-    const storeSettings = useCallback((newSettings: EmulatorSettings): void => {
-        setSettings(newSettings);
+    function storeSettings(newSettings: EmulatorSettings): void {
+        setSettingsStoreState({ settings: newSettings, storeSettings });
         localStorage.setItem("settings", JSON.stringify(newSettings));
-    }, []);
-
-    const [settingsStoreState] = useState({
-        settings,
-        storeSettings,
-    } as SettingsStoreState);
+    }
 
     return (
         <SettingsStoreContext.Provider value={settingsStoreState}>
@@ -68,7 +72,7 @@ interface SettingsStoreState {
 }
 
 interface EmulatorSettings {
-    readonly keyMap: Record<string, Key>;
+    readonly keyMap: Record<string, string>;
 }
 
 interface SettingsStoreProviderProps {

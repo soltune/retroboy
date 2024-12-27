@@ -23,7 +23,7 @@ const theme = createTheme({
         },
         background: {
             default: "#5e5a68",
-            paper: "#7E7B86",
+            paper: "#7e7b86",
         },
     },
     spacing: 0.5,

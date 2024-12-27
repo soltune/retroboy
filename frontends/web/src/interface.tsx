@@ -4,6 +4,7 @@ import PauseIcon from "@mui/icons-material/Pause";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import SettingsIcon from "@mui/icons-material/Settings";
 import {
     Button,
     Typography,
@@ -31,16 +32,21 @@ import {
     useCartridgeRamSaver,
     loadCartridgeRam,
 } from "./hooks/useCartridgeRamSaver";
-import useKeyListeners from "./hooks/useKeyListeners";
+import { useKeyListeners } from "./hooks/useKeyListeners";
 import {
     ResponsiveBreakpoint,
     useResponsiveBreakpoint,
 } from "./hooks/useResponsiveBreakpoint";
 import { useTopLevelRenderer } from "./hooks/useTopLevelRenderer";
 import useWasmInitializer from "./hooks/useWasmInitializer";
+import SettingsModal from "./settingsModal";
 
 const AppGrid = styled(CssGrid)`
     height: 100%;
+`;
+
+const HeaderGrid = styled(CssGrid)`
+    margin-bottom: 8px;
 `;
 
 const GameSelectionGrid = styled(CssGrid)`
@@ -71,6 +77,7 @@ const Logo = (): JSX.Element => (
 );
 
 const errorModalKey = "error-modal";
+const settingsModalKey = "settings-modal";
 
 const Interface = (): JSX.Element => {
     const wasmInitialized = useWasmInitializer();
@@ -172,6 +179,15 @@ const Interface = (): JSX.Element => {
         }
     };
 
+    const openSettings = (): void => {
+        displayTopLevelComponent(
+            settingsModalKey,
+            <SettingsModal
+                onClose={() => removeTopLevelComponent(settingsModalKey)}
+            />,
+        );
+    };
+
     return (
         <AppGrid justifyContent={Position.center} alignItems={Position.center}>
             {wasmInitialized ? (
@@ -190,7 +206,28 @@ const Interface = (): JSX.Element => {
                         gap={GapSize.extraLarge}
                     >
                         <div>
-                            <Logo />
+                            <HeaderGrid
+                                orientation={
+                                    isMobile
+                                        ? Orientation.vertical
+                                        : Orientation.horizontal
+                                }
+                                template={isMobile ? undefined : "1fr auto"}
+                                justifyContent={
+                                    isMobile ? Position.stretch : undefined
+                                }
+                                alignItems={Position.center}
+                            >
+                                <Logo />
+                                <Button
+                                    variant="contained"
+                                    color="secondary"
+                                    startIcon={<SettingsIcon />}
+                                    onClick={openSettings}
+                                >
+                                    Settings
+                                </Button>
+                            </HeaderGrid>
                             <Divider />
                         </div>
                         <Typography>

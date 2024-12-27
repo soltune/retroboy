@@ -25,6 +25,9 @@ const ModalContent = styled(Box, {
     height: isMobile ? "100%" : "auto",
     background: theme.palette.background.paper,
     boxShadow: "64px",
+    "&:focus": {
+        outline: "none",
+    },
 }));
 
 const ModalGrid = styled(CssGrid)`

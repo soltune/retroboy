@@ -1,6 +1,16 @@
 use crate::emulator::Emulator;
 use crate::utils::{reset_bit, set_bit};
-use crate::wasm::Key;
+
+pub enum Key {
+    Down,
+    Up,
+    Left,
+    Right,
+    Start,
+    Select,
+    B,
+    A
+}
 
 #[derive(Debug)]
 pub struct KeyState {

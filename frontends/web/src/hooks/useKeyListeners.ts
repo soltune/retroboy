@@ -4,25 +4,40 @@ import { useSettingsStore } from "./useSettingsStore";
 
 import { pressKey, releaseKey } from "../core/retroboyCore";
 
-const useKeyListeners = (playing: boolean): void => {
+export const asKeyMapping = (eventKey: string): string =>
+    eventKey === " " ? "Space" : eventKey;
+
+const invert = (keyMap: Record<string, string>): Record<string, string> => {
+    return Object.entries(keyMap).reduce(
+        (acc, [key, value]) => ({
+            ...acc,
+            [value]: key,
+        }),
+        {} as Record<string, string>,
+    );
+};
+
+export const useKeyListeners = (playing: boolean): void => {
     const { settings } = useSettingsStore();
 
     const keyMap = settings.keyMap;
-    const keyCodes = Object.keys(keyMap);
+
+    const invertedKeyMap = invert(keyMap);
+    const keys = Object.keys(invertedKeyMap);
 
     const handleKeyDown = (event: KeyboardEvent): void => {
-        const keyCode = event.code;
-        if (keyCodes.includes(keyCode)) {
+        const key = asKeyMapping(event.key);
+        if (keys.includes(key)) {
             event.preventDefault();
-            pressKey(keyMap[keyCode]);
+            pressKey(invertedKeyMap[key]);
         }
     };
 
     const handleKeyUp = (event: KeyboardEvent): void => {
-        const keyCode = event.code;
-        if (keyCodes.includes(keyCode)) {
+        const key = asKeyMapping(event.key);
+        if (keys.includes(key)) {
             event.preventDefault();
-            releaseKey(keyMap[keyCode]);
+            releaseKey(invertedKeyMap[key]);
         }
     };
 
@@ -40,5 +55,3 @@ const useKeyListeners = (playing: boolean): void => {
         };
     }, [playing]);
 };
-
-export default useKeyListeners;

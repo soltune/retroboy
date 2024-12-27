@@ -2,21 +2,9 @@ use crate::emulator;
 use crate::emulator::Emulator;
 use crate::emulator::Mode;
 use crate::emulator::CartridgeHeader;
-use crate::keys;
+use crate::keys::{self, Key};
 use std::cell::RefCell;
 use wasm_bindgen::prelude::*;
-
-#[wasm_bindgen]
-pub enum Key {
-    Down,
-    Up,
-    Left,
-    Right,
-    Start,
-    Select,
-    B,
-    A
-}
 
 #[wasm_bindgen]
 extern "C" {
@@ -158,18 +146,45 @@ pub fn step_until_next_audio_buffer() {
     })
 }
 
+const UP_CODE: &str = "Up";
+const DOWN_CODE: &str = "Down";
+const LEFT_CODE: &str = "Left";
+const RIGHT_CODE: &str = "Right";
+const START_CODE: &str = "Start";
+const SELECT_CODE: &str = "Select";
+const B_CODE: &str = "B";
+const A_CODE: &str = "A";
+
+fn as_maybe_key(key_code: &str) -> Option<Key> {
+    match key_code {
+        UP_CODE => Some(Key::Up),
+        DOWN_CODE => Some(Key::Down),
+        LEFT_CODE => Some(Key::Left),
+        RIGHT_CODE => Some(Key::Right),
+        START_CODE => Some(Key::Start),
+        SELECT_CODE => Some(Key::Select),
+        B_CODE => Some(Key::B),
+        A_CODE => Some(Key::A),
+        _ => None
+    }
+}
+
 #[wasm_bindgen(js_name = pressKey)]
-pub fn press_key(key: Key) {
-    EMULATOR.with(|emulator_cell| {
-        let mut emulator = emulator_cell.borrow_mut();
-        keys::handle_key_press(&mut emulator, &key);
-    })
+pub fn press_key(key_code: &str) {
+    as_maybe_key(key_code).map(|key| {
+        EMULATOR.with(|emulator_cell| {
+            let mut emulator = emulator_cell.borrow_mut();
+            keys::handle_key_press(&mut emulator, &key);
+        })
+    });
 }
 
 #[wasm_bindgen(js_name = releaseKey)]
-pub fn release_key(key: Key) {
-    EMULATOR.with(|emulator_cell| {
-        let mut emulator = emulator_cell.borrow_mut();
-        keys::handle_key_release(&mut emulator, &key);
-    })
+pub fn release_key(key_code: &str) {
+    as_maybe_key(key_code).map(|key| {
+        EMULATOR.with(|emulator_cell| {
+            let mut emulator = emulator_cell.borrow_mut();
+            keys::handle_key_release(&mut emulator, &key);
+        })
+    });
 }
