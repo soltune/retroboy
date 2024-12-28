@@ -58,7 +58,7 @@ const theme = createTheme({
                     fontFamily: "ByteBounce",
                     fontStyle: "normal",
                     fontDisplay: "swap",
-                    src: `local('ByteBounce'), local('ByteBounce-Regular'), url('/ByteBounce.ttf') format('truetype')`,
+                    src: `local('ByteBounce'), local('ByteBounce-Regular'), url('retroboy/ByteBounce.ttf') format('truetype')`,
                 },
             },
         },

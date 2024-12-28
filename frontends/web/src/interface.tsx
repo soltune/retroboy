@@ -73,7 +73,7 @@ const StretchableToggleButton = styled(ToggleButton, {
 }));
 
 const Logo = (): JSX.Element => (
-    <img src="/logo.png" width="150" height="150" />
+    <img src="retroboy/logo.png" width="150" height="150" />
 );
 
 const errorModalKey = "error-modal";
