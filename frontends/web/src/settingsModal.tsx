@@ -5,11 +5,16 @@ import { useEffect, useState } from "react";
 import { CssGrid, GapSize, Orientation, Position } from "./components/cssGrid";
 import Modal from "./components/modal";
 import { asKeyMapping } from "./hooks/useKeyListeners";
+import { useIsMobile } from "./hooks/useResponsiveBreakpoint";
 import { useSettingsStore } from "./hooks/useSettingsStore";
 
-const GameControlsGrid = styled(CssGrid)`
-    margin-bottom: 16px;
-`;
+const GameControlsGrid = styled(CssGrid, {
+    shouldForwardProp: prop => prop !== "isMobile",
+})<{ isMobile: boolean }>(({ isMobile }) => ({
+    maxHeight: isMobile ? "75%" : undefined,
+    overflowY: isMobile ? "scroll" : undefined,
+    marginBottom: "16px",
+}));
 
 const KeyMappingGrid = styled(CssGrid, {
     shouldForwardProp: prop => prop !== "selected",
@@ -42,6 +47,7 @@ const Key = styled.div`
 `;
 
 const SettingsModal = ({ onClose }: SettingsModalProps): JSX.Element => {
+    const isMobile = useIsMobile();
     const { settings, storeSettings } = useSettingsStore();
 
     const { keyMap } = settings;
@@ -82,6 +88,7 @@ const SettingsModal = ({ onClose }: SettingsModalProps): JSX.Element => {
             <GameControlsGrid
                 orientation={Orientation.vertical}
                 gap={GapSize.medium}
+                isMobile={isMobile}
             >
                 {Object.entries(keyMap).map(([control, keyMapping]) => (
                     <KeyMappingGrid
