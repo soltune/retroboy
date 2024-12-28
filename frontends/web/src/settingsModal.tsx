@@ -11,7 +11,7 @@ import { useSettingsStore } from "./hooks/useSettingsStore";
 const GameControlsGrid = styled(CssGrid, {
     shouldForwardProp: prop => prop !== "isMobile",
 })<{ isMobile: boolean }>(({ isMobile }) => ({
-    maxHeight: isMobile ? "75%" : undefined,
+    maxHeight: isMobile ? "50%" : undefined,
     overflowY: isMobile ? "scroll" : undefined,
     marginBottom: "16px",
 }));
