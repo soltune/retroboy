@@ -1,7 +1,7 @@
 <p align="center">
   <img src="images/logo.png" width="175px" height="175px">
   <br />
-  Retro Boy is a simple Game Boy emulator written in Rust that can be played on the web.
+  Retro Boy is a simple Game Boy emulator written in Rust that can be played on the web. <a href="https://smparsons.github.io/retroboy">Try it here.</a>
 </p>
 
 ## How to Compile to WebAssembly
