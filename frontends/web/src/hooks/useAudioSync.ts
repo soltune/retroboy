@@ -17,7 +17,7 @@ const useAudioSync = (
     const startReset = (): void => {
         if (playing) {
             scheduledResetRef.current = true;
-        } else if (playing) {
+        } else {
             resetGame();
         }
     };
