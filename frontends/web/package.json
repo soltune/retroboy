@@ -1,6 +1,7 @@
 {
     "name": "retroboy-web",
     "version": "0.1.0",
+    "homepage": "https://smparsons.github.io/retroboy",
     "private": true,
     "dependencies": {
         "@emotion/react": "^11.11.4",
@@ -22,6 +23,8 @@
         "web-vitals": "^2.1.0"
     },
     "scripts": {
+        "predeploy": "yarn build",
+        "deploy": "gh-pages -d build",
         "start": "react-scripts start",
         "build": "react-scripts build",
         "test": "react-scripts test",
@@ -56,6 +59,7 @@
         "@trivago/prettier-plugin-sort-imports": "^4.3.0",
         "eslint-config-prettier": "^9.1.0",
         "eslint-plugin-prettier": "^5.1.3",
+        "gh-pages": "^6.2.0",
         "prettier": "^3.2.5"
     }
 }

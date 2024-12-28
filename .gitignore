@@ -4,3 +4,4 @@ bios.bin
 pkg
 frontends/web/node_modules
 frontends/web/src/core
+frontends/web/build
