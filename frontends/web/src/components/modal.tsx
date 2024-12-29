@@ -21,7 +21,7 @@ const ModalContent = styled(Box, {
     left: "50%",
     transform: "translate(-50%, -50%)",
     paddingTop: "16px",
-    paddingBottom: isMobile ? "64px" : "16px",
+    paddingBottom: isMobile ? "80px" : "16px",
     paddingLeft: "32px",
     paddingRight: "32px",
     width: isMobile ? "100%" : "512px",
