@@ -23,6 +23,7 @@ import { CssGrid, GapSize, Orientation, Position } from "./components/cssGrid";
 import GameScreen from "./components/gameScreen";
 import Modal from "./components/modal";
 import {
+    EmulatorSettings,
     initializeEmulator,
     resetEmulator,
     RomMetadata,
@@ -112,10 +113,20 @@ const Interface = (): JSX.Element => {
 
     const playGame = () => {
         if (romBuffer) {
+            if (!audioContextRef.current) {
+                audioContextRef.current = new AudioContext();
+            }
+
+            const settings = new EmulatorSettings(
+                mode,
+                audioContextRef.current.sampleRate,
+            );
+
             const { error, metadata } = initializeEmulator(
                 romBuffer.data,
-                mode,
+                settings,
             );
+
             if (error) {
                 displayTopLevelComponent(
                     errorModalKey,
@@ -134,11 +145,6 @@ const Interface = (): JSX.Element => {
                     loadCartridgeRam(metadata.title);
                 }
                 setRomMetadata(metadata);
-
-                if (!audioContextRef.current) {
-                    audioContextRef.current = new AudioContext();
-                }
-
                 setPlaying(true);
             }
         }

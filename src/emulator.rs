@@ -103,6 +103,10 @@ pub fn set_mode(emulator: &mut Emulator, mode: Mode) {
     mmu::load_bios(emulator);
 }
 
+pub fn set_sample_rate(emulator: &mut Emulator, sample_rate: u32) {
+    apu::set_sample_rate(emulator, sample_rate);
+}
+
 pub fn step(emulator: &mut Emulator) {
     cpu::opcodes::step(emulator);
 }

@@ -25,7 +25,8 @@ pub struct ApuState {
     pub summed_channel1_sample: f32,
     pub summed_channel2_sample: f32,
     pub summed_channel3_sample: f32,
-    pub summed_channel4_sample: f32
+    pub summed_channel4_sample: f32,
+    pub enqueue_rate: u32
 }
 
 pub fn initialize_apu() -> ApuState {
@@ -46,7 +47,8 @@ pub fn initialize_apu() -> ApuState {
         summed_channel1_sample: 0.0,
         summed_channel2_sample: 0.0,
         summed_channel3_sample: 0.0,
-        summed_channel4_sample: 0.0
+        summed_channel4_sample: 0.0,
+        enqueue_rate: CPU_RATE / DEFAULT_SAMPLE_RATE
     }
 }
 
@@ -64,8 +66,7 @@ const APU_ENABLED_INDEX: u8 = 7;
 const MAX_DIV_APU_STEPS: u8 = 7;
 
 const CPU_RATE: u32 = 4194304;
-const SAMPLE_RATE: u32 = 48000;
-const ENQUEUE_RATE: u32 = CPU_RATE / SAMPLE_RATE;
+const DEFAULT_SAMPLE_RATE: u32 = 44100;
 const MAX_AUDIO_BUFFER_SIZE: usize = 512;
 
 const CHANNEL_STEP_RATE: u8 = 4;
@@ -201,12 +202,12 @@ fn enqueue_audio_samples(emulator: &mut Emulator) {
 
         emulator.apu.audio_buffer_clock += t_cycle_increment;
         let steps_since_enqueue = emulator.apu.audio_buffer_clock / t_cycle_increment;
-        let steps_per_enqueue = ENQUEUE_RATE as u8 + 1 / t_cycle_increment;
+        let steps_per_enqueue = emulator.apu.enqueue_rate as u8 + 1 / t_cycle_increment;
 
         let weight = calculate_sample_weight(steps_per_enqueue, steps_since_enqueue);
         track_digital_outputs(emulator, weight);
     
-        if emulator.apu.audio_buffer_clock as u32 >= ENQUEUE_RATE {
+        if emulator.apu.audio_buffer_clock as u32 >= emulator.apu.enqueue_rate {
             emulator.apu.audio_buffer_clock = 0;
     
             let channel1_dac_output = generate_dac_output(emulator.apu.summed_channel1_sample, steps_since_enqueue);
@@ -249,6 +250,10 @@ pub fn step(emulator: &mut Emulator) {
 
     enqueue_audio_samples(emulator);
     emulator.apu.last_divider_time = emulator.timers.divider;
+}
+
+pub fn set_sample_rate(emulator: &mut Emulator, sample_rate: u32) {
+    emulator.apu.enqueue_rate = CPU_RATE / sample_rate;
 }
 
 fn in_length_period_first_half(current_divider_apu: u8) -> bool {

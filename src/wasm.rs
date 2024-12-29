@@ -20,6 +20,34 @@ extern "C" {
 
 #[derive(Clone)]
 #[wasm_bindgen]
+pub struct EmulatorSettings {
+    mode: String,
+    audio_sample_rate: u32
+}
+
+#[wasm_bindgen]
+impl EmulatorSettings {
+    #[wasm_bindgen(constructor)]
+    pub fn new(mode: String, audio_sample_rate: u32) -> EmulatorSettings {
+        EmulatorSettings {
+            mode,
+            audio_sample_rate
+        }
+    }
+    
+    #[wasm_bindgen(getter)]
+    pub fn mode(&self) -> String {
+        self.mode.clone()
+    }
+
+    #[wasm_bindgen(getter, js_name = audioSampleRate)]
+    pub fn audio_sample_rate(&self) -> u32 {
+        self.audio_sample_rate
+    }
+}
+
+#[derive(Clone)]
+#[wasm_bindgen]
 pub struct RomMetadata {
     title: String,
     has_battery: bool
@@ -83,13 +111,15 @@ fn as_rom_metadata(header: CartridgeHeader) -> RomMetadata {
 }
 
 #[wasm_bindgen(js_name = initializeEmulator)]
-pub fn initialize_emulator(rom_buffer: &[u8], mode_text: &str) -> RomMetadataResult {
+pub fn initialize_emulator(rom_buffer: &[u8], settings: EmulatorSettings) -> RomMetadataResult {
     EMULATOR.with(|emulator_cell: &RefCell<Emulator>| {
         console_error_panic_hook::set_once();
 
         let mut emulator = emulator_cell.borrow_mut();
 
-        emulator::set_mode(&mut emulator, as_mode(mode_text));
+        emulator::set_mode(&mut emulator, as_mode(settings.mode.as_str()));
+
+        emulator::set_sample_rate(&mut emulator, settings.audio_sample_rate);
 
         match emulator::load_rom(&mut emulator, rom_buffer) {
             Ok(result) => {

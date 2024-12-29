@@ -45,7 +45,7 @@ const useAudioSync = (
                 const audioBuffer = audioContext.createBuffer(
                     2,
                     bufferLength,
-                    48000,
+                    audioContext.sampleRate,
                 );
 
                 const leftChannel = audioBuffer.getChannelData(0);
