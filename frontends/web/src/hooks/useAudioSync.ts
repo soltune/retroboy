@@ -38,7 +38,7 @@ const useAudioSync = (
         }
     }, [playing]);
 
-    const GAP_BEFORE_SAMPLE_PLAY = 10;
+    const GAP_BEFORE_SAMPLE_PLAY = 15;
 
     useEffect(() => {
         (window as any).playAudioSamples = (
