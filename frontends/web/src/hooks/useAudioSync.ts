@@ -9,6 +9,8 @@ const useAudioSync = (
     const audioContextRef = useRef<AudioContext | null>(null);
     const scheduledResetRef = useRef<boolean>(false);
 
+    const nextPlayTimeRef = useRef<number>(0);
+
     const resetGame = (): void => {
         resetGameCallback();
         scheduledResetRef.current = false;
@@ -29,6 +31,14 @@ const useAudioSync = (
             stepUntilNextAudioBuffer();
         }
     }, [playing]);
+
+    useEffect(() => {
+        if (playing && audioContextRef.current) {
+            nextPlayTimeRef.current = audioContextRef.current.currentTime;
+        }
+    }, [playing]);
+
+    const GAP_BEFORE_SAMPLE_PLAY = 10;
 
     useEffect(() => {
         (window as any).playAudioSamples = (
@@ -59,12 +69,22 @@ const useAudioSync = (
                 const bufferSource = audioContext.createBufferSource();
                 bufferSource.buffer = audioBuffer;
 
-                bufferSource.onended = () => {
-                    step();
-                };
+                const duration = bufferLength / audioContext.sampleRate;
 
                 bufferSource.connect(audioContext.destination);
-                bufferSource.start();
+
+                bufferSource.start(nextPlayTimeRef.current);
+
+                let waitTime =
+                    (nextPlayTimeRef.current - audioContext.currentTime) * 1000;
+
+                setTimeout(() => {
+                    step();
+                }, waitTime - GAP_BEFORE_SAMPLE_PLAY);
+
+                nextPlayTimeRef.current = nextPlayTimeRef.current
+                    ? nextPlayTimeRef.current + duration
+                    : duration;
             }
         };
     }, [playing]);
