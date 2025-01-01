@@ -75,7 +75,7 @@ const useAudioSync = (
 
                 bufferSource.start(nextPlayTimeRef.current);
 
-                let waitTime =
+                const waitTime =
                     (nextPlayTimeRef.current - audioContext.currentTime) * 1000;
 
                 setTimeout(() => {
