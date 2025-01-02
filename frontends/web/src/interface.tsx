@@ -161,8 +161,9 @@ const Interface = (): JSX.Element => {
     };
 
     const setFullscreen = (): void => {
-        if (canvasRef.current) {
-            canvasRef.current.requestFullscreen();
+        const canvas = canvasRef.current;
+        if (canvas && canvas.requestFullscreen) {
+            canvas.requestFullscreen();
         }
     };
 
