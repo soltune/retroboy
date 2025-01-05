@@ -20,11 +20,14 @@ import {
     FileBufferObject,
 } from "./components/bufferFileUpload";
 import { CssGrid, GapSize, Orientation, Position } from "./components/cssGrid";
+import GamePad from "./components/gamePad";
 import GameScreen from "./components/gameScreen";
 import Modal from "./components/modal";
 import {
     EmulatorSettings,
     initializeEmulator,
+    pressKey,
+    releaseKey,
     resetEmulator,
     RomMetadata,
 } from "./core/retroboyCore";
@@ -44,6 +47,7 @@ import SettingsModal from "./settingsModal";
 
 const AppGrid = styled(CssGrid)`
     height: 100%;
+    width: 100%;
 `;
 
 const HeaderGrid = styled(CssGrid)`
@@ -196,7 +200,10 @@ const Interface = (): JSX.Element => {
     };
 
     return (
-        <AppGrid justifyContent={Position.center} alignItems={Position.center}>
+        <AppGrid
+            justifyContent={isTablet || isMobile ? undefined : Position.center}
+            alignItems={Position.center}
+        >
             {wasmInitialized ? (
                 <CssGrid
                     gap={isTablet || isMobile ? GapSize.large : GapSize.giant}
@@ -355,6 +362,22 @@ const Interface = (): JSX.Element => {
                 </CssGrid>
             ) : (
                 <div>Loading...</div>
+            )}
+            {isTablet || isMobile ? (
+                <GamePad
+                    onTouchStart={gameControl => {
+                        if (playing) {
+                            pressKey(gameControl);
+                        }
+                    }}
+                    onTouchEnd={gameControl => {
+                        if (playing) {
+                            releaseKey(gameControl);
+                        }
+                    }}
+                />
+            ) : (
+                <></>
             )}
         </AppGrid>
     );

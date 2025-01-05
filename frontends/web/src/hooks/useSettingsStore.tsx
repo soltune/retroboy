@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
-const gameControls = {
+export const gameControls = {
     up: "Up",
     down: "Down",
     left: "Left",

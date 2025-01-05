@@ -81,6 +81,11 @@ export const useIsMobile = (): boolean => {
     return breakpoint === ResponsiveBreakpoint.xs;
 };
 
+export const useIsTablet = (): boolean => {
+    const breakpoint = useResponsiveBreakpoint();
+    return breakpoint === ResponsiveBreakpoint.sm;
+};
+
 interface ResponsiveBreakpointProviderProps {
     children: React.ReactNode;
 }
