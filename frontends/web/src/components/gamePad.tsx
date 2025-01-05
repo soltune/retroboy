@@ -13,6 +13,7 @@ const GamePadWrapperGrid = styled(CssGrid)`
     width: 100%;
     user-select: none;
     -webkit-touch-callout: none;
+    -webkit-user-select: none;
 `;
 
 const CircularButtonGrid = styled(CssGrid)`
