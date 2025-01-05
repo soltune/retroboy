@@ -1,6 +1,7 @@
 import TriangleIcon from "@mui/icons-material/ChangeHistory";
 import CircleIcon from "@mui/icons-material/FiberManualRecord";
 import { styled } from "@mui/material";
+import { useEffect, useRef } from "react";
 
 import { CssGrid, GapSize, Orientation, Position } from "./cssGrid";
 
@@ -12,12 +13,6 @@ const GamePadWrapperGrid = styled(CssGrid)`
     padding: 16px;
     width: 100%;
     user-select: none;
-    -webkit-touch-callout: none;
-    -webkit-user-callout: none;
-    -webkit-user-select: none;
-    -webkit-user-drag: none;
-    -webkit-user-modify: none;
-    -webkit-highlight: none;
 `;
 
 const CircularButtonGrid = styled(CssGrid)`
@@ -118,10 +113,36 @@ const DirectionalPad = ({
 
 const GamePad = ({ onTouchStart, onTouchEnd }: GamePadProps): JSX.Element => {
     const isTablet = useIsTablet();
+
+    const wrapperRef = useRef(null as HTMLDivElement | null);
+
+    const preventDefaultBehavior = (event: TouchEvent): void => {
+        event.preventDefault();
+    };
+
+    useEffect(() => {
+        const wrapper = wrapperRef.current;
+
+        if (wrapper) {
+            wrapper.addEventListener("touchstart", preventDefaultBehavior, {
+                passive: false,
+            });
+        }
+        return () => {
+            if (wrapper) {
+                wrapper.removeEventListener(
+                    "touchstart",
+                    preventDefaultBehavior,
+                );
+            }
+        };
+    }, [wrapperRef]);
+
     return (
         <GamePadWrapperGrid
             orientation={Orientation.vertical}
             gap={GapSize.medium}
+            ref={wrapperRef}
         >
             <CssGrid
                 orientation={Orientation.horizontal}
