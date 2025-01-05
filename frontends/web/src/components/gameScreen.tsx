@@ -1,15 +1,23 @@
 import { styled } from "@mui/material";
-import { RefObject, forwardRef, useEffect } from "react";
+import { RefObject, forwardRef, useEffect, useState } from "react";
 
 const GAMEBOY_WIDTH = 160;
 const GAMEBOY_HEIGHT = 144;
 
-const Screen = styled("canvas")`
-    width: ${GAMEBOY_WIDTH * 2}px;
-    height: ${GAMEBOY_HEIGHT * 2}px;
-    border: ${({ theme }) => `1px solid ${theme.palette.text.secondary}`};
-    image-rendering: pixelated;
-`;
+const DEFAULT_SCALE = 2;
+
+const Screen = styled("canvas", {
+    shouldForwardProp: prop => prop !== "mobileFullscreen" && prop !== "scale",
+})<{ mobileFullscreen: boolean; scale: number }>(
+    ({ mobileFullscreen, scale, theme }) => ({
+        width: `${GAMEBOY_WIDTH * scale}px`,
+        height: `${GAMEBOY_HEIGHT * scale}px`,
+        border: mobileFullscreen
+            ? undefined
+            : `1px solid ${theme.palette.text.secondary}`,
+        imageRendering: "pixelated",
+    }),
+);
 
 const renderFrame = (
     canvasContext: CanvasRenderingContext2D,
@@ -34,9 +42,20 @@ const initializeCanvas = (canvasContext: CanvasRenderingContext2D): void => {
     renderFrame(canvasContext, initialBuffer);
 };
 
-const GameScreen = forwardRef<HTMLCanvasElement, GameScreenProps>(
-    ({ wasmInitialized, playing, paused, ...remainingProps }, ref) => {
+export const GameScreen = forwardRef<HTMLCanvasElement, GameScreenProps>(
+    (
+        {
+            wasmInitialized,
+            playing,
+            paused,
+            mobileFullscreen,
+            ...remainingProps
+        },
+        ref,
+    ) => {
         const canvasRef = ref as RefObject<HTMLCanvasElement>;
+
+        const [scale, setScale] = useState(DEFAULT_SCALE);
 
         useEffect(() => {
             if (wasmInitialized && canvasRef.current) {
@@ -62,10 +81,24 @@ const GameScreen = forwardRef<HTMLCanvasElement, GameScreenProps>(
             }
         }, [playing, paused]);
 
+        useEffect(() => {
+            if (mobileFullscreen) {
+                setScale(window.innerWidth / GAMEBOY_WIDTH);
+            }
+
+            return () => {
+                if (mobileFullscreen) {
+                    setScale(DEFAULT_SCALE);
+                }
+            };
+        }, [mobileFullscreen]);
+
         return (
             <Screen
                 width={GAMEBOY_WIDTH}
                 height={GAMEBOY_HEIGHT}
+                mobileFullscreen={mobileFullscreen}
+                scale={scale}
                 ref={ref}
                 {...remainingProps}
             />
@@ -78,6 +111,7 @@ interface GameScreenProps
     wasmInitialized: boolean;
     playing: boolean;
     paused: boolean;
+    mobileFullscreen: boolean;
 }
 
 export default GameScreen;

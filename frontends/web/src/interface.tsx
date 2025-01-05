@@ -1,5 +1,6 @@
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
+import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
 import PauseIcon from "@mui/icons-material/Pause";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
@@ -13,7 +14,7 @@ import {
     ToggleButtonGroup,
     Divider,
 } from "@mui/material";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
     BufferFileUpload,
@@ -45,10 +46,13 @@ import { useTopLevelRenderer } from "./hooks/useTopLevelRenderer";
 import useWasmInitializer from "./hooks/useWasmInitializer";
 import SettingsModal from "./settingsModal";
 
-const AppGrid = styled(CssGrid)`
-    height: 100%;
-    width: 100%;
-`;
+const AppGrid = styled(CssGrid, {
+    shouldForwardProp: prop => prop !== "mobileFullscreenMode",
+})<{ mobileFullscreenMode?: boolean }>(({ mobileFullscreenMode }) => ({
+    height: "100%",
+    width: "100%",
+    background: mobileFullscreenMode ? "black" : undefined,
+}));
 
 const HeaderGrid = styled(CssGrid)`
     margin-bottom: 8px;
@@ -60,12 +64,15 @@ const GameSelectionGrid = styled(CssGrid)`
 `;
 
 const GameScreenGrid = styled(CssGrid, {
-    shouldForwardProp: prop => prop !== "isMobile",
-})<{ isMobile?: boolean }>(({ isMobile }) => ({
-    marginBottom: "32px",
-    justifySelf: isMobile ? "stretch" : undefined,
-    margin: "16px",
-}));
+    shouldForwardProp: prop =>
+        prop !== "isMobile" && prop != "mobileFullscreenMode",
+})<{ isMobile?: boolean; mobileFullscreenMode?: boolean }>(
+    ({ isMobile, mobileFullscreenMode }) => ({
+        marginBottom: mobileFullscreenMode ? undefined : "32px",
+        justifySelf: isMobile ? "stretch" : undefined,
+        margin: mobileFullscreenMode ? undefined : "16px",
+    }),
+);
 
 const CenteredGameScreen = styled(GameScreen)`
     justify-self: center;
@@ -76,6 +83,15 @@ const StretchableToggleButton = styled(ToggleButton, {
 })<{ stretch: boolean }>(({ stretch }) => ({
     width: stretch ? "50%" : undefined,
 }));
+
+const ExitFullscreenButton = styled(Button)`
+    background: black;
+    color: white;
+`;
+
+const WhiteFullscreenExitIcon = styled(FullscreenExitIcon)`
+    color: white;
+`;
 
 const Logo = (): JSX.Element => (
     <img src="/retroboy/logo.png" width="150" height="150" />
@@ -99,6 +115,7 @@ const Interface = (): JSX.Element => {
     const [paused, setPaused] = useState(false);
     const [mode, setMode] = useState("DMG");
     const [romMetadata, setRomMetadata] = useState(null as RomMetadata | null);
+    const [mobileFullscreenMode, setMobileFullscreenMode] = useState(false);
 
     useKeyListeners(playing);
 
@@ -165,10 +182,18 @@ const Interface = (): JSX.Element => {
     };
 
     const setFullscreen = (): void => {
-        const canvas = canvasRef.current;
-        if (canvas && canvas.requestFullscreen) {
-            canvas.requestFullscreen();
+        if (isMobile || isTablet) {
+            setMobileFullscreenMode(true);
+        } else {
+            const canvas = canvasRef.current;
+            if (canvas && canvas.requestFullscreen) {
+                canvas.requestFullscreen();
+            }
         }
+    };
+
+    const exitMobileFullscreen = (): void => {
+        setMobileFullscreenMode(false);
     };
 
     const downloadScreenshot = (): void => {
@@ -199,185 +224,221 @@ const Interface = (): JSX.Element => {
         );
     };
 
+    useEffect(() => {
+        if (!isMobile && !isTablet && mobileFullscreenMode) {
+            exitMobileFullscreen();
+        }
+    }, [isMobile, isTablet]);
+
     return (
         <AppGrid
             justifyContent={isTablet || isMobile ? undefined : Position.center}
-            alignItems={Position.center}
+            alignItems={isTablet || isMobile ? Position.end : Position.center}
+            mobileFullscreenMode={mobileFullscreenMode}
         >
             {wasmInitialized ? (
-                <CssGrid
-                    gap={isTablet || isMobile ? GapSize.large : GapSize.giant}
-                    alignItems={Position.center}
-                    justifyItems={Position.center}
-                    orientation={
-                        isTablet || isMobile
-                            ? Orientation.vertical
-                            : Orientation.horizontal
-                    }
-                >
-                    <GameSelectionGrid
-                        alignItems={Position.end}
-                        gap={GapSize.extraLarge}
+                <>
+                    <CssGrid
+                        gap={
+                            isTablet || isMobile ? GapSize.large : GapSize.giant
+                        }
+                        alignItems={Position.center}
+                        justifyItems={Position.center}
+                        orientation={
+                            isTablet || isMobile
+                                ? Orientation.vertical
+                                : Orientation.horizontal
+                        }
                     >
-                        <div>
-                            <HeaderGrid
-                                orientation={
-                                    isMobile
-                                        ? Orientation.vertical
-                                        : Orientation.horizontal
-                                }
-                                template={isMobile ? undefined : "1fr auto"}
-                                justifyContent={
-                                    isMobile ? Position.stretch : undefined
-                                }
-                                alignItems={Position.center}
+                        {!mobileFullscreenMode && (
+                            <GameSelectionGrid
+                                alignItems={Position.end}
+                                gap={GapSize.extraLarge}
                             >
-                                <Logo />
-                                <Button
-                                    variant="contained"
-                                    color="secondary"
-                                    startIcon={<SettingsIcon />}
-                                    onClick={openSettings}
+                                <div>
+                                    <HeaderGrid
+                                        orientation={
+                                            isMobile
+                                                ? Orientation.vertical
+                                                : Orientation.horizontal
+                                        }
+                                        template={
+                                            isMobile ? undefined : "1fr auto"
+                                        }
+                                        justifyContent={
+                                            isMobile
+                                                ? Position.stretch
+                                                : undefined
+                                        }
+                                        alignItems={Position.center}
+                                    >
+                                        <Logo />
+                                        <Button
+                                            variant="contained"
+                                            color="secondary"
+                                            startIcon={<SettingsIcon />}
+                                            onClick={openSettings}
+                                        >
+                                            Settings
+                                        </Button>
+                                    </HeaderGrid>
+                                    <Divider />
+                                </div>
+                                <Typography>
+                                    Retro Boy is a Game Boy emulator that can be
+                                    played on the web. To use, simply click
+                                    "Load ROM" to load your game ROM. Only .gb
+                                    files are supported. Then click "Play".
+                                </Typography>
+                                <CssGrid
+                                    orientation={
+                                        isMobile
+                                            ? Orientation.vertical
+                                            : Orientation.horizontal
+                                    }
+                                    gap={isMobile ? GapSize.large : undefined}
+                                    template="1fr auto"
                                 >
-                                    Settings
-                                </Button>
-                            </HeaderGrid>
-                            <Divider />
-                        </div>
-                        <Typography>
-                            Retro Boy is a Game Boy emulator that can be played
-                            on the web. To use, simply click "Load ROM" to load
-                            your game ROM. Only .gb files are supported. Then
-                            click "Play".
-                        </Typography>
-                        <CssGrid
-                            orientation={
-                                isMobile
-                                    ? Orientation.vertical
-                                    : Orientation.horizontal
-                            }
-                            gap={isMobile ? GapSize.large : undefined}
-                            template="1fr auto"
-                        >
-                            <BufferFileUpload
-                                label="Load ROM"
-                                onFileSelect={setRomBuffer}
-                                uploadedFile={romBuffer}
+                                    <BufferFileUpload
+                                        label="Load ROM"
+                                        onFileSelect={setRomBuffer}
+                                        uploadedFile={romBuffer}
+                                        variant="contained"
+                                        accept=".gb"
+                                        startIcon={<FileUploadIcon />}
+                                    />
+                                    <ToggleButtonGroup
+                                        color="primary"
+                                        value={mode}
+                                        exclusive
+                                        onChange={handleModeChange}
+                                        aria-label="Mode"
+                                        size="small"
+                                        disabled={playing || paused}
+                                    >
+                                        <StretchableToggleButton
+                                            value="DMG"
+                                            stretch={isMobile}
+                                        >
+                                            Monochrome
+                                        </StretchableToggleButton>
+                                        <StretchableToggleButton
+                                            value="CGB"
+                                            stretch={isMobile}
+                                        >
+                                            Color
+                                        </StretchableToggleButton>
+                                    </ToggleButtonGroup>
+                                </CssGrid>
+                                <CssGrid
+                                    orientation={
+                                        isMobile
+                                            ? Orientation.vertical
+                                            : Orientation.horizontal
+                                    }
+                                    gap={
+                                        isMobile
+                                            ? GapSize.large
+                                            : GapSize.medium
+                                    }
+                                    justifyContent={
+                                        isMobile
+                                            ? Position.stretch
+                                            : Position.start
+                                    }
+                                >
+                                    {!playing || paused ? (
+                                        <Button
+                                            variant="contained"
+                                            disabled={!romBuffer}
+                                            onClick={
+                                                paused ? resumeGame : playGame
+                                            }
+                                            startIcon={<PlayArrowIcon />}
+                                        >
+                                            {paused ? "Resume" : "Play"}
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            variant="contained"
+                                            onClick={pauseGame}
+                                            startIcon={<PauseIcon />}
+                                        >
+                                            Pause
+                                        </Button>
+                                    )}
+                                    <Button
+                                        variant="contained"
+                                        onClick={startReset}
+                                        disabled={!playing && !paused}
+                                        startIcon={<RefreshIcon />}
+                                    >
+                                        Reset
+                                    </Button>
+                                    <Button
+                                        variant="contained"
+                                        onClick={setFullscreen}
+                                        disabled={!playing && !paused}
+                                        startIcon={<FullscreenIcon />}
+                                    >
+                                        Fullscreen
+                                    </Button>
+                                </CssGrid>
+                            </GameSelectionGrid>
+                        )}
+                        {mobileFullscreenMode && (
+                            <ExitFullscreenButton
+                                onClick={exitMobileFullscreen}
                                 variant="contained"
-                                accept=".gb"
-                                startIcon={<FileUploadIcon />}
-                            />
-                            <ToggleButtonGroup
-                                color="primary"
-                                value={mode}
-                                exclusive
-                                onChange={handleModeChange}
-                                aria-label="Mode"
-                                size="small"
-                                disabled={playing || paused}
+                                startIcon={<WhiteFullscreenExitIcon />}
                             >
-                                <StretchableToggleButton
-                                    value="DMG"
-                                    stretch={isMobile}
-                                >
-                                    Monochrome
-                                </StretchableToggleButton>
-                                <StretchableToggleButton
-                                    value="CGB"
-                                    stretch={isMobile}
-                                >
-                                    Color
-                                </StretchableToggleButton>
-                            </ToggleButtonGroup>
-                        </CssGrid>
-                        <CssGrid
-                            orientation={
-                                isMobile
-                                    ? Orientation.vertical
-                                    : Orientation.horizontal
-                            }
-                            gap={isMobile ? GapSize.large : GapSize.medium}
-                            justifyContent={
-                                isMobile ? Position.stretch : Position.start
-                            }
+                                Exit Fullscreen
+                            </ExitFullscreenButton>
+                        )}
+                        <GameScreenGrid
+                            gap={GapSize.large}
+                            orientation={Orientation.vertical}
+                            justifyItems={isMobile ? undefined : Position.start}
+                            isMobile={isMobile}
+                            mobileFullscreenMode={mobileFullscreenMode}
                         >
-                            {!playing || paused ? (
+                            {!mobileFullscreenMode && (
                                 <Button
+                                    startIcon={<PhotoCameraIcon />}
+                                    onClick={downloadScreenshot}
+                                    disabled={!playing && !paused}
+                                    color="secondary"
                                     variant="contained"
-                                    disabled={!romBuffer}
-                                    onClick={paused ? resumeGame : playGame}
-                                    startIcon={<PlayArrowIcon />}
                                 >
-                                    {paused ? "Resume" : "Play"}
-                                </Button>
-                            ) : (
-                                <Button
-                                    variant="contained"
-                                    onClick={pauseGame}
-                                    startIcon={<PauseIcon />}
-                                >
-                                    Pause
+                                    Screenshot
                                 </Button>
                             )}
-                            <Button
-                                variant="contained"
-                                onClick={startReset}
-                                disabled={!playing && !paused}
-                                startIcon={<RefreshIcon />}
-                            >
-                                Reset
-                            </Button>
-                            <Button
-                                variant="contained"
-                                onClick={setFullscreen}
-                                disabled={!playing && !paused}
-                                startIcon={<FullscreenIcon />}
-                            >
-                                Fullscreen
-                            </Button>
-                        </CssGrid>
-                    </GameSelectionGrid>
-                    <GameScreenGrid
-                        gap={GapSize.large}
-                        orientation={Orientation.vertical}
-                        justifyItems={isMobile ? undefined : Position.start}
-                        isMobile={isMobile}
-                    >
-                        <Button
-                            startIcon={<PhotoCameraIcon />}
-                            onClick={downloadScreenshot}
-                            disabled={!playing && !paused}
-                            color="secondary"
-                            variant="contained"
-                        >
-                            Screenshot
-                        </Button>
-                        <CenteredGameScreen
-                            wasmInitialized={wasmInitialized}
-                            playing={playing}
-                            paused={paused}
-                            ref={canvasRef}
+                            <CenteredGameScreen
+                                wasmInitialized={wasmInitialized}
+                                playing={playing}
+                                paused={paused}
+                                mobileFullscreen={mobileFullscreenMode}
+                                ref={canvasRef}
+                            />
+                        </GameScreenGrid>
+                    </CssGrid>
+                    {(isTablet || isMobile) && (
+                        <GamePad
+                            onTouchStart={gameControl => {
+                                if (playing) {
+                                    pressKey(gameControl);
+                                }
+                            }}
+                            onTouchEnd={gameControl => {
+                                if (playing) {
+                                    releaseKey(gameControl);
+                                }
+                            }}
                         />
-                    </GameScreenGrid>
-                </CssGrid>
+                    )}
+                </>
             ) : (
                 <div>Loading...</div>
-            )}
-            {isTablet || isMobile ? (
-                <GamePad
-                    onTouchStart={gameControl => {
-                        if (playing) {
-                            pressKey(gameControl);
-                        }
-                    }}
-                    onTouchEnd={gameControl => {
-                        if (playing) {
-                            releaseKey(gameControl);
-                        }
-                    }}
-                />
-            ) : (
-                <></>
             )}
         </AppGrid>
     );
