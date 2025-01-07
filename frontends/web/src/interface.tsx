@@ -132,6 +132,13 @@ const Interface = (): JSX.Element => {
 
     useCartridgeRamSaver(playing, romMetadata);
 
+    const scrollToGamePad = ({ smooth }: { smooth: boolean }) => {
+        window.scrollTo({
+            top: document.body.scrollHeight,
+            behavior: smooth ? "smooth" : "auto",
+        });
+    };
+
     const playGame = () => {
         if (romBuffer) {
             if (!audioContextRef.current) {
@@ -167,6 +174,7 @@ const Interface = (): JSX.Element => {
                 }
                 setRomMetadata(metadata);
                 setPlaying(true);
+                scrollToGamePad({ smooth: true });
             }
         }
     };
@@ -179,6 +187,7 @@ const Interface = (): JSX.Element => {
     const resumeGame = (): void => {
         setPaused(false);
         setPlaying(true);
+        scrollToGamePad({ smooth: true });
     };
 
     const setFullscreen = (): void => {
@@ -229,6 +238,16 @@ const Interface = (): JSX.Element => {
             exitMobileFullscreen();
         }
     }, [isMobile, isTablet]);
+
+    useEffect(() => {
+        if (playing && !mobileFullscreenMode) {
+            setTimeout(() => {
+                window.requestAnimationFrame(() =>
+                    scrollToGamePad({ smooth: false }),
+                );
+            });
+        }
+    }, [mobileFullscreenMode]);
 
     return (
         <AppGrid
