@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import init from "../core/retroboyCore";
 
-const useWasmInitializer = () => {
+const WasmLoader = ({ children }: WasmLoaderProps): JSX.Element => {
     const [wasmInitialized, setWasmInitialized] = useState(false);
 
     const initalizeWasm = (): void => {
@@ -15,7 +15,11 @@ const useWasmInitializer = () => {
         initalizeWasm();
     }, []);
 
-    return wasmInitialized;
+    return wasmInitialized ? <>{children}</> : <div>Loading...</div>;
 };
 
-export default useWasmInitializer;
+interface WasmLoaderProps {
+    readonly children: React.ReactNode;
+}
+
+export default WasmLoader;

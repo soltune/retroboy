@@ -43,22 +43,13 @@ const initializeCanvas = (canvasContext: CanvasRenderingContext2D): void => {
 };
 
 export const GameScreen = forwardRef<HTMLCanvasElement, GameScreenProps>(
-    (
-        {
-            wasmInitialized,
-            playing,
-            paused,
-            mobileFullscreen,
-            ...remainingProps
-        },
-        ref,
-    ) => {
+    ({ playing, paused, mobileFullscreen, ...remainingProps }, ref) => {
         const canvasRef = ref as RefObject<HTMLCanvasElement>;
 
         const [scale, setScale] = useState(DEFAULT_SCALE);
 
         useEffect(() => {
-            if (wasmInitialized && canvasRef.current) {
+            if (canvasRef.current) {
                 const canvas = canvasRef.current;
                 const canvasContext = canvas.getContext("2d");
 
@@ -68,7 +59,7 @@ export const GameScreen = forwardRef<HTMLCanvasElement, GameScreenProps>(
                     };
                 }
             }
-        }, [wasmInitialized]);
+        }, []);
 
         useEffect(() => {
             if (canvasRef.current) {
@@ -108,7 +99,6 @@ export const GameScreen = forwardRef<HTMLCanvasElement, GameScreenProps>(
 
 interface GameScreenProps
     extends React.CanvasHTMLAttributes<HTMLCanvasElement> {
-    wasmInitialized: boolean;
     playing: boolean;
     paused: boolean;
     mobileFullscreen: boolean;
