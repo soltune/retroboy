@@ -5,14 +5,14 @@ import { useEffect, useRef } from "react";
 
 import { CssGrid, GapSize, Orientation, Position } from "./cssGrid";
 
+import { pressKey, releaseKey } from "../core/retroboyCore";
 import { useIsTablet } from "../hooks/useResponsiveBreakpoint";
 import { gameControls } from "../hooks/useSettingsStore";
 
 const GamePadWrapperGrid = styled(CssGrid)`
     background-color: white;
-    padding: 16px;
+    padding: 4px 16px;
     width: 100%;
-    user-select: none;
 `;
 
 const CircularButtonGrid = styled(CssGrid)`
@@ -21,7 +21,6 @@ const CircularButtonGrid = styled(CssGrid)`
     width: 48px;
     height: 48px;
     background: ${({ theme }) => theme.palette.background.default};
-    touch-action: none;
     font-size: 32px;
 `;
 
@@ -43,7 +42,6 @@ const CylindricalButtonGridArea = styled("div")`
     width: 48px;
     border-radius: 40%;
     background: ${({ theme }) => theme.palette.background.default};
-    touch-action: none;
 `;
 
 const DirectionalPadGrid = styled(CssGrid)`
@@ -53,7 +51,6 @@ const DirectionalPadGrid = styled(CssGrid)`
 
 const DirectionalPadArea = styled("div")`
     background: ${({ theme }) => theme.palette.background.default};
-    touch-action: none;
 `;
 
 const DirectionalIcon = styled(TriangleIcon, {
@@ -66,6 +63,8 @@ const DirectionalIcon = styled(TriangleIcon, {
 const DirectionalPadCenterIcon = styled(CircleIcon)`
     color: ${({ theme }) => theme.palette.background.paper};
 `;
+
+const gameControlClass = "game-control";
 
 const DirectionalPad = ({
     onTouchStart,
@@ -80,6 +79,7 @@ const DirectionalPad = ({
             <DirectionalPadArea
                 onTouchStart={() => onTouchStart(gameControls.up)}
                 onTouchEnd={() => onTouchEnd(gameControls.up)}
+                className={gameControlClass}
             >
                 <DirectionalIcon rotation={0} />
             </DirectionalPadArea>
@@ -87,6 +87,7 @@ const DirectionalPad = ({
             <DirectionalPadArea
                 onTouchStart={() => onTouchStart(gameControls.left)}
                 onTouchEnd={() => onTouchEnd(gameControls.left)}
+                className={gameControlClass}
             >
                 <DirectionalIcon rotation={270} />
             </DirectionalPadArea>
@@ -96,6 +97,7 @@ const DirectionalPad = ({
             <DirectionalPadArea
                 onTouchStart={() => onTouchStart(gameControls.right)}
                 onTouchEnd={() => onTouchEnd(gameControls.right)}
+                className={gameControlClass}
             >
                 <DirectionalIcon rotation={90} />
             </DirectionalPadArea>
@@ -103,6 +105,7 @@ const DirectionalPad = ({
             <DirectionalPadArea
                 onTouchStart={event => onTouchStart(gameControls.down)}
                 onTouchEnd={() => onTouchEnd(gameControls.down)}
+                className={gameControlClass}
             >
                 <DirectionalIcon rotation={180} />
             </DirectionalPadArea>
@@ -111,29 +114,42 @@ const DirectionalPad = ({
     );
 };
 
-const GamePad = ({ onTouchStart, onTouchEnd }: GamePadProps): JSX.Element => {
+const GamePad = ({ playing }: GamePadProps): JSX.Element => {
     const isTablet = useIsTablet();
 
     const wrapperRef = useRef(null as HTMLDivElement | null);
 
-    const preventDefaultBehavior = (event: TouchEvent): void => {
-        event.preventDefault();
+    const preventDefault = (event: TouchEvent): void => {
+        const node = event.target as HTMLElement;
+        const isGameControl = node && !!node.closest(`.${gameControlClass}`);
+        if (isGameControl) {
+            event.preventDefault();
+        }
+    };
+
+    const handleTouchStart = (gameControl: string): void => {
+        if (playing) {
+            pressKey(gameControl);
+        }
+    };
+
+    const handleTouchEnd = (gameControl: string): void => {
+        if (playing) {
+            releaseKey(gameControl);
+        }
     };
 
     useEffect(() => {
         const wrapper = wrapperRef.current;
 
         if (wrapper) {
-            wrapper.addEventListener("touchstart", preventDefaultBehavior, {
+            wrapper.addEventListener("touchstart", preventDefault, {
                 passive: false,
             });
         }
         return () => {
             if (wrapper) {
-                wrapper.removeEventListener(
-                    "touchstart",
-                    preventDefaultBehavior,
-                );
+                wrapper.removeEventListener("touchstart", preventDefault);
             }
         };
     }, [wrapperRef]);
@@ -150,24 +166,26 @@ const GamePad = ({ onTouchStart, onTouchEnd }: GamePadProps): JSX.Element => {
                 template="auto 1fr 1fr auto auto"
             >
                 <DirectionalPad
-                    onTouchStart={onTouchStart}
-                    onTouchEnd={onTouchEnd}
+                    onTouchStart={handleTouchStart}
+                    onTouchEnd={handleTouchEnd}
                 />
                 <div />
                 <div />
                 <BGrid
                     alignItems={Position.center}
                     justifyContent={Position.center}
-                    onTouchStart={() => onTouchStart(gameControls.b)}
-                    onTouchEnd={() => onTouchEnd(gameControls.b)}
+                    onTouchStart={() => handleTouchStart(gameControls.b)}
+                    onTouchEnd={() => handleTouchEnd(gameControls.b)}
+                    className={gameControlClass}
                 >
                     B
                 </BGrid>
                 <AGrid
                     alignItems={Position.center}
                     justifyContent={Position.center}
-                    onTouchStart={() => onTouchStart(gameControls.a)}
-                    onTouchEnd={() => onTouchEnd(gameControls.a)}
+                    onTouchStart={() => handleTouchStart(gameControls.a)}
+                    onTouchEnd={() => handleTouchEnd(gameControls.a)}
+                    className={gameControlClass}
                 >
                     A
                 </AGrid>
@@ -185,8 +203,11 @@ const GamePad = ({ onTouchStart, onTouchEnd }: GamePadProps): JSX.Element => {
                     justifyItems={Position.center}
                 >
                     <CylindricalButtonGridArea
-                        onTouchStart={() => onTouchStart(gameControls.select)}
-                        onTouchEnd={() => onTouchEnd(gameControls.select)}
+                        onTouchStart={() =>
+                            handleTouchStart(gameControls.select)
+                        }
+                        onTouchEnd={() => handleTouchEnd(gameControls.select)}
+                        className={gameControlClass}
                     />
                     <div>SELECT</div>
                 </CylindricalButtonGrid>
@@ -197,8 +218,11 @@ const GamePad = ({ onTouchStart, onTouchEnd }: GamePadProps): JSX.Element => {
                     justifyItems={Position.center}
                 >
                     <CylindricalButtonGridArea
-                        onTouchStart={() => onTouchStart(gameControls.start)}
-                        onTouchEnd={() => onTouchEnd(gameControls.start)}
+                        onTouchStart={() =>
+                            handleTouchStart(gameControls.start)
+                        }
+                        onTouchEnd={() => handleTouchEnd(gameControls.start)}
+                        className={gameControlClass}
                     />
                     <div>START</div>
                 </CylindricalButtonGrid>
@@ -214,8 +238,7 @@ interface DirectionalPadProps {
 }
 
 interface GamePadProps {
-    readonly onTouchStart: (gameControl: string) => void;
-    readonly onTouchEnd: (gameControl: string) => void;
+    readonly playing: boolean;
 }
 
 export default GamePad;

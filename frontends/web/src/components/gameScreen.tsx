@@ -1,5 +1,7 @@
 import { styled } from "@mui/material";
-import { RefObject, forwardRef, useEffect, useState } from "react";
+import { useEffect, useState, useRef, forwardRef, RefObject } from "react";
+
+import { useIsMobile } from "../hooks/useResponsiveBreakpoint";
 
 const GAMEBOY_WIDTH = 160;
 const GAMEBOY_HEIGHT = 144;
@@ -7,15 +9,19 @@ const GAMEBOY_HEIGHT = 144;
 const DEFAULT_SCALE = 2;
 
 const Screen = styled("canvas", {
-    shouldForwardProp: prop => prop !== "mobileFullscreen" && prop !== "scale",
-})<{ mobileFullscreen: boolean; scale: number }>(
-    ({ mobileFullscreen, scale, theme }) => ({
-        width: `${GAMEBOY_WIDTH * scale}px`,
-        height: `${GAMEBOY_HEIGHT * scale}px`,
-        border: mobileFullscreen
+    shouldForwardProp: prop =>
+        prop !== "fullscreen" && prop !== "scale" && prop !== "isMobile",
+})<{ fullscreen: boolean; scale: number; isMobile: boolean }>(
+    ({ fullscreen, scale, isMobile, theme }) => ({
+        width: fullscreen && !isMobile ? "100%" : `${GAMEBOY_WIDTH * scale}px`,
+        height:
+            fullscreen && !isMobile ? "100%" : `${GAMEBOY_HEIGHT * scale}px`,
+        border: fullscreen
             ? undefined
             : `1px solid ${theme.palette.text.secondary}`,
         imageRendering: "pixelated",
+        justifySelf: "center",
+        alignSelf: "center",
     }),
 );
 
@@ -43,7 +49,8 @@ const initializeCanvas = (canvasContext: CanvasRenderingContext2D): void => {
 };
 
 export const GameScreen = forwardRef<HTMLCanvasElement, GameScreenProps>(
-    ({ playing, paused, mobileFullscreen, ...remainingProps }, ref) => {
+    ({ playing, paused, fullscreen, ...remainingProps }, ref) => {
+        const isMobile = useIsMobile();
         const canvasRef = ref as RefObject<HTMLCanvasElement>;
 
         const [scale, setScale] = useState(DEFAULT_SCALE);
@@ -59,6 +66,10 @@ export const GameScreen = forwardRef<HTMLCanvasElement, GameScreenProps>(
                     };
                 }
             }
+
+            return () => {
+                (window as any).canvasRender = (_: number[]) => {};
+            };
         }, []);
 
         useEffect(() => {
@@ -73,24 +84,25 @@ export const GameScreen = forwardRef<HTMLCanvasElement, GameScreenProps>(
         }, [playing, paused]);
 
         useEffect(() => {
-            if (mobileFullscreen) {
+            if (fullscreen) {
                 setScale(window.innerWidth / GAMEBOY_WIDTH);
             }
 
             return () => {
-                if (mobileFullscreen) {
+                if (fullscreen) {
                     setScale(DEFAULT_SCALE);
                 }
             };
-        }, [mobileFullscreen]);
+        }, [fullscreen]);
 
         return (
             <Screen
+                isMobile={isMobile}
                 width={GAMEBOY_WIDTH}
                 height={GAMEBOY_HEIGHT}
-                mobileFullscreen={mobileFullscreen}
+                fullscreen={fullscreen}
                 scale={scale}
-                ref={ref}
+                ref={canvasRef}
                 {...remainingProps}
             />
         );
@@ -101,7 +113,7 @@ interface GameScreenProps
     extends React.CanvasHTMLAttributes<HTMLCanvasElement> {
     playing: boolean;
     paused: boolean;
-    mobileFullscreen: boolean;
+    fullscreen: boolean;
 }
 
 export default GameScreen;
