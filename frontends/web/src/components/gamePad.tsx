@@ -91,7 +91,7 @@ const DirectionalPad = ({
             >
                 <DirectionalIcon rotation={270} />
             </DirectionalPadArea>
-            <DirectionalPadArea>
+            <DirectionalPadArea className={gameControlClass}>
                 <DirectionalPadCenterIcon />
             </DirectionalPadArea>
             <DirectionalPadArea

@@ -181,7 +181,7 @@ const StandardView = ({
                         <Button
                             variant="contained"
                             onClick={onFullscreen}
-                            disabled={!playing && !paused}
+                            disabled={!playing}
                             startIcon={<FullscreenIcon />}
                         >
                             Fullscreen

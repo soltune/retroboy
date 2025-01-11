@@ -1,10 +1,13 @@
 import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
 import { Button, styled } from "@mui/material";
-import { RefObject } from "react";
+import { RefObject, useLayoutEffect, useRef, useState } from "react";
 
 import { CssGrid, GapSize, Orientation, Position } from "../components/cssGrid";
 import GamePad from "../components/gamePad";
-import GameScreen from "../components/gameScreen";
+import GameScreen, {
+    GAMEBOY_HEIGHT,
+    GAMEBOY_WIDTH,
+} from "../components/gameScreen";
 import {
     ResponsiveBreakpoint,
     useResponsiveBreakpoint,
@@ -31,17 +34,35 @@ const FullscreenView = ({
     onExitFullscreen,
     canvasRef,
 }: FullscreenViewProps): JSX.Element => {
+    const screenWrapperRef = useRef(null as HTMLDivElement | null);
     const breakpoint = useResponsiveBreakpoint();
 
     const isMobile = breakpoint === ResponsiveBreakpoint.xs;
     const isTablet = breakpoint === ResponsiveBreakpoint.sm;
 
+    const [scale, setScale] = useState(undefined as number | undefined);
+
+    useLayoutEffect(() => {
+        if (screenWrapperRef.current) {
+            const screenWrapper = screenWrapperRef.current;
+
+            const screenWrapperHeight = screenWrapper.clientHeight;
+            const heightScale = screenWrapperHeight / GAMEBOY_HEIGHT;
+
+            const windowWidth = window.innerWidth;
+            const widthScale = windowWidth / GAMEBOY_WIDTH;
+
+            const smallerScale = Math.min(heightScale, widthScale);
+
+            setScale(smallerScale);
+        }
+    }, []);
+
     return (
         <FullscreenWrapperGrid
             orientation={Orientation.vertical}
             gap={GapSize.small}
-            justifyContent={Position.center}
-            alignItems={Position.start}
+            justifyContent={Position.stretch}
             template={isMobile || isTablet ? "auto 1fr" : "auto 1fr auto"}
         >
             <ExitFullscreenButton
@@ -50,12 +71,19 @@ const FullscreenView = ({
             >
                 Exit Fullscreen
             </ExitFullscreenButton>
-            <GameScreen
-                playing={playing}
-                paused={paused}
-                ref={canvasRef}
-                fullscreen
-            />
+            <CssGrid
+                alignItems={Position.center}
+                justifyContent={Position.center}
+                ref={screenWrapperRef}
+            >
+                <GameScreen
+                    playing={playing}
+                    paused={paused}
+                    ref={canvasRef}
+                    scale={scale}
+                    fullscreen
+                />
+            </CssGrid>
             {(isTablet || isMobile) && <GamePad playing={playing} />}
         </FullscreenWrapperGrid>
     );
