@@ -61,6 +61,8 @@ pub fn step(emulator: &mut Emulator) {
 mod tests {
     use crate::emulator::initialize_screenless_emulator;
     use crate::mmu;
+    use crate::mmu::constants::*;
+    use crate::mmu::test_utils::*;
     use super::*;
 
     #[test]
@@ -86,14 +88,13 @@ mod tests {
     fn should_transfer_byte_from_source_to_destination() {
         let mut emulator = initialize_screenless_emulator();
 
-        let mut test_instructions: Vec<u8> = vec![0; 0x8000];
-        test_instructions.resize(0x8000, 0);
-        mmu::load_rom_buffer(&mut emulator.memory, test_instructions).unwrap();
+        let mut rom = build_rom(CART_TYPE_MBC1, ROM_SIZE_64KB, RAM_SIZE_2KB);
+        rom[0x1200] = 0x12;
+        mmu::load_rom_buffer(&mut emulator.memory, rom).unwrap();
 
         emulator.dma.source = 0x1200;
         emulator.dma.offset = 0x0;
         emulator.dma.in_progress = true;
-        emulator.memory.cartridge.rom[0x1200] = 0x12;
         
         step(&mut emulator);
         
@@ -107,14 +108,13 @@ mod tests {
     fn should_stop_dma_transfer_after_transferring_160_bytes() {
         let mut emulator = initialize_screenless_emulator();
 
-        let mut test_instructions: Vec<u8> = vec![0; 0x8000];
-        test_instructions.resize(0x8000, 0);
-        mmu::load_rom_buffer(&mut emulator.memory, test_instructions).unwrap();
+        let mut rom = build_rom(CART_TYPE_MBC1, ROM_SIZE_64KB, RAM_SIZE_2KB);
+        rom[0x129F] = 0x12;
+        mmu::load_rom_buffer(&mut emulator.memory, rom).unwrap();
 
         emulator.dma.source = 0x1200;
         emulator.dma.offset = 0x0;
         emulator.dma.in_progress = true;
-        emulator.memory.cartridge.rom[0x129F] = 0x12;
         
         for _ in 0..DMA_TRANSFER_BYTES {
             step(&mut emulator);

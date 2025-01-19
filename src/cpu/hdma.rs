@@ -162,6 +162,8 @@ pub fn step(emulator: &mut Emulator) {
 mod tests {
     use crate::emulator::{initialize_screenless_emulator, Mode};
     use crate::mmu;
+    use crate::mmu::constants::*;
+    use crate::mmu::test_utils::*;
     use super::*;
 
     #[test]
@@ -236,13 +238,12 @@ mod tests {
         let mut emulator = initialize_screenless_emulator();
         emulator.mode = Mode::CGB;
 
-        let mut test_instructions = Vec::new();
-        test_instructions.resize(0x8000, 0);
-        mmu::load_rom_buffer(&mut emulator.memory, test_instructions).unwrap();
-
+        let mut test_instructions = build_rom(CART_TYPE_MBC1, ROM_SIZE_64KB, RAM_SIZE_2KB);
         for i in 0..32 {
-            emulator.memory.cartridge.rom[0x71A0 + i] = 0xA1;
+            test_instructions[0x71A0 + i] = 0xA1;
         }
+
+        mmu::load_rom_buffer(&mut emulator.memory, test_instructions).unwrap();
 
         set_hdma1(&mut emulator, 0x71);
         set_hdma2(&mut emulator, 0xA2);
@@ -272,13 +273,12 @@ mod tests {
         let mut emulator = initialize_screenless_emulator();
         emulator.mode = Mode::CGB;
 
-        let mut test_instructions = Vec::new();
-        test_instructions.resize(0x8000, 0);
-        mmu::load_rom_buffer(&mut emulator.memory, test_instructions).unwrap();
-
+        let mut test_instructions = build_rom(CART_TYPE_MBC1, ROM_SIZE_64KB, RAM_SIZE_2KB);
         for i in 0..32 {
-            emulator.memory.cartridge.rom[0x71A0 + i] = 0xA1;
+            test_instructions[0x71A0 + i] = 0xA1;
         }
+
+        mmu::load_rom_buffer(&mut emulator.memory, test_instructions).unwrap();
 
         set_hdma1(&mut emulator, 0x71);
         set_hdma2(&mut emulator, 0xA2);

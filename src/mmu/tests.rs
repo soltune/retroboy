@@ -1,39 +1,44 @@
 use crate::emulator::initialize_screenless_emulator;
 use crate::emulator::Mode;
+use crate::mmu::test_utils::*;
+use crate::mmu::constants::*;
 
 use super::*;
 
 fn setup_emulator_with_test_memory() -> Emulator {
     let mut emulator = initialize_screenless_emulator();
 
-    emulator.memory.bios[0] = 0xaf;
+    emulator.memory.bios[0] = 0xAF;
     emulator.memory.bios[1] = 0xF1;
     emulator.memory.bios[2] = 0x03;
     emulator.memory.bios[3] = 0x4D;
 
-    emulator.memory.cartridge.rom.resize(0x8000, 0);
-    emulator.memory.cartridge.ram.resize(0x8000, 0);
+    let mut rom = build_rom(CART_TYPE_MBC1, ROM_SIZE_64KB, RAM_SIZE_2KB);
+    
+    rom[0] = 0x1E;
+    rom[1] = 0xF2;
+    rom[2] = 0x01;
+    rom[3] = 0x09;
 
-    emulator.memory.cartridge.rom[0] = 0x1E;
-    emulator.memory.cartridge.rom[1] = 0xF2;
-    emulator.memory.cartridge.rom[2] = 0x01;
-    emulator.memory.cartridge.rom[3] = 0x09;
+    rom[0x20AF] = 0x11;
+    rom[0x20B0] = 0x17;
+    rom[0x20B1] = 0xEE;
 
-    emulator.memory.cartridge.rom[0x20AF] = 0x11;
-    emulator.memory.cartridge.rom[0x20B0] = 0x17;
-    emulator.memory.cartridge.rom[0x20B1] = 0xEE;
+    rom[0x5ACC] = 0x13;
+    rom[0x5ACD] = 0x9C;
+    rom[0x5ACE] = 0x55;
 
-    emulator.memory.cartridge.rom[0x5ACC] = 0x13;
-    emulator.memory.cartridge.rom[0x5ACD] = 0x9C;
-    emulator.memory.cartridge.rom[0x5ACE] = 0x55;
+    load_rom_buffer(&mut emulator.memory, rom).unwrap(); 
+
+    let mut ram = vec![0; 0x800];
+    ram[0] = 0xC2;
+    ram[1] = 0x22;
+    ram[2] = 0x35;
+    set_cartridge_ram(&mut emulator.memory, ram);
 
     emulator.gpu.video_ram[0] = 0xB1;
     emulator.gpu.video_ram[1] = 0xD2;
     emulator.gpu.video_ram[2] = 0xAA;
-
-    emulator.memory.cartridge.ram[0] = 0xC2;
-    emulator.memory.cartridge.ram[1] = 0x22;
-    emulator.memory.cartridge.ram[2] = 0x35;
 
     emulator.memory.working_ram[0] = 0xF1;
     emulator.memory.working_ram[1] = 0x22;
@@ -313,18 +318,17 @@ fn reads_joyp_register() {
 fn loads_rom_buffer_into_emulator() {
     let mut emulator = setup_emulator_with_test_memory();
 
-    let mut rom_buffer = vec![0; 0xA000];
-    rom_buffer[0] = 0xA0;
-    rom_buffer[1] = 0xCC;
-    rom_buffer[2] = 0x3B;
-    rom_buffer[3] = 0x4C;
-    rom_buffer[0x146] = 0x00;
-    rom_buffer[0x147] = 0x01;
-    rom_buffer[0x7FFF] = 0xD4;
-    rom_buffer[0x8000] = 0xBB;
-    rom_buffer[0x8001] = 0xD1;
-
-    load_rom_buffer(&mut emulator.memory, rom_buffer).unwrap();
+    let mut rom = build_rom(CART_TYPE_MBC1, ROM_SIZE_64KB, RAM_SIZE_2KB);
+    rom[0] = 0xA0;
+    rom[1] = 0xCC;
+    rom[2] = 0x3B;
+    rom[3] = 0x4C;
+    rom[0x146] = 0x00;
+    rom[0x147] = 0x01;
+    rom[0x7FFF] = 0xD4;
+    rom[0x8000] = 0xBB;
+    rom[0x8001] = 0xD1;
+    let header = load_rom_buffer(&mut emulator.memory, rom).unwrap();
 
     assert_eq!(read_byte(&mut emulator, 0x0000), 0xA0);
     assert_eq!(read_byte(&mut emulator, 0x0001), 0xCC);
@@ -333,8 +337,8 @@ fn loads_rom_buffer_into_emulator() {
     assert_eq!(read_byte(&mut emulator, 0x7FFF), 0xD4);
     assert_eq!(read_byte(&mut emulator, 0x8000), 0xB1);
 
-    assert_eq!(emulator.memory.cartridge.header.sgb_support, false);
-    assert_eq!(emulator.memory.cartridge.header.type_code, 0x01);
+    assert_eq!(header.sgb_support, false);
+    assert_eq!(header.type_code, 0x01);
 }
 
 #[test]

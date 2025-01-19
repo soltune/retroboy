@@ -1,11 +1,11 @@
 use core::panic;
 use std::io;
 
-use crate::mmu::mbc1;
-use crate::mmu::mbc1::{MBC1, initialize_mbc1};
-use crate::mmu::mbc3;
-use crate::mmu::mbc3::{MBC3, empty_clock, initialize_mbc3};
-use crate::mmu::mbc_rom_only;
+use crate::mmu::constants::*;
+use crate::mmu::mbc1::initialize_mbc1;
+use crate::mmu::mbc3::initialize_mbc3;
+use crate::mmu::rtc::RTC;
+use crate::mmu::mbc_rom_only::initialize_mbc_rom_only;
 
 #[derive(Debug, Clone)]
 pub struct CartridgeHeader {
@@ -21,32 +21,18 @@ pub struct Cartridge {
     pub rom: Vec<u8>,
     pub ram: Vec<u8>,
     pub header: CartridgeHeader,
-    pub mbc1: MBC1,
-    pub mbc3: MBC3,
 }
 
-const ENTRY_POINT_ADDRESS: usize = 0x100;
-const SGB_SUPPORT_ADDRESS: usize = 0x146;
-const CARTRIDGE_TYPE_ADDRESS: usize = 0x147;
-const ROM_SIZE_ADDRESS: usize = 0x148;
-pub const RAM_SIZE_ADDRESS: usize = 0x149;
+pub trait CartridgeMapper: std::fmt::Debug {
+    fn read_rom(&self, address: u16) -> u8;
+    fn write_rom(&mut self, address: u16, value: u8);
+    fn read_ram(&self, address: u16) -> u8;
+    fn write_ram(&mut self, address: u16, value: u8);
+    fn get_cartridge(&self) -> &Cartridge;
+    fn set_cartridge_ram(&mut self, ram: Vec<u8>);
+}
 
-const TITLE_START_ADDRESS: usize = 0x134;
-const TITLE_END_ADDRESS: usize = 0x143;
-
-const CGB_COMPATABILITY_INDEX: usize = 15;
-
-pub const CART_TYPE_ROM_ONLY: u8 = 0x0;
-pub const CART_TYPE_MBC1: u8 = 0x1;
-pub const CART_TYPE_MBC1_WITH_RAM: u8 = 0x2;
-pub const CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY: u8 = 0x3;
-pub const CART_TYPE_MBC3_TIMER_BATTERY: u8 = 0xF;
-pub const CART_TYPE_MBC3_TIMER_RAM_BATTERY: u8 = 0x10;
-pub const CART_TYPE_MBC3: u8 = 0x11;
-pub const CART_TYPE_MBC3_RAM: u8 = 0x12;
-pub const CART_TYPE_MBC3_RAM_BATTERY: u8 = 0x13;
-
-pub const SUPPORTED_CARTRIDGE_TYPES: [u8; 9] = [CART_TYPE_ROM_ONLY,
+const SUPPORTED_CARTRIDGE_TYPES: [u8; 9] = [CART_TYPE_ROM_ONLY,
     CART_TYPE_MBC1,
     CART_TYPE_MBC1_WITH_RAM,
     CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY,
@@ -67,17 +53,23 @@ pub fn initialize_cartridge() -> Cartridge {
             title: String::from(""),
             has_battery: false
         },
-        mbc1: initialize_mbc1(),
-        mbc3: initialize_mbc3(empty_clock), // TODO: Initialize with actual clock
     }
+}
+
+pub fn initialize_cartridge_mapper() -> Box<dyn CartridgeMapper> {
+    Box::new(initialize_mbc_rom_only(initialize_cartridge()))
 }
 
 fn cartridge_type_supported(type_code: u8) -> bool {
     SUPPORTED_CARTRIDGE_TYPES.contains(&type_code)
 }
 
-fn as_max_banks(rom_size_index: u8) -> u16 {
+pub fn as_max_banks(rom_size_index: u8) -> u16 {
     (2 as u16).pow(rom_size_index as u32 + 1)
+}
+
+fn is_mbc_rom_only(type_code: u8) -> bool {
+    type_code == CART_TYPE_ROM_ONLY
 }
 
 fn is_mbc1(type_code: u8) -> bool {
@@ -153,7 +145,19 @@ pub fn convert_cartridge_type_to_text(type_code: u8) -> String {
     }.to_string()
 }
 
-pub fn load_rom_buffer(buffer: Vec<u8>) -> io::Result<Cartridge> {
+fn as_mapper(cartridge: Cartridge, type_code: u8, rtc: fn() -> RTC) -> Box<dyn CartridgeMapper> {
+    if is_mbc_rom_only(type_code) {
+        Box::new(initialize_mbc_rom_only(cartridge))
+    } else if is_mbc1(type_code) {
+        Box::new(initialize_mbc1(cartridge))
+    } else if is_mbc3(type_code) {
+        Box::new(initialize_mbc3(cartridge, rtc))
+    } else {
+        panic!("Unsupported cartridge type: {}", type_code);
+    }
+}
+
+pub fn load_rom_buffer(buffer: Vec<u8>, rtc: fn() -> RTC) -> io::Result<Box<dyn CartridgeMapper>> {
     if buffer.len() > ENTRY_POINT_ADDRESS {
         let type_code = buffer[CARTRIDGE_TYPE_ADDRESS];
         let sgb_support = buffer[SGB_SUPPORT_ADDRESS] == 0x03;
@@ -178,13 +182,13 @@ pub fn load_rom_buffer(buffer: Vec<u8>) -> io::Result<Cartridge> {
                     title,
                     has_battery: is_battery_backed(type_code)
                 },
-                mbc1: initialize_mbc1(),
-                mbc3: initialize_mbc3(empty_clock), // TODO: Initialize with actual clock
             };
 
             set_ram_size(&mut cartridge);
 
-            Ok(cartridge)
+            let mapper = as_mapper(cartridge, type_code, rtc);
+
+            Ok(mapper)
         } else {
             let given_cartridge_type = convert_cartridge_type_to_text(type_code);
 
@@ -200,66 +204,19 @@ pub fn load_rom_buffer(buffer: Vec<u8>) -> io::Result<Cartridge> {
     }
 }
 
-pub fn read_rom(cartridge: &Cartridge, address: u16) -> u8 {
-    let cartridge_type_code = cartridge.header.type_code;
+#[cfg(test)]
+pub mod test_utils {
+    use super::*;
+    use crate::mmu::rtc::empty_clock;
+    use crate::mmu::test_utils::*;
 
-    if cartridge_type_code == CART_TYPE_ROM_ONLY {
-        mbc_rom_only::read_rom(cartridge, address)
-    } else if is_mbc1(cartridge_type_code) {
-        mbc1::read_rom(cartridge, address)
-    } else if is_mbc3(cartridge_type_code) {
-        mbc3::read_rom(cartridge, address)
-    } else {
-        panic!("Unsupported cartridge type: {}", cartridge.header.type_code);
+    pub fn build_cartridge_mapper(cartridge_type: u8, rom_size_index: u8, ram_size_index: u8) -> Box<dyn CartridgeMapper> {
+        let rom_buffer = build_rom(cartridge_type, rom_size_index, ram_size_index);
+        load_rom_buffer(rom_buffer, empty_clock).unwrap()
     }
- }
 
-pub fn write_rom(cartridge: &mut Cartridge, address: u16, value: u8) {
-    let cartridge_type_code = cartridge.header.type_code;
-
-    if cartridge_type_code == CART_TYPE_ROM_ONLY {
-        mbc_rom_only::write_rom(cartridge, address, value);
-    } else if is_mbc1(cartridge_type_code) {
-        mbc1::write_rom(cartridge, address, value);
-    } else if is_mbc3(cartridge_type_code) {
-        mbc3::write_rom(cartridge, address, value);
-    } else {
-        panic!("Unsupported cartridge type: {}", cartridge.header.type_code);
+    pub fn build_cartridge_mapper_with_rtc(cartridge_type: u8, rom_size_index: u8, ram_size_index: u8, rtc: fn() -> RTC) -> Box<dyn CartridgeMapper> {
+        let rom_buffer = build_rom(cartridge_type, rom_size_index, ram_size_index);
+        load_rom_buffer(rom_buffer, rtc).unwrap()
     }
-}
-
-pub fn read_ram(cartridge: &Cartridge, address: u16) -> u8 {
-    let cartridge_type_code = cartridge.header.type_code;
-
-    if cartridge_type_code == CART_TYPE_ROM_ONLY {
-        mbc_rom_only::read_ram(cartridge, address)
-    } else if is_mbc1(cartridge_type_code) {
-        mbc1::read_ram(cartridge, address)
-    } else if is_mbc3(cartridge_type_code) {
-        mbc3::read_ram(cartridge, address)
-    } else {
-        panic!("Unsupported cartridge type: {}", cartridge.header.type_code);
-    }
-}
-
-pub fn write_ram(cartridge: &mut Cartridge, address: u16, value: u8) {
-    let cartridge_type_code = cartridge.header.type_code;
-
-    if cartridge_type_code == CART_TYPE_ROM_ONLY {
-        mbc_rom_only::write_ram(cartridge, address, value);
-    } else if is_mbc1(cartridge_type_code) {
-        mbc1::write_ram(cartridge, address, value);
-    } else if is_mbc3(cartridge_type_code) {
-        mbc3::write_ram(cartridge, address, value);
-    } else {
-        panic!("Unsupported cartridge type: {}", cartridge.header.type_code);
-    }
-}
-
-pub fn get_cartridge_ram(cartridge: &Cartridge) -> Vec<u8> {
-    cartridge.ram.clone()
-}
-
-pub fn set_cartridge_ram(cartridge: &mut Cartridge, ram: Vec<u8>) {
-    cartridge.ram = ram;
 }

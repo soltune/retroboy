@@ -2,11 +2,20 @@ use super::*;
 use crate::cpu::{BusActivityEntry, BusActivityType};
 use crate::emulator::{initialize_screenless_emulator, Mode};
 use crate::mmu;
+use crate::mmu::constants::*;
+use crate::mmu::test_utils::build_rom;
 
-fn init_emulator_with_test_instructions(mut test_instructions: Vec<u8>) -> Emulator {
+fn init_rom_with_test_instructions(test_instructions: Vec<u8>) -> Vec<u8> {
+    let mut rom = build_rom(CART_TYPE_ROM_ONLY, ROM_SIZE_64KB, RAM_SIZE_2KB);
+    for i in 0..test_instructions.len() {
+        rom[i] = test_instructions[i];
+    }
+    rom
+}
+
+fn init_emulator_from_rom(rom: Vec<u8>) -> Emulator {
     let mut emulator = initialize_screenless_emulator();
-    test_instructions.resize(0x8000, 0);
-    mmu::load_rom_buffer(&mut emulator.memory, test_instructions).unwrap();
+    mmu::load_rom_buffer(&mut emulator.memory, rom).unwrap();
     emulator.memory.in_bios = false;
 
     // The Game Boy actually uses a decode/execute/prefetch loop, where fetching
@@ -14,8 +23,13 @@ fn init_emulator_with_test_instructions(mut test_instructions: Vec<u8>) -> Emula
     // Source: https://gist.github.com/SonoSooS/c0055300670d678b5ae8433e20bea595#fetch-and-stuff
     // This is why we need to step twice to get to the first opcode under test.
     step(&mut emulator);
-    
+
     emulator
+}
+
+fn init_emulator_with_test_instructions(test_instructions: Vec<u8>) -> Emulator {
+    let rom = init_rom_with_test_instructions(test_instructions);
+    init_emulator_from_rom(rom)
 }
 
 #[test]
@@ -39,10 +53,11 @@ fn loads_register_b_into_register_a() {
 
 #[test]
 fn loads_byte_at_address_hl_into_register_a() {
-    let mut emulator = init_emulator_with_test_instructions(vec![0x7e]);
+    let mut rom = init_rom_with_test_instructions(vec![0x7e]);
+    rom[0x5550] = 0xB1;
+    let mut emulator = init_emulator_from_rom(rom);
     emulator.cpu.registers.h = 0x55;
     emulator.cpu.registers.l = 0x50;
-    emulator.memory.cartridge.rom[0x5550] = 0xB1;
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.a, 0xB1);
     assert_eq!(emulator.cpu.registers.program_counter, 2);
@@ -72,8 +87,9 @@ fn loads_immediate_byte_into_memory() {
 
 #[test]
 fn loads_byte_at_address_nn_into_register_a() {
-    let mut emulator = init_emulator_with_test_instructions(vec![0xFA, 0x1C, 0x4B]);
-    emulator.memory.cartridge.rom[0x4B1C] = 0x22;
+    let mut rom = init_rom_with_test_instructions(vec![0xFA, 0x1C, 0x4B]);
+    rom[0x4B1C] = 0x22;
+    let mut emulator = init_emulator_from_rom(rom);
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.a, 0x22);
     assert_eq!(emulator.cpu.clock.instruction_clock_cycles, 16);
@@ -101,10 +117,11 @@ fn loads_register_a_into_ff00_plus_register_c() {
 
 #[test]
 fn loads_byte_at_address_hl_into_register_a_then_decrements_hl() {
-    let mut emulator = init_emulator_with_test_instructions(vec![0x3a]);
+    let mut rom = init_rom_with_test_instructions(vec![0x3a]);
+    rom[0x2AB1] = 0xAA;
+    let mut emulator = init_emulator_from_rom(rom);
     emulator.cpu.registers.h = 0x2A;
     emulator.cpu.registers.l = 0xB1;
-    emulator.memory.cartridge.rom[0x2AB1] = 0xAA;
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.a, 0xAA);
     assert_eq!(emulator.cpu.registers.program_counter, 2);
@@ -130,10 +147,11 @@ fn loads_register_a_into_address_hl_then_decrements_hl() {
 
 #[test]
 fn loads_byte_at_address_hl_into_register_a_then_increments_hl() {
-    let mut emulator = init_emulator_with_test_instructions(vec![0x2A]);
+    let mut rom = init_rom_with_test_instructions(vec![0x2A]);
+    rom[0x2AB1] = 0xAA;
+    let mut emulator = init_emulator_from_rom(rom);
     emulator.cpu.registers.h = 0x2A;
     emulator.cpu.registers.l = 0xB1;
-    emulator.memory.cartridge.rom[0x2AB1] = 0xAA;
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.a, 0xAA);
     assert_eq!(emulator.cpu.registers.program_counter, 2);
@@ -250,10 +268,11 @@ fn pushes_register_pair_onto_stack() {
 
 #[test]
 fn pops_word_into_register_pair_from_stack() {
-    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xC1]);
+    let mut rom = init_rom_with_test_instructions(vec![0xC1]);
+    rom[0x2111] = 0xB1;
+    rom[0x2110] = 0xDD;
+    let mut emulator = init_emulator_from_rom(rom);
     emulator.cpu.registers.stack_pointer = 0x2110;
-    emulator.memory.cartridge.rom[0x2111] = 0xB1;
-    emulator.memory.cartridge.rom[0x2110] = 0xDD;
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.b, 0xB1);
     assert_eq!(emulator.cpu.registers.c, 0xDD);
@@ -1175,12 +1194,10 @@ fn calls_address_nn_if_c_flag_is_reset() {
 
 #[test]
 fn calls_address_nn_if_c_flag_is_set() {
-    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xDC, 0x4A, 0x51]);
+    let mut emulator = init_emulator_with_test_instructions(vec![0xDC, 0x4A, 0x51]);
     emulator.cpu.registers.stack_pointer = 0x2112;
     emulator.cpu.registers.f = 0x80;
     step(&mut emulator);
-    assert_eq!(emulator.memory.cartridge.rom[0x2111], 0x00);
-    assert_eq!(emulator.memory.cartridge.rom[0x2110], 0x00);
     assert_eq!(emulator.cpu.registers.stack_pointer, 0x2112);
     assert_eq!(emulator.cpu.registers.program_counter, 0x04);
     assert_eq!(emulator.cpu.clock.instruction_clock_cycles, 12);
@@ -1202,10 +1219,11 @@ fn restarts_address_0() {
 
 #[test]
 fn returns_from_call() {
-    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xC9]);
+    let mut rom = init_rom_with_test_instructions(vec![0xC9]);
+    rom[0x2111] = 0xB1;
+    rom[0x2110] = 0xDD;
+    let mut emulator = init_emulator_from_rom(rom);
     emulator.cpu.registers.stack_pointer = 0x2110;
-    emulator.memory.cartridge.rom[0x2111] = 0xB1;
-    emulator.memory.cartridge.rom[0x2110] = 0xDD;
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.program_counter, 0xB1DE);
     assert_eq!(emulator.cpu.registers.stack_pointer, 0x2112);
@@ -1214,11 +1232,12 @@ fn returns_from_call() {
 
 #[test]
 fn returns_from_call_if_z_flag_is_reset() {
-    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xC0]);
+    let mut rom = init_rom_with_test_instructions(vec![0xC0]);
+    rom[0x2111] = 0xB1;
+    rom[0x2110] = 0xDD;
+    let mut emulator = init_emulator_from_rom(rom);
     emulator.cpu.registers.stack_pointer = 0x2110;
     emulator.cpu.registers.f = 0x80;
-    emulator.memory.cartridge.rom[0x2111] = 0xB1;
-    emulator.memory.cartridge.rom[0x2110] = 0xDD;
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.program_counter, 0x02);
     assert_eq!(emulator.cpu.registers.stack_pointer, 0x2110);
@@ -1227,11 +1246,12 @@ fn returns_from_call_if_z_flag_is_reset() {
 
 #[test]
 fn returns_from_call_if_z_flag_is_set() {
-    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xC8]);
+    let mut rom = init_rom_with_test_instructions(vec![0xC8]);
+    rom[0x2111] = 0xB1;
+    rom[0x2110] = 0xDD;
+    let mut emulator = init_emulator_from_rom(rom);
     emulator.cpu.registers.stack_pointer = 0x2110;
     emulator.cpu.registers.f = 0x80;
-    emulator.memory.cartridge.rom[0x2111] = 0xB1;
-    emulator.memory.cartridge.rom[0x2110] = 0xDD;
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.program_counter, 0xB1DE);
     assert_eq!(emulator.cpu.registers.stack_pointer, 0x2112);
@@ -1240,11 +1260,12 @@ fn returns_from_call_if_z_flag_is_set() {
 
 #[test]
 fn returns_from_call_if_c_flag_is_reset() {
-    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xD0]);
+    let mut rom = init_rom_with_test_instructions(vec![0xD0]);
+    rom[0x2111] = 0xB1;
+    rom[0x2110] = 0xDD;
+    let mut emulator = init_emulator_from_rom(rom);
     emulator.cpu.registers.stack_pointer = 0x2110;
     emulator.cpu.registers.f = 0x80;
-    emulator.memory.cartridge.rom[0x2111] = 0xB1;
-    emulator.memory.cartridge.rom[0x2110] = 0xDD;
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.program_counter, 0xB1DE);
     assert_eq!(emulator.cpu.registers.stack_pointer, 0x2112);
@@ -1254,11 +1275,12 @@ fn returns_from_call_if_c_flag_is_reset() {
 
 #[test]
 fn returns_from_call_if_c_flag_is_set() {
-    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xD8]);
+    let mut rom = init_rom_with_test_instructions(vec![0xD8]);
+    rom[0x2111] = 0xB1;
+    rom[0x2110] = 0xDD;
+    let mut emulator = init_emulator_from_rom(rom);
     emulator.cpu.registers.stack_pointer = 0x2110;
     emulator.cpu.registers.f = 0x80;
-    emulator.memory.cartridge.rom[0x2111] = 0xB1;
-    emulator.memory.cartridge.rom[0x2110] = 0xDD;
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.program_counter, 0x02);
     assert_eq!(emulator.cpu.registers.stack_pointer, 0x2110);
@@ -1329,10 +1351,11 @@ fn disables_interrupts() {
 
 #[test]
 fn returns_from_call_then_enables_interrupts() {
-    let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xD9]);
+    let mut rom = init_rom_with_test_instructions(vec![0xD9]);
+    rom[0x2111] = 0xB1;
+    rom[0x2110] = 0xDD;
+    let mut emulator: Emulator = init_emulator_from_rom(rom);
     emulator.cpu.registers.stack_pointer = 0x2110;
-    emulator.memory.cartridge.rom[0x2111] = 0xB1;
-    emulator.memory.cartridge.rom[0x2110] = 0xDD;
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.program_counter, 0xB1DE);
     assert_eq!(emulator.cpu.registers.stack_pointer, 0x2112);

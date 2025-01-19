@@ -1,9 +1,10 @@
 use crate::bios::{CGB_BOOT, DMG_BOOTIX};
+use crate::mmu::cartridge::{initialize_cartridge_mapper, CartridgeMapper};
 use crate::{apu, dma, gpu};
 use crate::cpu::hdma;
 use crate::emulator::{is_cgb, Emulator};
 pub use crate::mmu::cartridge::CartridgeHeader;
-use crate::mmu::cartridge::{Cartridge, initialize_cartridge};
+use crate::mmu::rtc::empty_clock;
 use crate::speed_switch;
 use crate::keys;
 use std::io;
@@ -14,7 +15,7 @@ pub struct Memory {
     pub working_ram: [u8; 0x10000],
     pub zero_page_ram: [u8; 0x80],
     pub svbk: u8,
-    pub cartridge: Cartridge,
+    pub cartridge_mapper: Box<dyn CartridgeMapper>,
     pub processor_test_ram: [u8; 0xFFFF]
 }
 
@@ -25,7 +26,7 @@ pub fn initialize_memory() -> Memory {
         working_ram: [0; 0x10000],
         zero_page_ram: [0; 0x80],
         svbk: 0,
-        cartridge: initialize_cartridge(),
+        cartridge_mapper: initialize_cartridge_mapper(),
         processor_test_ram: [0; 0xFFFF]
     }
 }
@@ -79,11 +80,11 @@ pub fn read_byte(emulator: &mut Emulator, address: u16) -> u8 {
                     emulator.memory.bios[address as usize]
                 },
                 0x0000..=0x7FFF =>
-                    cartridge::read_rom(&emulator.memory.cartridge, address),
+                    emulator.memory.cartridge_mapper.read_rom(address),
                 0x8000..=0x9FFF =>
                     gpu::get_video_ram_byte(emulator, address & 0x1FFF),
                 0xA000..=0xBFFF =>
-                    cartridge::read_ram(&emulator.memory.cartridge, address & 0x1FFF),
+                    emulator.memory.cartridge_mapper.read_ram(address & 0x1FFF),
                 0xC000..=0xEFFF => {
                     let index = calculate_working_ram_index(emulator, address);
                     emulator.memory.working_ram[index]
@@ -162,11 +163,11 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
         if address_accessible(emulator, address) {
             match address & 0xF000 {
                 0x0000..=0x7FFF =>
-                    cartridge::write_rom(&mut emulator.memory.cartridge, address, value),
+                    emulator.memory.cartridge_mapper.write_rom(address, value),
                 0x8000..=0x9FFF =>
                     gpu::set_video_ram_byte(emulator, address & 0x1FFF, value),
                 0xA000..=0xBFFF =>
-                    cartridge::write_ram(&mut emulator.memory.cartridge, address & 0x1FFF, value),
+                    emulator.memory.cartridge_mapper.write_ram(address & 0x1FFF, value),
                 0xC000..=0xEFFF => {
                     let index = calculate_working_ram_index(emulator, address);
                     emulator.memory.working_ram[index] = value;
@@ -252,11 +253,13 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
 }
 
 pub fn load_rom_buffer(memory: &mut Memory, buffer: Vec<u8>) -> io::Result<CartridgeHeader> {
-    let cartridge_result = cartridge::load_rom_buffer(buffer);
+    // TODO: Initialize RTC parameter with actual clock instead of empty clock.
+    let cartridge_result = cartridge::load_rom_buffer(buffer, empty_clock); 
     match cartridge_result {
-        Ok(cartridge) => {
+        Ok(mapper) => {
+            let cartridge = mapper.get_cartridge();
             let header = cartridge.header.clone();
-            memory.cartridge = cartridge;
+            memory.cartridge_mapper = mapper;
             Ok(header)
         },
         Err(e) => Err(e)
@@ -264,16 +267,35 @@ pub fn load_rom_buffer(memory: &mut Memory, buffer: Vec<u8>) -> io::Result<Cartr
 }
 
 pub fn get_cartridge_ram(memory: &Memory) -> Vec<u8> {
-    cartridge::get_cartridge_ram(&memory.cartridge)
+    let cartridge = &memory.cartridge_mapper.get_cartridge();
+    cartridge.ram.clone()
 }
 
 pub fn set_cartridge_ram(memory: &mut Memory, buffer: Vec<u8>) {
-    cartridge::set_cartridge_ram(&mut memory.cartridge, buffer);
+    memory.cartridge_mapper.set_cartridge_ram(buffer);
+}
+
+#[cfg(test)]
+pub mod test_utils {
+    use crate::mmu::cartridge::*;
+    use crate::mmu::constants::*;
+
+    pub fn build_rom(cartridge_type: u8, rom_size_index: u8, ram_size_index: u8) -> Vec<u8> {
+        let mut rom_buffer: Vec<u8> = Vec::new();
+        let number_of_banks = as_max_banks(rom_size_index) as u32;
+        rom_buffer.resize((0x4000 * number_of_banks) as usize, 0);
+        rom_buffer[CARTRIDGE_TYPE_ADDRESS] = cartridge_type; 
+        rom_buffer[ROM_SIZE_ADDRESS] = rom_size_index;
+        rom_buffer[RAM_SIZE_ADDRESS] = ram_size_index;
+        rom_buffer
+    }
 }
 
 #[cfg(test)]
 mod tests;
 
+pub mod constants;
+pub mod rtc;
 mod cartridge;
 mod mbc1;
 mod mbc3;
