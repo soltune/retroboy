@@ -1,7 +1,9 @@
 use crate::emulator;
 use crate::emulator::Emulator;
 use crate::emulator::Mode;
+use crate::emulator::CartridgeEffects;
 use crate::emulator::CartridgeHeader;
+use crate::emulator::RTCState;
 use crate::keys::{self, Key};
 use std::cell::RefCell;
 use wasm_bindgen::prelude::*;
@@ -16,6 +18,21 @@ extern "C" {
 
     #[wasm_bindgen(js_name = playAudioSamples)]
     pub fn play_audio_samples(left_samples: &[f32], right_samples: &[f32]);
+
+    #[wasm_bindgen(js_name = currentTimeMillis)]
+    pub fn current_time_millis() -> f64;
+
+    #[wasm_bindgen(js_name = loadRTCState)]
+    fn load_rtc_state(key: &str) -> Option<WasmRTCState>;
+
+    #[wasm_bindgen(js_name = saveRTCState)]
+    fn save_rtc_state(key: &str, value: WasmRTCState);
+
+    #[wasm_bindgen(js_name = loadRam)]
+    fn load_ram(key: &str) -> Option<Vec<u8>>;
+
+    #[wasm_bindgen(js_name = saveRam)]
+    fn save_ram(key: &str, value: &[u8]);
 }
 
 #[derive(Clone)]
@@ -85,6 +102,128 @@ impl RomMetadataResult {
     }
 }
 
+#[wasm_bindgen]
+pub struct WasmRTCState {
+    milliseconds: u16,
+    seconds: u8,
+    minutes: u8,
+    hours: u8,
+    days: u16,
+    base_timestamp: f64,
+    halted: bool,
+    day_carry: bool
+}
+
+#[wasm_bindgen]
+impl WasmRTCState {
+    #[wasm_bindgen(constructor)]
+    pub fn new(
+        milliseconds: u16,
+        seconds: u8,
+        minutes: u8,
+        hours: u8,
+        days: u16,
+        base_timestamp: f64,
+        halted: bool,
+        day_carry: bool
+    ) -> WasmRTCState {
+        WasmRTCState {
+            milliseconds,
+            seconds,
+            minutes,
+            hours,
+            days,
+            base_timestamp,
+            halted,
+            day_carry
+        }
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn milliseconds(&self) -> u16 {
+        self.milliseconds
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn seconds(&self) -> u8 {
+        self.seconds
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn minutes(&self) -> u8 {
+        self.minutes
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn hours(&self) -> u8 {
+        self.hours
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn days(&self) -> u16 {
+        self.days
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn base_timestamp(&self) -> f64 {
+        self.base_timestamp
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn halted(&self) -> bool {
+        self.halted
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn day_carry(&self) -> bool {
+        self.day_carry
+    }
+}
+
+pub struct WasmCartridgeEffects;
+
+impl CartridgeEffects for WasmCartridgeEffects {
+    fn current_time_millis(&self) -> f64 {
+        current_time_millis()
+    }
+
+    fn load_rtc_state(&self, key: &str) -> Option<RTCState> {
+        load_rtc_state(key).map(|state| {
+            RTCState {
+                milliseconds: state.milliseconds() as u16,
+                seconds: state.seconds(),
+                minutes: state.minutes(),
+                hours: state.hours(),
+                days: state.days(),
+                base_timestamp: state.base_timestamp(),
+                halted: state.halted(),
+                day_carry: state.day_carry()
+            }
+        })
+    }
+
+    fn save_rtc_state(&self, key: &str, state: &RTCState) {
+        save_rtc_state(key, WasmRTCState {
+            milliseconds: state.milliseconds as u16,
+            seconds: state.seconds,
+            minutes: state.minutes,
+            hours: state.hours,
+            days: state.days,
+            base_timestamp: state.base_timestamp,
+            halted: state.halted,
+            day_carry: state.day_carry
+        });
+    }
+
+    fn load_ram(&self, key: &str) -> Option<Vec<u8>> {
+        load_ram(key)
+    }
+
+    fn save_ram(&self, key: &str, ram: &[u8]) {
+        save_ram(key, ram);
+    }
+}
+
 fn initialize_web_emulator() -> Emulator {
     emulator::initialize_emulator(canvas_render)
 }
@@ -121,7 +260,9 @@ pub fn initialize_emulator(rom_buffer: &[u8], settings: EmulatorSettings) -> Rom
 
         emulator::set_sample_rate(&mut emulator, settings.audio_sample_rate);
 
-        match emulator::load_rom(&mut emulator, rom_buffer) {
+        let wasm_cartridge_effects= WasmCartridgeEffects {};
+
+        match emulator::load_rom(&mut emulator, rom_buffer, Box::new(wasm_cartridge_effects)) {
             Ok(result) => {
                 log("Emulator initialized!");
                 RomMetadataResult {
@@ -137,22 +278,6 @@ pub fn initialize_emulator(rom_buffer: &[u8], settings: EmulatorSettings) -> Rom
                 }
             }
         }
-    })
-}
-
-#[wasm_bindgen(js_name = setCartridgeRam)]
-pub fn set_cartridge_ram(ram: &[u8]) {
-    EMULATOR.with(|emulator_cell| {
-        let mut emulator = emulator_cell.borrow_mut();
-        emulator::set_cartridge_ram(&mut emulator, ram);
-    })
-}
-
-#[wasm_bindgen(js_name = getCartridgeRam)]
-pub fn get_cartridge_ram() -> Vec<u8> {
-    EMULATOR.with(|emulator_cell| {
-        let emulator = emulator_cell.borrow();
-        emulator::get_cartridge_ram(&emulator)
     })
 }
 

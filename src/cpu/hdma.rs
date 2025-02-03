@@ -163,6 +163,7 @@ mod tests {
     use crate::emulator::{initialize_screenless_emulator, Mode};
     use crate::mmu;
     use crate::mmu::constants::*;
+    use crate::mmu::effects::empty_cartridge_effects;
     use crate::mmu::test_utils::*;
     use super::*;
 
@@ -243,7 +244,7 @@ mod tests {
             test_instructions[0x71A0 + i] = 0xA1;
         }
 
-        mmu::load_rom_buffer(&mut emulator.memory, test_instructions).unwrap();
+        mmu::load_rom_buffer(&mut emulator.memory, test_instructions, empty_cartridge_effects()).unwrap();
 
         set_hdma1(&mut emulator, 0x71);
         set_hdma2(&mut emulator, 0xA2);
@@ -278,7 +279,7 @@ mod tests {
             test_instructions[0x71A0 + i] = 0xA1;
         }
 
-        mmu::load_rom_buffer(&mut emulator.memory, test_instructions).unwrap();
+        mmu::load_rom_buffer(&mut emulator.memory, test_instructions, empty_cartridge_effects()).unwrap();
 
         set_hdma1(&mut emulator, 0x71);
         set_hdma2(&mut emulator, 0xA2);

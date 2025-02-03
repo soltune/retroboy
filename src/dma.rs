@@ -62,6 +62,7 @@ mod tests {
     use crate::emulator::initialize_screenless_emulator;
     use crate::mmu;
     use crate::mmu::constants::*;
+    use crate::mmu::effects::empty_cartridge_effects;
     use crate::mmu::test_utils::*;
     use super::*;
 
@@ -90,7 +91,7 @@ mod tests {
 
         let mut rom = build_rom(CART_TYPE_MBC1, ROM_SIZE_64KB, RAM_SIZE_2KB);
         rom[0x1200] = 0x12;
-        mmu::load_rom_buffer(&mut emulator.memory, rom).unwrap();
+        mmu::load_rom_buffer(&mut emulator.memory, rom, empty_cartridge_effects()).unwrap();
 
         emulator.dma.source = 0x1200;
         emulator.dma.offset = 0x0;
@@ -110,7 +111,7 @@ mod tests {
 
         let mut rom = build_rom(CART_TYPE_MBC1, ROM_SIZE_64KB, RAM_SIZE_2KB);
         rom[0x129F] = 0x12;
-        mmu::load_rom_buffer(&mut emulator.memory, rom).unwrap();
+        mmu::load_rom_buffer(&mut emulator.memory, rom, empty_cartridge_effects()).unwrap();
 
         emulator.dma.source = 0x1200;
         emulator.dma.offset = 0x0;

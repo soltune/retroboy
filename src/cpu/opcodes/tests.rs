@@ -3,6 +3,7 @@ use crate::cpu::{BusActivityEntry, BusActivityType};
 use crate::emulator::{initialize_screenless_emulator, Mode};
 use crate::mmu;
 use crate::mmu::constants::*;
+use crate::mmu::effects::empty_cartridge_effects;
 use crate::mmu::test_utils::build_rom;
 
 fn init_rom_with_test_instructions(test_instructions: Vec<u8>) -> Vec<u8> {
@@ -15,7 +16,7 @@ fn init_rom_with_test_instructions(test_instructions: Vec<u8>) -> Vec<u8> {
 
 fn init_emulator_from_rom(rom: Vec<u8>) -> Emulator {
     let mut emulator = initialize_screenless_emulator();
-    mmu::load_rom_buffer(&mut emulator.memory, rom).unwrap();
+    mmu::load_rom_buffer(&mut emulator.memory, rom, empty_cartridge_effects()).unwrap();
     emulator.memory.in_bios = false;
 
     // The Game Boy actually uses a decode/execute/prefetch loop, where fetching

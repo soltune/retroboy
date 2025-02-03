@@ -1,5 +1,6 @@
 use crate::emulator::initialize_screenless_emulator;
 use crate::emulator::Mode;
+use crate::mmu::effects::empty_cartridge_effects;
 use crate::mmu::test_utils::*;
 use crate::mmu::constants::*;
 
@@ -28,7 +29,7 @@ fn setup_emulator_with_test_memory() -> Emulator {
     rom[0x5ACD] = 0x9C;
     rom[0x5ACE] = 0x55;
 
-    load_rom_buffer(&mut emulator.memory, rom).unwrap(); 
+    load_rom_buffer(&mut emulator.memory, rom, empty_cartridge_effects()).unwrap(); 
 
     let mut ram = vec![0; 0x800];
     ram[0] = 0xC2;
@@ -328,7 +329,7 @@ fn loads_rom_buffer_into_emulator() {
     rom[0x7FFF] = 0xD4;
     rom[0x8000] = 0xBB;
     rom[0x8001] = 0xD1;
-    let header = load_rom_buffer(&mut emulator.memory, rom).unwrap();
+    let header = load_rom_buffer(&mut emulator.memory, rom, empty_cartridge_effects()).unwrap();
 
     assert_eq!(read_byte(&mut emulator, 0x0000), 0xA0);
     assert_eq!(read_byte(&mut emulator, 0x0001), 0xCC);

@@ -3,11 +3,14 @@ use crate::mmu::cartridge::{initialize_cartridge_mapper, CartridgeMapper};
 use crate::{apu, dma, gpu};
 use crate::cpu::hdma;
 use crate::emulator::{is_cgb, Emulator};
-pub use crate::mmu::cartridge::CartridgeHeader;
-use crate::mmu::rtc::empty_clock;
+use crate::mmu::effects::empty_cartridge_effects;
 use crate::speed_switch;
 use crate::keys;
 use std::io;
+
+pub use crate::mmu::cartridge::CartridgeHeader;
+pub use crate::mmu::effects::CartridgeEffects;
+pub use crate::mmu::mbc3::RTCState;
 
 pub struct Memory {
     pub in_bios: bool,
@@ -26,7 +29,7 @@ pub fn initialize_memory() -> Memory {
         working_ram: [0; 0x10000],
         zero_page_ram: [0; 0x80],
         svbk: 0,
-        cartridge_mapper: initialize_cartridge_mapper(),
+        cartridge_mapper: initialize_cartridge_mapper(empty_cartridge_effects()),
         processor_test_ram: [0; 0xFFFF]
     }
 }
@@ -252,9 +255,8 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
     }
 }
 
-pub fn load_rom_buffer(memory: &mut Memory, buffer: Vec<u8>) -> io::Result<CartridgeHeader> {
-    // TODO: Initialize RTC parameter with actual clock instead of empty clock.
-    let cartridge_result = cartridge::load_rom_buffer(buffer, empty_clock); 
+pub fn load_rom_buffer(memory: &mut Memory, buffer: Vec<u8>, cartridge_effects: Box<dyn CartridgeEffects>) -> io::Result<CartridgeHeader> {
+    let cartridge_result = cartridge::load_rom_buffer(buffer, cartridge_effects); 
     match cartridge_result {
         Ok(mapper) => {
             let cartridge = mapper.get_cartridge();
@@ -295,7 +297,7 @@ pub mod test_utils {
 mod tests;
 
 pub mod constants;
-pub mod rtc;
+pub mod effects;
 mod cartridge;
 mod mbc1;
 mod mbc3;

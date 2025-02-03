@@ -7,13 +7,8 @@ import {
     EmulatorSettings,
     initializeEmulator,
     resetEmulator,
-    RomMetadata,
 } from "./core/retroboyCore";
 import useAudioSync from "./hooks/useAudioSync";
-import {
-    useCartridgeRamSaver,
-    loadCartridgeRam,
-} from "./hooks/useCartridgeRamSaver";
 import { useKeyListeners } from "./hooks/useKeyListeners";
 import { useIsMobile } from "./hooks/useResponsiveBreakpoint";
 import { useTopLevelRenderer } from "./hooks/useTopLevelRenderer";
@@ -35,7 +30,6 @@ const Interface = (): JSX.Element => {
     const [playing, setPlaying] = useState(false);
     const [paused, setPaused] = useState(false);
     const [mode, setMode] = useState(gameBoyModes.dmg);
-    const [romMetadata, setRomMetadata] = useState(null as RomMetadata | null);
     const [fullscreenMode, setFullscreenMode] = useState(false);
 
     useKeyListeners(playing);
@@ -50,8 +44,6 @@ const Interface = (): JSX.Element => {
     };
 
     const [audioContextRef, startReset] = useAudioSync(playing, resetGame);
-
-    useCartridgeRamSaver(playing, romMetadata);
 
     const scrollToGamePad = ({ smooth }: { smooth: boolean }) => {
         window.scrollTo({
@@ -71,10 +63,7 @@ const Interface = (): JSX.Element => {
                 audioContextRef.current.sampleRate,
             );
 
-            const { error, metadata } = initializeEmulator(
-                romBuffer.data,
-                settings,
-            );
+            const { error } = initializeEmulator(romBuffer.data, settings);
 
             if (error) {
                 displayTopLevelComponent(
@@ -89,11 +78,7 @@ const Interface = (): JSX.Element => {
                 );
 
                 resetGame();
-            } else if (metadata) {
-                if (metadata.hasBattery) {
-                    loadCartridgeRam(metadata.title);
-                }
-                setRomMetadata(metadata);
+            } else {
                 setPlaying(true);
                 scrollToGamePad({ smooth: true });
             }

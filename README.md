@@ -68,8 +68,6 @@ This emulator is still a work in progress and not all features are supported.
 | MBC6 | ❌        |
 | MBC7 | ❌        |
 
-(For MBC3, no RTC support yet.)
-
 ## Helpful Resources
 
 I described some of the resources I used to build this emulator in a [blog post](https://samthecoder.com/must-have-resources-for-building-a-gameboy-emulator).

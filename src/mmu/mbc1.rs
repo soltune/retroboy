@@ -108,7 +108,7 @@ mod tests {
     use crate::mmu::cartridge::*;
     use crate::mmu::cartridge::test_utils::*;
     use crate::mmu::constants::*;
-    use crate::mmu::rtc::empty_clock;
+    use crate::mmu::effects::empty_cartridge_effects;
     use crate::mmu::test_utils::*;
 
     #[test]
@@ -170,7 +170,7 @@ mod tests {
     fn set_rom_bank_number() {
         let mut rom = build_rom(CART_TYPE_MBC1, ROM_SIZE_128KB, RAM_SIZE_2KB);
         rom[0xC005] = 0xA1;
-        let mut mapper = load_rom_buffer(rom, empty_clock).unwrap(); 
+        let mut mapper = load_rom_buffer(rom, empty_cartridge_effects()).unwrap(); 
 
         mapper.write_rom(0x2000, 0x3);
         
@@ -182,7 +182,7 @@ mod tests {
     fn correctly_sets_lower_and_upper_bits_of_the_rom_bank_number() {
         let mut rom = build_rom(CART_TYPE_MBC1, ROM_SIZE_2MB, RAM_SIZE_2KB);
         rom[0x110005] = 0xA1;
-        let mut mapper = load_rom_buffer(rom, empty_clock).unwrap();
+        let mut mapper = load_rom_buffer(rom, empty_cartridge_effects()).unwrap();
 
         mapper.write_rom(0x4000, 0x02);
         mapper.write_rom(0x2000, 0x4);
@@ -195,7 +195,7 @@ mod tests {
     fn reads_bank_zero_as_bank_one() {
         let mut rom = build_rom(CART_TYPE_MBC1, ROM_SIZE_64KB, RAM_SIZE_2KB);
         rom[0x4005] = 0xCC;
-        let mut mapper = load_rom_buffer(rom, empty_clock).unwrap();
+        let mut mapper = load_rom_buffer(rom, empty_cartridge_effects()).unwrap();
 
         mapper.write_rom(0x2000, 0x0);
 
@@ -210,7 +210,7 @@ mod tests {
         rom[1] = 0xD2;
         rom[0x8000] = 0xBB;
         rom[0x8001] = 0xD1;
-        let mut mapper = load_rom_buffer(rom, empty_clock).unwrap();
+        let mut mapper = load_rom_buffer(rom, empty_cartridge_effects()).unwrap();
 
         mapper.write_rom(0x2000, 0x12);
 
