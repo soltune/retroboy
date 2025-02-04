@@ -89,6 +89,7 @@ The following games work pretty well with this emulator:
 3. Kirby's Dream Land
 4. Pac-Man
 5. Super Mario Land
+6. Pokemon Red
+7. Pokemon Silver
 
-Pokemon Red works for the most part but has a couple minor glitches (from what I've seen so far). Pokemon
-Silver works from what I can tell, however the clock does not work properly due to there being no RTC support.
+I am going to continue testing this emulator with more games in the future.
