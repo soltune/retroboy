@@ -301,4 +301,5 @@ pub mod effects;
 mod cartridge;
 mod mbc1;
 mod mbc3;
+mod mbc5;
 mod mbc_rom_only;

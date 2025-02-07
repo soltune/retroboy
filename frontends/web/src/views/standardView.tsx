@@ -132,7 +132,7 @@ const StandardView = ({
                             onFileSelect={onRomBufferChange}
                             uploadedFile={romBuffer}
                             variant="contained"
-                            accept=".gb"
+                            accept=".gb,.gbc"
                             startIcon={<FileUploadIcon />}
                         />
                         <ModeSwitch

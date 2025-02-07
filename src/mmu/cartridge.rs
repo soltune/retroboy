@@ -5,6 +5,7 @@ use crate::mmu::constants::*;
 use crate::mmu::effects::CartridgeEffects;
 use crate::mmu::mbc1::initialize_mbc1;
 use crate::mmu::mbc3::initialize_mbc3;
+use crate::mmu::mbc5::initialize_mbc5;
 use crate::mmu::mbc_rom_only::initialize_mbc_rom_only;
 
 #[derive(Debug, Clone)]
@@ -12,6 +13,7 @@ pub struct CartridgeHeader {
     pub sgb_support: bool,
     pub type_code: u8,
     pub max_banks: u16,
+    pub max_ram_banks: u8,
     pub title: String,
     pub has_battery: bool
 }
@@ -33,7 +35,7 @@ pub trait CartridgeMapper: std::fmt::Debug {
     fn set_cartridge_ram(&mut self, ram: Vec<u8>);
 }
 
-const SUPPORTED_CARTRIDGE_TYPES: [u8; 9] = [CART_TYPE_ROM_ONLY,
+const SUPPORTED_CARTRIDGE_TYPES: [u8; 15] = [CART_TYPE_ROM_ONLY,
     CART_TYPE_MBC1,
     CART_TYPE_MBC1_WITH_RAM,
     CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY,
@@ -41,7 +43,13 @@ const SUPPORTED_CARTRIDGE_TYPES: [u8; 9] = [CART_TYPE_ROM_ONLY,
     CART_TYPE_MBC3_TIMER_RAM_BATTERY,
     CART_TYPE_MBC3,
     CART_TYPE_MBC3_RAM,
-    CART_TYPE_MBC3_RAM_BATTERY];
+    CART_TYPE_MBC3_RAM_BATTERY,
+    CART_TYPE_MBC5,
+    CART_TYPE_MBC5_RAM,
+    CART_TYPE_MBC5_RAM_BATTERY,
+    CART_TYPE_MBC5_RUMBLE,
+    CART_TYPE_MBC5_RUMBLE_RAM,
+    CART_TYPE_MBC5_RUMBLE_RAM_BATTERY];
 
 pub fn initialize_cartridge(effects: Box<dyn CartridgeEffects>) -> Cartridge {
     Cartridge {
@@ -51,6 +59,7 @@ pub fn initialize_cartridge(effects: Box<dyn CartridgeEffects>) -> Cartridge {
             sgb_support: false,
             type_code: 0,
             max_banks: 0,
+            max_ram_banks: 0,
             title: String::from(""),
             has_battery: false
         },
@@ -68,6 +77,10 @@ fn cartridge_type_supported(type_code: u8) -> bool {
 
 pub fn as_max_banks(rom_size_index: u8) -> u16 {
     (2 as u16).pow(rom_size_index as u32 + 1)
+}
+
+pub fn as_max_ram_banks(ram_size: u32) -> u8 {
+    (ram_size / 0x2000) as u8
 }
 
 fn is_mbc_rom_only(type_code: u8) -> bool {
@@ -88,11 +101,21 @@ fn is_mbc3(type_code: u8) -> bool {
         | CART_TYPE_MBC3_TIMER_RAM_BATTERY)
 }
 
+fn is_mbc5(type_code: u8) -> bool {
+    matches!(type_code, CART_TYPE_MBC5
+        | CART_TYPE_MBC5_RAM
+        | CART_TYPE_MBC5_RAM_BATTERY
+        | CART_TYPE_MBC5_RUMBLE
+        | CART_TYPE_MBC5_RUMBLE_RAM
+        | CART_TYPE_MBC5_RUMBLE_RAM_BATTERY)
+}
+
 fn is_battery_backed(type_code: u8) -> bool {
     matches!(type_code, CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY
         | CART_TYPE_MBC3_TIMER_BATTERY
         | CART_TYPE_MBC3_TIMER_RAM_BATTERY
-        | CART_TYPE_MBC3_RAM_BATTERY)
+        | CART_TYPE_MBC3_RAM_BATTERY
+        | CART_TYPE_MBC5_RAM_BATTERY)
 }
 
 fn set_ram_size(cartridge: &mut Cartridge) {
@@ -154,6 +177,8 @@ fn as_mapper(cartridge: Cartridge, type_code: u8) -> Box<dyn CartridgeMapper> {
         Box::new(initialize_mbc1(cartridge))
     } else if is_mbc3(type_code) {
         Box::new(initialize_mbc3(cartridge))
+    } else if is_mbc5(type_code) {
+        Box::new(initialize_mbc5(cartridge))
     } else {
         panic!("Unsupported cartridge type: {}", type_code);
     }
@@ -181,6 +206,7 @@ pub fn load_rom_buffer(buffer: Vec<u8>, effects: Box<dyn CartridgeEffects>) -> i
                     sgb_support,
                     type_code,
                     max_banks: as_max_banks(rom_size),
+                    max_ram_banks: 0,
                     title,
                     has_battery: is_battery_backed(type_code)
                 },
@@ -195,6 +221,8 @@ pub fn load_rom_buffer(buffer: Vec<u8>, effects: Box<dyn CartridgeEffects>) -> i
                 set_ram_size(&mut cartridge);
             }
 
+            cartridge.header.max_ram_banks = as_max_ram_banks(cartridge.ram.len() as u32);
+
             let mapper = as_mapper(cartridge, type_code);
 
             Ok(mapper)
@@ -202,7 +230,7 @@ pub fn load_rom_buffer(buffer: Vec<u8>, effects: Box<dyn CartridgeEffects>) -> i
             let given_cartridge_type = convert_cartridge_type_to_text(type_code);
 
             let error_message = format!(r#"Sorry, but Retro Boy currently only supports
-                ROM-only, MBC1, or MBC3 cartridges.
+                ROM-only, MBC1, MBC3, or MBC5 cartridges.
                 The cartridge you provided is of type {}."#, given_cartridge_type);
 
             Err(io::Error::new(io::ErrorKind::Other, error_message))
