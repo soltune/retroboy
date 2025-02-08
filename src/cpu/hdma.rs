@@ -69,6 +69,7 @@ pub fn set_hdma5(emulator: &mut Emulator, value: u8) {
     if is_cgb(emulator) {
         if emulator.hdma.in_progress && !is_bit_set(value, VRAM_TRANSFER_INDEX) {
             emulator.hdma.in_progress = false;
+            emulator.hdma.offset = 0;
         }
         else {
             emulator.hdma.transfer_length = value & 0b01111111;
@@ -144,7 +145,7 @@ pub fn step(emulator: &mut Emulator) {
     if is_cgb(emulator) && emulator.hdma.in_progress {
         let source = get_vram_dma_source(emulator);
         let destination = get_vram_dma_destination(emulator);
-
+        
         let is_hblank_mode = emulator.hdma.transfer_mode == VRAMTransferMode::HBlank;
         if is_hblank_mode && emulator.hdma.hblank_started {
             transfer_block(emulator, source, destination);
@@ -156,7 +157,7 @@ pub fn step(emulator: &mut Emulator) {
             }
         }
     }
-}
+}   
 
 #[cfg(test)]
 mod tests {
