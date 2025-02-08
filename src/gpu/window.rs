@@ -23,7 +23,7 @@ pub fn read_window_color(emulator: &Emulator, x: u8, y: u8) -> Option<Background
         let tile_index = emulator.gpu.video_ram[tile_map_index as usize];
         let tile_data_index = calculate_tile_data_index(lcdc, tile_index);
 
-        let row_offset = y % 8;
+        let row_offset = (y - wy) % 8;
         let bit_index = ((x_int - (wx_int - 7)) % 8) as u8;
 
         if is_cgb(emulator) {
