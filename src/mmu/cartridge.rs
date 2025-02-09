@@ -80,7 +80,11 @@ pub fn as_max_banks(rom_size_index: u8) -> u16 {
 }
 
 pub fn as_max_ram_banks(ram_size: u32) -> u8 {
-    (ram_size / 0x2000) as u8
+    match ram_size {
+        0 => 0,
+        0x800 => 1,
+        _ => (ram_size / 0x2000) as u8
+    }
 }
 
 fn is_mbc_rom_only(type_code: u8) -> bool {

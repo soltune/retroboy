@@ -80,7 +80,7 @@ impl CartridgeMapper for MBC1 {
     
     fn read_ram(&self, address: u16) -> u8 {
         let calculated_address = (self.ram_bank_number as u16 * 0x2000) + address;
-        if self.ram_enabled {
+        if self.ram_enabled && self.cartridge.header.max_ram_banks > 0 {
             self.cartridge.ram[calculated_address as usize]
         } else {
             0xFF
@@ -89,7 +89,7 @@ impl CartridgeMapper for MBC1 {
 
     fn write_ram(&mut self, address: u16, value: u8) {
         let calculated_address = (self.ram_bank_number as u16 * 0x2000) + address;
-        if self.ram_enabled {
+        if self.ram_enabled && self.cartridge.header.max_ram_banks > 0 {
             self.cartridge.ram[calculated_address as usize] = value;
         }
     }
