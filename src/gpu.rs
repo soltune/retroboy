@@ -313,6 +313,7 @@ pub fn set_lcdc(emulator: &mut Emulator, value: u8) {
     if !lcd_enabled {
         emulator.gpu.registers.ly = 0;
         emulator.gpu.mode_clock = 0;
+        emulator.gpu.registers.stat = 0;
         emulator.gpu.mode = HBLANK_MODE;
         emulator.gpu.frame_buffer = initialize_blank_frame();
         emulator.gpu.sprite_buffer = Vec::new();
