@@ -115,8 +115,8 @@ const StandardView = ({
                     <Typography>
                         Retro Boy is a Game Boy emulator that can be played on
                         the web. To use, simply click "Load ROM" to load your
-                        game ROM. Only .gb files are supported. Then click
-                        "Play".
+                        game ROM. Only .gb and .gbc files are supported. Then
+                        click "Play".
                     </Typography>
                     <CssGrid
                         orientation={
