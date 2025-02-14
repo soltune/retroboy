@@ -639,7 +639,7 @@ fn should_render_eight_by_sixteen_sprite() {
 }
 
 #[test]
-fn should_prioritize_non_white_background_colors_when_sprite_priority_flag_set_to_true() {
+fn should_prioritize_non_color_id_zero_background_colors_when_sprite_priority_flag_set_to_true() {
     let mut emulator = initialize_test_emulator();
 
     initialize_monochrome_palettes(&mut emulator.gpu.registers.palettes);
@@ -669,7 +669,7 @@ fn should_prioritize_non_white_background_colors_when_sprite_priority_flag_set_t
 
     assert_that(frame_buffer)
         .at_starting_coordinates((0, 0))
-        .has_pixels(&[BLACK, LIGHT_GRAY, DARK_GRAY, DARK_GRAY, DARK_GRAY, DARK_GRAY, LIGHT_GRAY, BLACK]);
+        .has_pixels(&[BLACK, LIGHT_GRAY, WHITE, WHITE, WHITE, WHITE, LIGHT_GRAY, DARK_GRAY]);
 }
 
 #[test]

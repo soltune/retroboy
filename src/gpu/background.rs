@@ -27,7 +27,7 @@ pub fn read_bg_color(emulator: &Emulator, x: u8, y: u8) -> BackgroundPixel {
         let color_id = calculate_color_id(bit_index, msb_byte, lsb_byte, attributes.x_flip);
         let color = as_cgb_bg_color_rgb(&emulator.gpu.registers.palettes, palette_number, color_id, dmg_compatible);
 
-        BackgroundPixel { color, prioritize_bg: attributes.priority }
+        BackgroundPixel { color, color_id, prioritize_bg: attributes.priority }
     }
     else {
         let (lsb_byte, msb_byte) = get_tile_line_bytes(&emulator.gpu, tile_data_index, row_offset, false, false);
@@ -35,6 +35,6 @@ pub fn read_bg_color(emulator: &Emulator, x: u8, y: u8) -> BackgroundPixel {
         let color_id = calculate_color_id(bit_index, msb_byte, lsb_byte, false);
         let color = as_dmg_bg_color_rgb(&emulator.gpu.registers.palettes, color_id);
         
-        BackgroundPixel { color, prioritize_bg: false }
+        BackgroundPixel { color, color_id, prioritize_bg: false }
     }
 }
