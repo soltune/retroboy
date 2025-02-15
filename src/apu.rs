@@ -4,7 +4,7 @@ use crate::apu::noise::{initialize_noise_channel, reset_noise_channel, NoiseChan
 use crate::apu::wave::{initialize_wave_channel, reset_wave_channel, WaveChannel};
 use crate::apu::pulse::{initialize_pulse_channel, reset_pulse_channel, PulseChannel};
 use crate::apu::utils::{bounded_wrapping_add, as_dac_output};
-use crate::emulator::{Emulator, in_color_bios};
+use crate::emulator::{in_color_bios, is_cgb, Emulator};
 use crate::utils::{get_bit, get_t_cycle_increment, is_bit_set};
 
 #[derive(Debug)]
@@ -52,12 +52,14 @@ pub fn initialize_apu() -> ApuState {
     }
 }
 
-pub fn reset_apu(original_apu_state: &ApuState) -> ApuState {
+pub fn reset_apu(emulator: &Emulator) -> ApuState {
     let mut new_apu_state = initialize_apu();
-    new_apu_state.channel1 = reset_pulse_channel(&original_apu_state.channel1);
-    new_apu_state.channel2 = reset_pulse_channel(&original_apu_state.channel2);
-    new_apu_state.channel3 = reset_wave_channel(&original_apu_state.channel3);
-    new_apu_state.channel4 = reset_noise_channel(&original_apu_state.channel4);
+    let is_cgb = is_cgb(emulator);
+    let original_apu_state = &emulator.apu;
+    new_apu_state.channel1 = reset_pulse_channel(&original_apu_state.channel1, is_cgb);
+    new_apu_state.channel2 = reset_pulse_channel(&original_apu_state.channel2, is_cgb);
+    new_apu_state.channel3 = reset_wave_channel(&original_apu_state.channel3, is_cgb);
+    new_apu_state.channel4 = reset_noise_channel(&original_apu_state.channel4, is_cgb);
     new_apu_state
 }
 
@@ -324,7 +326,7 @@ pub fn set_ch3_period_high(emulator: &mut Emulator, new_period_high_value: u8) {
         }
 
         if wave::should_trigger(&emulator.apu.channel3) {
-            wave::trigger(&mut emulator.apu.channel3);
+            wave::trigger(emulator);
 
             if wave::should_clock_length_on_trigger(&emulator.apu.channel3) && length_period_first_half {
                wave::step_length(&mut emulator.apu.channel3);
@@ -431,7 +433,7 @@ pub fn get_wave_ram_byte(emulator: &Emulator, localized_address: u8) -> u8 {
 
     if emulator.apu.channel3.enabled {
         address = emulator.apu.channel3.wave_position / 2;
-        if emulator.apu.channel3.period.reloaded {
+        if emulator.apu.channel3.period.reloaded || is_cgb(emulator) {
             wave::read_from_wave_ram(&emulator.apu.channel3, address)
         }
         else {
@@ -448,7 +450,7 @@ pub fn set_wave_ram_byte(emulator: &mut Emulator, localized_address: u8, new_val
 
     if emulator.apu.channel3.enabled {
         address = emulator.apu.channel3.wave_position / 2;
-        if emulator.apu.channel3.period.reloaded {
+        if emulator.apu.channel3.period.reloaded || is_cgb(emulator) {
             wave::write_to_wave_ram(&mut emulator.apu.channel3, address, new_value);
         }
     }
@@ -461,7 +463,7 @@ pub fn set_audio_master_control(emulator: &mut Emulator, new_audio_master_contro
     emulator.apu.enabled = is_bit_set(new_audio_master_control, APU_ENABLED_INDEX);
 
     if !emulator.apu.enabled {
-        emulator.apu = reset_apu(&emulator.apu);
+        emulator.apu = reset_apu(&emulator);
     }
 }
 

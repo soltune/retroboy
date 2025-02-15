@@ -3,7 +3,7 @@ use crate::apu::period::{initalize_period, Period};
 use crate::apu::length;
 use crate::apu::length::{initialize_length, Length};
 use crate::apu::utils::{bounded_wrapping_add, length_enabled};
-use crate::emulator::Emulator;
+use crate::emulator::{is_cgb, Emulator};
 use crate::utils::is_bit_set;
 
 #[derive(Debug)]
@@ -29,10 +29,13 @@ pub fn initialize_wave_channel() -> WaveChannel {
     }
 }
 
-pub fn reset_wave_channel(original_wave_channel: &WaveChannel) -> WaveChannel {
+pub fn reset_wave_channel(original_wave_channel: &WaveChannel, is_cgb: bool) -> WaveChannel {
     let mut new_wave_channel = initialize_wave_channel();
-    // On reset (when APU is powered down), maintain length timers, as this is expected behavior for DMG
-    new_wave_channel.length = length::reset_initial_settings(&original_wave_channel.length);
+
+    if !is_cgb {
+        // On reset (when APU is powered down), maintain length timers, as this is expected behavior for DMG
+        new_wave_channel.length = length::reset_initial_settings(&original_wave_channel.length);
+    }
     
     // APU powering down should also not affect wave RAM.
     new_wave_channel.wave_pattern_ram = original_wave_channel.wave_pattern_ram;
@@ -116,8 +119,10 @@ fn corrupt_wave_ram_bug(channel: &mut WaveChannel) {
     } 
 }
 
-pub fn trigger(channel: &mut WaveChannel) {
-    if channel.enabled && channel.period.divider == 1 {
+pub fn trigger(emulator: &mut Emulator) {
+    let is_cgb = is_cgb(emulator);
+    let channel = &mut emulator.apu.channel3;
+    if channel.enabled && channel.period.divider == 1 && !is_cgb {
         corrupt_wave_ram_bug(channel);
     }
 

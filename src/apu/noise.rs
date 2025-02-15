@@ -32,10 +32,12 @@ pub fn initialize_noise_channel() -> NoiseChannel {
     }
 }
 
-pub fn reset_noise_channel(original_noise_channel: &NoiseChannel) -> NoiseChannel {
+pub fn reset_noise_channel(original_noise_channel: &NoiseChannel, is_cgb: bool) -> NoiseChannel {
     let mut new_noise_channel = initialize_noise_channel();
-    // On reset (when APU is powered down), maintain length timers, as this is expected behavior for DMG
-    new_noise_channel.length = length::reset_initial_settings(&original_noise_channel.length);
+    if !is_cgb {
+        // On reset (when APU is powered down), maintain length timers, as this is expected behavior for DMG
+        new_noise_channel.length = length::reset_initial_settings(&original_noise_channel.length);
+    }
     new_noise_channel
 }
 
