@@ -474,14 +474,16 @@ pub fn set_ch1_sweep_settings(emulator: &mut Emulator, new_sweep_settings: u8) {
 }
 
 pub fn set_ch1_length_settings(emulator: &mut Emulator, new_length_settings: u8) {
-    emulator.apu.channel1.length.initial_settings = if emulator.apu.enabled {
-        new_length_settings
+    if emulator.apu.enabled || !is_cgb(emulator) {
+        emulator.apu.channel1.length.initial_settings = if emulator.apu.enabled {
+            new_length_settings
+        }
+        else {
+            new_length_settings & 0x3F
+        };
+    
+        length::initialize_timer(&mut emulator.apu.channel1.length); 
     }
-    else {
-        new_length_settings & 0x3F
-    };
-
-    length::initialize_timer(&mut emulator.apu.channel1.length);
 }
 
 pub fn set_ch1_period_low(emulator: &mut Emulator, new_period_low: u8) {
@@ -491,14 +493,16 @@ pub fn set_ch1_period_low(emulator: &mut Emulator, new_period_low: u8) {
 }
 
 pub fn set_ch2_length_settings(emulator: &mut Emulator, new_length_settings: u8) {
-    emulator.apu.channel2.length.initial_settings = if emulator.apu.enabled {
-        new_length_settings
-    }
-    else {
-        new_length_settings & 0x3F
-    };
+    if emulator.apu.enabled || !is_cgb(emulator) {
+        emulator.apu.channel2.length.initial_settings = if emulator.apu.enabled {
+            new_length_settings
+        }
+        else {
+            new_length_settings & 0x3F
+        };
 
-    length::initialize_timer(&mut emulator.apu.channel2.length);
+        length::initialize_timer(&mut emulator.apu.channel2.length); 
+    }
 }
 
 pub fn set_ch2_period_low(emulator: &mut Emulator, new_period_low: u8) {
@@ -508,8 +512,10 @@ pub fn set_ch2_period_low(emulator: &mut Emulator, new_period_low: u8) {
 }
 
 pub fn set_ch3_length_settings(emulator: &mut Emulator, new_length_settings: u8) {
-    emulator.apu.channel3.length.initial_settings = new_length_settings;
-    length::initialize_wave_channel_timer(&mut emulator.apu.channel3.length);
+    if emulator.apu.enabled || !is_cgb(emulator) {
+        emulator.apu.channel3.length.initial_settings = new_length_settings;
+        length::initialize_wave_channel_timer(&mut emulator.apu.channel3.length); 
+    }
 }
 
 pub fn set_ch3_period_low(emulator: &mut Emulator, new_period_low: u8) {
@@ -519,14 +525,16 @@ pub fn set_ch3_period_low(emulator: &mut Emulator, new_period_low: u8) {
 }
 
 pub fn set_ch3_volume(emulator: &mut Emulator, new_volume: u8) {
-    if emulator.apu.enabled{
+    if emulator.apu.enabled {
         emulator.apu.channel3.volume = new_volume;
     }
 }
 
 pub fn set_ch4_length_settings(emulator: &mut Emulator, new_length_settings: u8) {
-    emulator.apu.channel4.length.initial_settings = new_length_settings;
-    length::initialize_timer(&mut emulator.apu.channel4.length);
+    if emulator.apu.enabled || !is_cgb(emulator) {
+        emulator.apu.channel4.length.initial_settings = new_length_settings;
+        length::initialize_timer(&mut emulator.apu.channel4.length); 
+    }
 }
 
 pub fn set_ch4_polynomial(emulator: &mut Emulator, new_polynomial: u8) {
