@@ -52,15 +52,17 @@ pub fn initialize_apu() -> ApuState {
     }
 }
 
-pub fn reset_apu(emulator: &Emulator) -> ApuState {
-    let mut new_apu_state = initialize_apu();
+pub fn reset_apu(emulator: &mut Emulator) {
     let is_cgb = is_cgb(emulator);
-    let original_apu_state = &emulator.apu;
-    new_apu_state.channel1 = reset_pulse_channel(&original_apu_state.channel1, is_cgb);
-    new_apu_state.channel2 = reset_pulse_channel(&original_apu_state.channel2, is_cgb);
-    new_apu_state.channel3 = reset_wave_channel(&original_apu_state.channel3, is_cgb);
-    new_apu_state.channel4 = reset_noise_channel(&original_apu_state.channel4, is_cgb);
-    new_apu_state
+    emulator.apu.enabled = false;
+    emulator.apu.sound_panning = 0;
+    emulator.apu.master_volume = 0;
+    emulator.apu.divider_apu = 0;
+    emulator.apu.last_divider_time = 0;
+    emulator.apu.channel1 = reset_pulse_channel(&emulator.apu.channel1, is_cgb);
+    emulator.apu.channel2 = reset_pulse_channel(&emulator.apu.channel2, is_cgb);
+    emulator.apu.channel3 = reset_wave_channel(&emulator.apu.channel3, is_cgb);
+    emulator.apu.channel4 = reset_noise_channel(&emulator.apu.channel4, is_cgb);
 }
 
 const CH3_DAC_ENABLED_INDEX: u8 = 7;
@@ -208,7 +210,7 @@ fn enqueue_audio_samples(emulator: &mut Emulator) {
 
         let weight = calculate_sample_weight(steps_per_enqueue, steps_since_enqueue);
         track_digital_outputs(emulator, weight);
-    
+
         if emulator.apu.audio_buffer_clock as u32 >= emulator.apu.enqueue_rate {
             emulator.apu.audio_buffer_clock = 0;
     
@@ -240,12 +242,13 @@ pub fn step(emulator: &mut Emulator) {
     emulator.apu.channel_clock += t_cycle_increment;
     
     if emulator.apu.enabled && emulator.apu.channel_clock >= CHANNEL_STEP_RATE {
+        let clock_cycles = emulator.apu.channel_clock;
         emulator.apu.channel_clock = 0;
 
-        pulse::step(&mut emulator.apu.channel1, t_cycle_increment);
-        pulse::step(&mut emulator.apu.channel2, t_cycle_increment);
-        wave::step(&mut emulator.apu.channel3, t_cycle_increment);
-        noise::step(&mut emulator.apu.channel4, t_cycle_increment);
+        pulse::step(&mut emulator.apu.channel1, clock_cycles);
+        pulse::step(&mut emulator.apu.channel2, clock_cycles);
+        wave::step(&mut emulator.apu.channel3, clock_cycles);
+        noise::step(&mut emulator.apu.channel4, clock_cycles);
         
         step_div_apu(emulator);
     }
@@ -463,7 +466,7 @@ pub fn set_audio_master_control(emulator: &mut Emulator, new_audio_master_contro
     emulator.apu.enabled = is_bit_set(new_audio_master_control, APU_ENABLED_INDEX);
 
     if !emulator.apu.enabled {
-        emulator.apu = reset_apu(&emulator);
+        reset_apu(emulator);
     }
 }
 
