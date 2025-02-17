@@ -76,8 +76,10 @@ const MAX_AUDIO_BUFFER_SIZE: usize = 512;
 const CHANNEL_STEP_RATE: u8 = 4;
 
 fn should_step_div_apu(emulator: &mut Emulator) -> bool {
-    get_bit(emulator.apu.last_divider_time, 4) == 1
-    && get_bit(emulator.timers.divider, 4) == 0
+    let double_speed_mode = emulator.speed_switch.cgb_double_speed;
+    let bit_to_check = if double_speed_mode { 5 } else { 4 };
+    get_bit(emulator.apu.last_divider_time, bit_to_check) == 1
+    && get_bit(emulator.timers.divider, bit_to_check) == 0
 }
 
 fn step_div_apu(emulator: &mut Emulator) {
@@ -241,15 +243,17 @@ pub fn step(emulator: &mut Emulator) {
     let t_cycle_increment = get_t_cycle_increment(double_speed_mode);
     emulator.apu.channel_clock += t_cycle_increment;
     
-    if emulator.apu.enabled && emulator.apu.channel_clock >= CHANNEL_STEP_RATE {
-        let clock_cycles = emulator.apu.channel_clock;
-        emulator.apu.channel_clock = 0;
+    if emulator.apu.enabled {
+        if emulator.apu.channel_clock >= CHANNEL_STEP_RATE {
+            let clock_cycles = emulator.apu.channel_clock;
+            emulator.apu.channel_clock = 0;
+    
+            pulse::step(&mut emulator.apu.channel1, clock_cycles);
+            pulse::step(&mut emulator.apu.channel2, clock_cycles);
+            wave::step(&mut emulator.apu.channel3, clock_cycles);
+            noise::step(&mut emulator.apu.channel4, clock_cycles);
+        }
 
-        pulse::step(&mut emulator.apu.channel1, clock_cycles);
-        pulse::step(&mut emulator.apu.channel2, clock_cycles);
-        wave::step(&mut emulator.apu.channel3, clock_cycles);
-        noise::step(&mut emulator.apu.channel4, clock_cycles);
-        
         step_div_apu(emulator);
     }
 
