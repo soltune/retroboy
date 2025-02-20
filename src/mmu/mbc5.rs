@@ -33,6 +33,11 @@ fn rumble_supported(cartridge: &Cartridge) -> bool {
     cartridge.header.type_code == CART_TYPE_MBC5_RUMBLE_RAM_BATTERY
 }
 
+fn battery_supported(cartridge: &Cartridge) -> bool {
+    cartridge.header.type_code == CART_TYPE_MBC5_RAM_BATTERY ||
+    cartridge.header.type_code == CART_TYPE_MBC5_RUMBLE_RAM_BATTERY
+}
+
 impl MBC5 {
     fn set_rom_bank_number(&mut self, next_rom_bank_number: u16) {
         if next_rom_bank_number < self.cartridge.header.max_banks {
@@ -104,6 +109,9 @@ impl CartridgeMapper for MBC5 {
         let calculated_address = (self.ram_bank_number as u32 * 0x2000) + address as u32;
         if self.ram_enabled {
             self.cartridge.ram[calculated_address as usize] = value;
+            if battery_supported(&self.cartridge) {
+                self.cartridge.effects.save_ram(&self.cartridge.header.title, &self.cartridge.ram);
+            }   
         }
     }
 

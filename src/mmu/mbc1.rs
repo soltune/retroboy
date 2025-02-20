@@ -32,6 +32,10 @@ fn ram_supported(cartridge: &Cartridge) -> bool {
     cartridge.header.type_code == CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY
 }
 
+fn battery_supported(cartridge: &Cartridge) -> bool {
+    cartridge.header.type_code == CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY
+}
+
 impl CartridgeMapper for MBC1 {
     fn read_rom(&self, address: u16) -> u8 {
         match address {
@@ -91,6 +95,9 @@ impl CartridgeMapper for MBC1 {
         let calculated_address = (self.ram_bank_number as u16 * 0x2000) + address;
         if self.ram_enabled && self.cartridge.header.max_ram_banks > 0 {
             self.cartridge.ram[calculated_address as usize] = value;
+            if battery_supported(&self.cartridge) {
+                self.cartridge.effects.save_ram(&self.cartridge.header.title, &self.cartridge.ram);
+            }
         }
     }
 
