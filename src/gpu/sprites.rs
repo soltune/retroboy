@@ -204,16 +204,17 @@ fn calculate_tile_index(sprite: &Sprite, y_int: i16, eight_by_sixteen_mode: bool
     }
 }
 
-pub fn read_sprite_pixel_color(emulator: &Emulator, x: u8, y: u8) -> Option<SpritePixel> {
+pub fn read_sprite_pixel_color(emulator: &Emulator, viewport_x: u8) -> Option<SpritePixel> {
     let lcdc = emulator.gpu.registers.lcdc;
+    let ly = emulator.gpu.registers.ly;
 
     let eight_by_sixteen_mode = get_obj_size_mode(lcdc);
     let sprites_enabled = get_obj_enabled_mode(lcdc);
 
-    let possible_sprites = lookup_possible_sprites(emulator, x, y, eight_by_sixteen_mode);
+    let possible_sprites = lookup_possible_sprites(emulator, viewport_x, ly, eight_by_sixteen_mode);
     
     if sprites_enabled {
-        match resolve_highest_priority_sprite(emulator, possible_sprites, x, y) {
+        match resolve_highest_priority_sprite(emulator, possible_sprites, viewport_x, ly) {
             Some((highest_priority_sprite, maybe_color)) => {
                 let prioritize_bg = highest_priority_sprite.priority;
                 maybe_color.map(|color| SpritePixel { color, prioritize_bg })

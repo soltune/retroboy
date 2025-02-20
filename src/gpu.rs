@@ -5,7 +5,7 @@ use crate::gpu::colors::{initialize_palettes, Palettes};
 use crate::gpu::constants::{GB_SCREEN_HEIGHT, GB_SCREEN_WIDTH, BYTES_PER_COLOR};
 use crate::gpu::scanline::write_scanline;
 use crate::gpu::sprites::{collect_scanline_sprites, Sprite};
-use crate::gpu::utils::get_lcd_enabled_mode;
+use crate::gpu::utils::{get_lcd_enabled_mode, get_window_enabled_mode};
 use crate::utils::get_t_cycle_increment;
 use crate::utils::is_bit_set;
 
@@ -16,6 +16,7 @@ pub struct GpuRegisters {
     pub scx: u8,
     pub wx: u8,
     pub wy: u8,
+    pub wly: u8,
     pub ly: u8,
     pub lyc: u8,
     pub stat: u8,
@@ -71,6 +72,7 @@ pub fn initialize_gpu() -> GpuState {
             scx: 0,
             wx: 0,
             wy: 0,
+            wly: 0,
             ly: 0,
             lyc: 0,
             stat: 0,
@@ -152,6 +154,15 @@ pub fn step(emulator: &mut Emulator) {
             }
             HBLANK_MODE => {
                 if emulator.gpu.mode_clock >= HBLANK_TIME {
+                    let wx = emulator.gpu.registers.wx;
+                    let wy = emulator.gpu.registers.wy;
+                    let window_enabled = get_window_enabled_mode(lcdc);
+                    let window_visible = wx >= 7 && wx - 7 < GB_SCREEN_WIDTH as u8 && wy < GB_SCREEN_HEIGHT as u8;
+                    
+                    if window_enabled && window_visible && emulator.gpu.registers.ly >= wy {
+                        emulator.gpu.registers.wly += 1;
+                    }
+
                     if emulator.gpu.registers.ly == FRAME_SCANLINE_COUNT - VBLANK_SCANLINE_COUNT - 1 {
                         update_mode(emulator, VBLANK_MODE);
                         (emulator.render)(&emulator.gpu.frame_buffer);
@@ -174,6 +185,7 @@ pub fn step(emulator: &mut Emulator) {
     
                     if emulator.gpu.registers.ly > FRAME_SCANLINE_COUNT - 1 {
                         emulator.gpu.registers.ly = 0;
+                        emulator.gpu.registers.wly = 0;
                         update_mode(emulator, OAM_MODE);
                     }
     

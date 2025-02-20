@@ -8,20 +8,14 @@ use crate::gpu::utils::get_bg_and_window_enabled_mode;
 
 pub fn write_scanline(emulator: &mut Emulator) {
     let ly = emulator.gpu.registers.ly;
-    let scx = emulator.gpu.registers.scx;
-    let scy = emulator.gpu.registers.scy;
     let lcdc = emulator.gpu.registers.lcdc;
-
-    let y = scy.wrapping_add(ly);
 
     if !in_color_bios(emulator) {
         for viewport_x in 0..GB_SCREEN_WIDTH as u8 {
-            let x = scx.wrapping_add(viewport_x);
+            let bg_pixel = read_window_color(emulator, viewport_x)
+                .unwrap_or(read_bg_color(emulator, viewport_x));
 
-            let bg_pixel = read_window_color(emulator, viewport_x, ly)
-                .unwrap_or(read_bg_color(emulator, x, y));
-
-            let maybe_sprite_pixel = read_sprite_pixel_color(emulator, viewport_x, ly);
+            let maybe_sprite_pixel = read_sprite_pixel_color(emulator, viewport_x);
 
             let cgb_mode = emulator.mode == Mode::CGB;
             let lcdc_bg_and_window_priority = get_bg_and_window_enabled_mode(lcdc);

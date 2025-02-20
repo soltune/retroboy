@@ -5,8 +5,14 @@ use crate::gpu::line_addressing::{calculate_bg_tile_map_index, calculate_tile_da
 use crate::gpu::prioritization::BackgroundPixel;
 use crate::gpu::utils::get_tile_line_bytes;
 
-pub fn read_bg_color(emulator: &Emulator, x: u8, y: u8) -> BackgroundPixel {
+pub fn read_bg_color(emulator: &Emulator, viewport_x: u8) -> BackgroundPixel {
+    let scx = emulator.gpu.registers.scx;
+    let scy = emulator.gpu.registers.scy;
+    let ly = emulator.gpu.registers.ly;
     let lcdc = emulator.gpu.registers.lcdc;
+
+    let x = scx.wrapping_add(viewport_x);
+    let y = scy.wrapping_add(ly);
 
     let column_tile_offset = y / 8;
     let row_tile_offset = x / 8;
