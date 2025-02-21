@@ -6,7 +6,7 @@
 
 ## Introduction
 
-Retro Boy is a cycle-accurate Game Boy emulator written in Rust. It uses `wasm-pack` to translate the Rust code into WebAssembly so it can be played on the web. The web frontend then uses Web Audio API and HTML Canvas for rendering audio and graphics. It also leverages the browser's local storage to persist cartridge RAM data for battery-backed MBC cartridges.
+Retro Boy is a cycle-accurate Game Boy emulator written in Rust. It uses `wasm-pack` to translate the Rust code into WebAssembly so it can be played on the web. The web frontend then uses Web Audio API and HTML Canvas for audio and graphics. It also leverages the browser's local storage to persist cartridge RAM data for battery-backed MBC cartridges.
 
 ## Features
 
