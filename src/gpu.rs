@@ -157,7 +157,7 @@ pub fn step(emulator: &mut Emulator) {
                     let wx = emulator.gpu.registers.wx;
                     let wy = emulator.gpu.registers.wy;
                     let window_enabled = get_window_enabled_mode(lcdc);
-                    let window_visible = wx >= 7 && wx - 7 < GB_SCREEN_WIDTH as u8 && wy < GB_SCREEN_HEIGHT as u8;
+                    let window_visible = (wx < 7 || wx - 7 < GB_SCREEN_WIDTH as u8) && wy < GB_SCREEN_HEIGHT as u8;
                     
                     if window_enabled && window_visible && emulator.gpu.registers.ly >= wy {
                         emulator.gpu.registers.wly += 1;
@@ -324,6 +324,7 @@ pub fn set_lcdc(emulator: &mut Emulator, value: u8) {
     let lcd_enabled = get_lcd_enabled_mode(emulator.gpu.registers.lcdc);
     if !lcd_enabled {
         emulator.gpu.registers.ly = 0;
+        emulator.gpu.registers.wly = 0;
         emulator.gpu.mode_clock = 0;
         emulator.gpu.mode = HBLANK_MODE;
         emulator.gpu.registers.stat = (emulator.gpu.registers.stat & 0b11111100) | HBLANK_MODE;
