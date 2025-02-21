@@ -50,6 +50,7 @@ To run the web frontend:
   <img src="images/screenshots/super-mario-land.png" width="240" />
   <img src="images/screenshots/tetris.png" width="240" />
   <img src="images/screenshots/kirby.png" width="240" />
+  <img src="images/screenshots/links-awakening.png" width="240">
 </p>
 
 ## Test ROMs
