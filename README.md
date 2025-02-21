@@ -42,10 +42,10 @@ To run the web frontend:
 ## Screenshots
 
 <p float="left">
-  <img src="images/screenshots/pokemon-red.png" width="320" margin-right="64px" />
-  <img src="images/screenshots/pokemon-crystal.png" width="320" margin-right="64px" />
-  <img src="images/screenshots/yugioh-dds.png" width="320" margin-right="64px" />
-  <img src="images/screenshots/marble-madness.png" width="320" margin-right="64px" />
+  <img src="images/screenshots/pokemon-red.png" width="320" margin-right="32px" />
+  <img src="images/screenshots/pokemon-crystal.png" width="320" margin-right="32px" />
+  <img src="images/screenshots/yugioh-dds.png" width="320" margin-right="32px" />
+  <img src="images/screenshots/marble-madness.png" width="320" margin-right="32px" />
 </p>
 
 ## Test ROMs
