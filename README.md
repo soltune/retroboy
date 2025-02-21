@@ -10,8 +10,6 @@ Retro Boy is a cycle-accurate Game Boy emulator written in Rust. It uses `wasm-p
 
 ## Features
 
-Retro Boy supports the following features:
-
 - Cycle-accurate emulation
 - Accurate CPU that passes all [JSON CPU tests](https://github.com/adtennant/GameboyCPUTests)
 - Accurate audio emulation
@@ -44,14 +42,10 @@ To run the web frontend:
 ## Screenshots
 
 <p float="left">
-  <img src="images/screenshots/kirby.png" width="320" margin-right="32px" />
-  <img src="images/screenshots/pacman.png" width="320" margin-right="32px" />
-  <img src="images/screenshots/super-mario-land.png" width="320" margin-right="32px" />  
-  <img src="images/screenshots/tetris.png" width="320" margin-right="32px" />
-  <img src="images/screenshots/pokemon-red.png" width="320" margin-right="32px" />
-  <img src="images/screenshots/pokemon-crystal.png" width="320" margin-right="32px" />
-  <img src="images/screenshots/yugioh-dds.png" width="320" margin-right="32px" />
-  <img src="images/screenshots/marble-madness.png" width="320" margin-right="32px" />
+  <img src="images/screenshots/pokemon-red.png" width="320" margin-right="64px" />
+  <img src="images/screenshots/pokemon-crystal.png" width="320" margin-right="64px" />
+  <img src="images/screenshots/yugioh-dds.png" width="320" margin-right="64px" />
+  <img src="images/screenshots/marble-madness.png" width="320" margin-right="64px" />
 </p>
 
 ## Test ROMs
