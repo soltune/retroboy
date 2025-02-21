@@ -4,6 +4,28 @@
   Retro Boy is a simple Game Boy emulator written in Rust that can be played on the web. <a href="https://smparsons.github.io/retroboy">Try it here.</a>
 </p>
 
+## Introduction
+
+Retro Boy is a cycle-accurate Game Boy emulator written in Rust. It uses `wasm-pack` to translate the Rust code into WebAssembly so it can be played on the web. The web frontend then uses Web Audio API and HTML Canvas for rendering audio and graphics. It also leverages the browser's local storage to persist cartridge RAM data for battery-backed MBC cartridges.
+
+## Features
+
+Retro Boy supports the following features:
+
+- Cycle-accurate emulation
+- Accurate CPU that passes all [JSON CPU tests](https://github.com/adtennant/GameboyCPUTests)
+- Accurate audio emulation
+- Graphics emulation built using a scanline-based renderer
+- MBC1, MBC3, and MBC5 support
+- RTC support for MBC3 cartridges
+- Cartridge RAM that persists to browser local storage for battery-backed cartridges
+- A web frontend that supports:
+  - Fullscreen mode
+  - Pausing/resuming
+  - Selectable monochrome or color modes
+  - Customizable key map for game controls
+  - A mobile-friendy responsive design
+
 ## How to Compile to WebAssembly
 
 To compile the implementation to WebAssembly, you will first need to install wasm-pack with the command `cargo install wasm-pack` if you haven't done so already. Then, run `sh ./build-wasm.sh` to build the core project and generate the Javascript binding code in the web frontend directory.
@@ -22,10 +44,14 @@ To run the web frontend:
 ## Screenshots
 
 <p float="left">
-  <img src="images/screenshots/kirby-color.png" width="160" margin-right="32px" />
-  <img src="images/screenshots/pacman-color.png" width="160" margin-right="32px" />
-  <img src="images/screenshots/super-mario-land-color.png" width="160" margin-right="32px" />  
-  <img src="images/screenshots/tetris-color.png" width="160" margin-right="32px" />
+  <img src="images/screenshots/kirby.png" width="320" margin-right="32px" />
+  <img src="images/screenshots/pacman.png" width="320" margin-right="32px" />
+  <img src="images/screenshots/super-mario-land.png" width="320" margin-right="32px" />  
+  <img src="images/screenshots/tetris.png" width="320" margin-right="32px" />
+  <img src="images/screenshots/pokemon-red.png" width="320" margin-right="32px" />
+  <img src="images/screenshots/pokemon-crystal.png" width="320" margin-right="32px" />
+  <img src="images/screenshots/yugioh-dds.png" width="320" margin-right="32px" />
+  <img src="images/screenshots/marble-madness.png" width="320" margin-right="32px" />
 </p>
 
 ## Test ROMs
@@ -47,51 +73,12 @@ only some tests from the [Mooneye test ROM collection](https://github.com/Gekkio
 
 This project holds a fairly extensive test suite, as the bulk of the logic was designed using a TDD approach. There are a lot of tests that exercise CPU opcodes, and basic tests that exercise the GPU. Run `cargo test` to run the test suite.
 
-## Supported Features
-
-This emulator is still a work in progress and not all features are supported.
-
-| Feature           | Supported |
-| ----------------- | --------- |
-| CPU               | ✅        |
-| Basic Graphics    | ✅        |
-| Audio             | ✅        |
-| Color Support     | ✅        |
-| GameShark Support | ❌        |
-
-### MBC Support
-
-| Type | Supported |
-| ---- | --------- |
-| MBC1 | ✅        |
-| MBC2 | ❌        |
-| MBC3 | ✅        |
-| MBC5 | ✅        |
-| MBC6 | ❌        |
-| MBC7 | ❌        |
-
 ## Helpful Resources
 
-I described some of the resources I used to build this emulator in a [blog post](https://samthecoder.com/must-have-resources-for-building-a-gameboy-emulator).
-
-For convenience, here is a list of the resources I used:
+For convenience, here is a list of the resources I used to build this emulator:
 
 1. [Gameboy CPU Manual](http://marc.rawer.de/Gameboy/Docs/GBCPUman.pdf)
 2. [Pan Docs](https://gbdev.io/pandocs/)
 3. [Blargg's Test ROM Collection](https://github.com/retrio/gb-test-roms)
 4. [Gameboy Doctor](https://github.com/robert/gameboy-doctor)
 5. [Imran Nazar's Gameboy Emulator Tutorial](https://imrannazar.com/series/gameboy-emulation-in-javascript)
-
-## Future Plans
-
-The following games work pretty well with this emulator:
-
-1. Tic-Tac-Toe
-2. Tetris
-3. Kirby's Dream Land
-4. Pac-Man
-5. Super Mario Land
-6. Pokemon Red
-7. Pokemon Silver
-
-I am going to continue testing this emulator with more games in the future.
