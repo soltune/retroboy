@@ -10,6 +10,7 @@ use crate::gpu::{self, initialize_gpu, GpuState};
 use crate::keys::{initialize_keys, KeyState};
 use crate::mmu;
 use crate::mmu::{Memory, initialize_memory};
+use crate::serial::{self, initialize_serial, SerialState};
 use crate::speed_switch::{initialize_speed_switch, SpeedSwitch};
 use std::cell::{Ref, RefMut};
 use std::io;
@@ -33,6 +34,7 @@ pub struct Emulator {
     pub apu: ApuState,
     pub dma: DMAState,
     pub hdma: HDMAState,
+    pub serial: SerialState,
     pub render: fn(&[u8]),
     pub mode: Mode,
     pub speed_switch: SpeedSwitch,
@@ -61,6 +63,7 @@ pub fn initialize_emulator(render: fn(&[u8])) -> Emulator {
         apu: initialize_apu(),
         dma: initialize_dma(),
         hdma: initialize_hdma(),
+        serial: initialize_serial(),
         render,
         mode: Mode::DMG,
         speed_switch: initialize_speed_switch(),
@@ -98,6 +101,7 @@ pub fn sync(emulator: &mut Emulator) {
     dma::step(emulator);
     gpu::step(emulator);
     apu::step(emulator);
+    serial::step(emulator);
 }
 
 pub fn set_mode(emulator: &mut Emulator, mode: Mode) {

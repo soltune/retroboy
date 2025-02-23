@@ -8,4 +8,5 @@ pub mod keys;
 pub mod emulator;
 pub mod wasm;
 pub mod speed_switch;
+pub mod serial;
 mod bios;

@@ -1,6 +1,6 @@
 use crate::bios::{CGB_BOOT, DMG_BOOTIX};
 use crate::mmu::cartridge::{initialize_cartridge_mapper, CartridgeMapper};
-use crate::{apu, dma, gpu};
+use crate::{apu, dma, gpu, serial};
 use crate::cpu::hdma;
 use crate::emulator::{is_cgb, Emulator};
 use crate::mmu::effects::empty_cartridge_effects;
@@ -102,6 +102,8 @@ pub fn read_byte(emulator: &mut Emulator, address: u16) -> u8 {
                     0xF00 if address >= 0xFF80 => emulator.memory.zero_page_ram[(address & 0x7F) as usize],
                     _ => match address & 0xFF {
                         0x00 => keys::read_joyp_byte(&emulator.keys),
+                        0x01 => serial::get_data(emulator),
+                        0x02 => serial::get_control(emulator),
                         0x10 => emulator.apu.channel1.sweep.initial_settings | 0b10000000,
                         0x11 => emulator.apu.channel1.length.initial_settings | 0b00111111,
                         0x12 => emulator.apu.channel1.envelope.initial_settings,
@@ -185,6 +187,8 @@ pub fn write_byte(emulator: &mut Emulator, address: u16, value: u8) {
                     0xF00 if address >= 0xFF80 => emulator.memory.zero_page_ram[(address & 0x7F) as usize] = value,
                     _ => match address & 0xFF {
                         0x00 => keys::write_joyp_byte(&mut emulator.keys, value),
+                        0x01 => serial::set_data(emulator, value),
+                        0x02 => serial::set_control(emulator, value),
                         0x10 => apu::set_ch1_sweep_settings(emulator, value),
                         0x11 => apu::set_ch1_length_settings(emulator, value),
                         0x12 => apu::set_ch1_envelope_settings(emulator, value),
