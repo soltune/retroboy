@@ -1,4 +1,4 @@
-use crate::emulator::{is_cgb, Emulator, Mode};
+use crate::emulator::{is_cgb, Emulator};
 use crate::utils::is_bit_set;
 
 pub struct SerialState {
@@ -93,7 +93,7 @@ pub fn set_data(emulator: &mut Emulator, value: u8) {
 
 pub fn set_control(emulator: &mut Emulator, value: u8) {
     emulator.serial.transfer_enabled = is_bit_set(value, 7);
-    if emulator.mode == Mode::CGB {
+    if is_cgb(emulator) {
         emulator.serial.is_high_speed_clock = is_bit_set(value, 1);
     }
     emulator.serial.is_master = is_bit_set(value, 0);
