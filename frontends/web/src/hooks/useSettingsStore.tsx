@@ -1,26 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
-export const gameControls = {
-    up: "Up",
-    down: "Down",
-    left: "Left",
-    right: "Right",
-    start: "Start",
-    select: "Select",
-    b: "B",
-    a: "A",
-};
-
-const initialKeyMap = {
-    [gameControls.up]: "ArrowUp",
-    [gameControls.down]: "ArrowDown",
-    [gameControls.left]: "ArrowLeft",
-    [gameControls.right]: "ArrowRight",
-    [gameControls.start]: "Enter",
-    [gameControls.select]: "Space",
-    [gameControls.b]: "x",
-    [gameControls.a]: "z",
-} as Record<string, string>;
+import { Cheat } from "../modals/cheatsModal";
+import { initialKeyMap } from "../modals/controlsModal";
 
 const initialSettings = {
     keyMap: initialKeyMap,
@@ -73,6 +54,7 @@ interface SettingsStoreState {
 
 interface EmulatorSettings {
     readonly keyMap: Record<string, string>;
+    readonly cheats?: Record<string, Record<string, Cheat>>;
 }
 
 interface SettingsStoreProviderProps {

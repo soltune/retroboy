@@ -1,10 +1,11 @@
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
+import GamepadIcon from "@mui/icons-material/Gamepad";
 import PauseIcon from "@mui/icons-material/Pause";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import SettingsIcon from "@mui/icons-material/Settings";
+import VideogameAssetIcon from "@mui/icons-material/VideogameAsset";
 import { Button, Typography, styled, Divider } from "@mui/material";
 import { RefObject } from "react";
 
@@ -48,7 +49,9 @@ const Logo = (): JSX.Element => (
 );
 
 const StandardView = ({
-    onOpenSettings,
+    gameKey,
+    onOpenControls,
+    onOpenCheats,
     playing,
     paused,
     mode,
@@ -94,7 +97,8 @@ const StandardView = ({
                                     ? Orientation.vertical
                                     : Orientation.horizontal
                             }
-                            template={isMobile ? undefined : "1fr auto"}
+                            gap={GapSize.large}
+                            template={isMobile ? undefined : "1fr auto auto"}
                             justifyContent={
                                 isMobile ? Position.stretch : undefined
                             }
@@ -104,10 +108,19 @@ const StandardView = ({
                             <Button
                                 variant="contained"
                                 color="secondary"
-                                startIcon={<SettingsIcon />}
-                                onClick={onOpenSettings}
+                                startIcon={<GamepadIcon />}
+                                onClick={onOpenControls}
                             >
-                                Settings
+                                Controls
+                            </Button>
+                            <Button
+                                variant="contained"
+                                color="secondary"
+                                startIcon={<VideogameAssetIcon />}
+                                onClick={onOpenCheats}
+                                disabled={!gameKey}
+                            >
+                                Cheats
                             </Button>
                         </HeaderGrid>
                         <Divider />
@@ -217,11 +230,13 @@ const StandardView = ({
 };
 
 interface StandardViewProps {
+    readonly gameKey: string | null;
     readonly playing: boolean;
     readonly paused: boolean;
     readonly mode: GameBoyMode;
     readonly romBuffer: FileBufferObject | null;
-    readonly onOpenSettings: () => void;
+    readonly onOpenControls: () => void;
+    readonly onOpenCheats: () => void;
     readonly onPlay: () => void;
     readonly onPause: () => void;
     readonly onResume: () => void;

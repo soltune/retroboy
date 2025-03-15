@@ -35,4 +35,8 @@ impl CartridgeMapper for MBCRomOnly {
     fn set_cartridge_ram(&mut self, _: Vec<u8>) {
         ()
     }
+
+    fn get_ram_bank(&self) -> u8 {
+        0
+    }
 }

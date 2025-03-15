@@ -1,5 +1,6 @@
 use crate::apu;
 use crate::apu::{initialize_apu, ApuState};
+use crate::cheats::{initialize_cheats, CheatState};
 use crate::cpu::{self, initialize_cpu, timers, CpuState};
 use crate::cpu::interrupts::InterruptRegisters;
 use crate::cpu::timers::TimerRegisters;
@@ -35,6 +36,7 @@ pub struct Emulator {
     pub dma: DMAState,
     pub hdma: HDMAState,
     pub serial: SerialState,
+    pub cheats: CheatState,
     pub render: fn(&[u8]),
     pub mode: Mode,
     pub speed_switch: SpeedSwitch,
@@ -64,6 +66,7 @@ pub fn initialize_emulator(render: fn(&[u8])) -> Emulator {
         dma: initialize_dma(),
         hdma: initialize_hdma(),
         serial: initialize_serial(),
+        cheats: initialize_cheats(),
         render,
         mode: Mode::DMG,
         speed_switch: initialize_speed_switch(),

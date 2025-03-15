@@ -41,13 +41,13 @@ const CloseIcon = styled(MuiCloseIcon)`
     font-size: 28px;
 `;
 
-const CloseButton = styled(Button, {
+export const ModalGridButton = styled(Button, {
     shouldForwardProp: prop => prop !== "isMobile",
 })<{ isMobile?: boolean }>(({ isMobile }) => ({
     justifySelf: isMobile ? "stretch" : "end",
 }));
 
-const Modal = ({
+export const Modal = ({
     heading,
     onClose,
     open,
@@ -57,7 +57,7 @@ const Modal = ({
     return (
         <MuiModal open={open} onClose={onClose}>
             <ModalContent isMobile={isMobile}>
-                <ModalGrid gap={GapSize.large} template="auto 1fr auto">
+                <ModalGrid gap={GapSize.large} template="auto 1fr">
                     <CssGrid
                         template="1fr auto"
                         orientation={Orientation.horizontal}
@@ -69,13 +69,6 @@ const Modal = ({
                         </IconButton>
                     </CssGrid>
                     <div>{children}</div>
-                    <CloseButton
-                        variant="contained"
-                        onClick={onClose}
-                        isMobile={isMobile}
-                    >
-                        OK
-                    </CloseButton>
                 </ModalGrid>
             </ModalContent>
         </MuiModal>
@@ -88,5 +81,3 @@ interface ModalProps {
     readonly onClose: () => void;
     readonly children: React.ReactNode;
 }
-
-export default Modal;

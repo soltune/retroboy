@@ -7,7 +7,7 @@ import { CssGrid, GapSize, Orientation, Position } from "./cssGrid";
 
 import { pressKey, releaseKey } from "../core/retroboyCore";
 import { useIsTablet } from "../hooks/useResponsiveBreakpoint";
-import { gameControls } from "../hooks/useSettingsStore";
+import { gameControls } from "../modals/controlsModal";
 
 const GamePadWrapperGrid = styled(CssGrid)`
     background-color: white;

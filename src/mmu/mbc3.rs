@@ -259,6 +259,10 @@ impl CartridgeMapper for MBC3 {
     fn set_cartridge_ram(&mut self, ram: Vec<u8>) {
         self.cartridge.ram = ram;
     }
+
+    fn get_ram_bank(&self) -> u8 {
+        self.ram_rtc_selection
+    }
 }
 
 #[cfg(test)]

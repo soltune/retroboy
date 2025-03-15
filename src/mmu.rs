@@ -1,6 +1,6 @@
 use crate::bios::{CGB_BOOT, DMG_BOOTIX};
 use crate::mmu::cartridge::{initialize_cartridge_mapper, CartridgeMapper};
-use crate::{apu, dma, gpu, serial};
+use crate::{apu, cheats, dma, gpu, serial};
 use crate::cpu::hdma;
 use crate::emulator::{is_cgb, Emulator};
 use crate::mmu::effects::empty_cartridge_effects;
@@ -48,19 +48,23 @@ fn address_accessible(emulator: &Emulator, address: u16) -> bool {
     (emulator.dma.in_progress && !accessing_oam) || !emulator.dma.in_progress
 }
 
+pub fn get_working_ram_bank(emulator: &Emulator) -> u8 {
+    if is_cgb(emulator) {
+        let masked_value = emulator.memory.svbk & 0b111;
+        if masked_value == 0 { 1 } else { masked_value }
+    }
+    else {
+        1
+    }
+}
+
 fn calculate_working_ram_index(emulator: &Emulator, address: u16) -> usize {
     let localized_index = address & 0x1FFF;
     if localized_index <= 0xFFF {
         localized_index as usize
     }
     else {
-        let masked_value = emulator.memory.svbk & 0b111;
-        let bank_number = if is_cgb(emulator) {
-            if masked_value == 0 { 1 } else { masked_value }
-        }
-        else {
-            1
-        };
+        let bank_number = get_working_ram_bank(emulator);
         let index = (bank_number as u16 * 0x1000) + (address & 0x0FFF);
         index as usize 
     }
@@ -71,7 +75,7 @@ pub fn read_byte(emulator: &mut Emulator, address: u16) -> u8 {
         emulator.memory.processor_test_ram[address as usize]
     }
     else {
-        if address_accessible(emulator, address) {
+        let byte = if address_accessible(emulator, address) {
             match address & 0xF000 {
                 0x0000 if address <= 0x00FE && emulator.memory.in_bios => {
                     if address == 0x00FE {
@@ -156,7 +160,9 @@ pub fn read_byte(emulator: &mut Emulator, address: u16) -> u8 {
         }
         else {
             0xFF
-        }
+        };
+
+        cheats::apply_cheat_if_needed(emulator, address, byte)
     }
 }
 

@@ -122,6 +122,10 @@ impl CartridgeMapper for MBC5 {
     fn set_cartridge_ram(&mut self, ram: Vec<u8>) {
         self.cartridge.ram = ram;
     }
+
+    fn get_ram_bank(&self) -> u8 {
+        self.ram_bank_number
+    }
 }
 
 #[cfg(test)]

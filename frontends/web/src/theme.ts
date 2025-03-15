@@ -11,6 +11,9 @@ const smallerLineHeight = {
 const theme = createTheme({
     palette: {
         mode: "dark",
+        error: {
+            main: "#ff7074",
+        },
         primary: {
             main: "#79f6bf",
             light: "#93f7cb",

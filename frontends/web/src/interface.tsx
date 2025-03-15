@@ -1,23 +1,29 @@
 import { useEffect, useRef, useState } from "react";
 
 import { FileBufferObject } from "./components/bufferFileUpload";
-import Modal from "./components/modal";
 import { gameBoyModes } from "./components/modeSwitch";
 import {
     EmulatorSettings,
     initializeEmulator,
+    registerGamegenieCheat,
+    registerGamesharkCheat,
     resetEmulator,
 } from "./core/retroboyCore";
 import useAudioSync from "./hooks/useAudioSync";
 import { useKeyListeners } from "./hooks/useKeyListeners";
 import { useIsMobile } from "./hooks/useResponsiveBreakpoint";
+import { useSettingsStore } from "./hooks/useSettingsStore";
 import { useTopLevelRenderer } from "./hooks/useTopLevelRenderer";
-import SettingsModal from "./settingsModal";
+import { CheatType } from "./modals/cheatsModal";
+import { CheatsModal } from "./modals/cheatsModal";
+import { ControlsModal } from "./modals/controlsModal";
+import { MessageDialog } from "./modals/dialog";
 import FullscreenView from "./views/fullscreenView";
 import StandardView from "./views/standardView";
 
 const errorModalKey = "error-modal";
-const settingsModalKey = "settings-modal";
+const controlsModalKey = "controls-modal";
+const cheatsModalKey = "cheats-modal";
 
 const Interface = (): JSX.Element => {
     const isMobile = useIsMobile();
@@ -27,16 +33,19 @@ const Interface = (): JSX.Element => {
 
     const [romBuffer, setRomBuffer] = useState(null as FileBufferObject | null);
 
+    const [gameKey, setGameKey] = useState(null as string | null);
     const [playing, setPlaying] = useState(false);
     const [paused, setPaused] = useState(false);
     const [mode, setMode] = useState(gameBoyModes.dmg);
     const [fullscreenMode, setFullscreenMode] = useState(false);
+    const [usingModal, setUsingModal] = useState(false);
 
-    useKeyListeners(playing);
+    useKeyListeners(playing, usingModal);
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
     const resetGame = (): void => {
+        setGameKey(null);
         setPlaying(false);
         setPaused(false);
         resetEmulator();
@@ -52,33 +61,43 @@ const Interface = (): JSX.Element => {
         });
     };
 
+    const { settings } = useSettingsStore();
+
+    const registerCheats = (newGameKey: string): void => {
+        const cheatsById = settings.cheats ? settings.cheats[newGameKey] : {};
+        const cheats = Object.values(cheatsById || {});
+        cheats.forEach(cheat => {
+            if (cheat.registered) {
+                if (cheat.type == CheatType.GameShark) {
+                    registerGamesharkCheat(cheat.id, cheat.code);
+                } else {
+                    registerGamegenieCheat(cheat.id, cheat.code);
+                }
+            }
+        });
+    };
+
     const playGame = () => {
         if (romBuffer) {
             if (!audioContextRef.current) {
                 audioContextRef.current = new AudioContext();
             }
 
-            const settings = new EmulatorSettings(
+            const emulatorSettings = new EmulatorSettings(
                 mode,
                 audioContextRef.current.sampleRate,
             );
-
-            const { error } = initializeEmulator(romBuffer.data, settings);
+            const { error, metadata } = initializeEmulator(
+                romBuffer.data,
+                emulatorSettings,
+            );
 
             if (error) {
-                displayTopLevelComponent(
-                    errorModalKey,
-                    <Modal
-                        heading="Error"
-                        open={!!error}
-                        onClose={() => removeTopLevelComponent(errorModalKey)}
-                    >
-                        {error}
-                    </Modal>,
-                );
-
+                openErrorDialog(error);
                 resetGame();
-            } else {
+            } else if (metadata) {
+                setGameKey(metadata.title);
+                registerCheats(metadata.title);
                 setPlaying(true);
                 scrollToGamePad({ smooth: true });
             }
@@ -126,13 +145,44 @@ const Interface = (): JSX.Element => {
         }
     };
 
-    const openSettings = (): void => {
+    const openErrorDialog = (message: string): void => {
         displayTopLevelComponent(
-            settingsModalKey,
-            <SettingsModal
-                onClose={() => removeTopLevelComponent(settingsModalKey)}
+            errorModalKey,
+            <MessageDialog
+                heading="Error"
+                message={message}
+                onClose={() => removeTopLevelComponent(errorModalKey)}
             />,
         );
+    };
+
+    const openControls = (): void => {
+        setUsingModal(true);
+        displayTopLevelComponent(
+            controlsModalKey,
+            <ControlsModal
+                onClose={() => {
+                    removeTopLevelComponent(controlsModalKey);
+                    setUsingModal(false);
+                }}
+            />,
+        );
+    };
+
+    const openCheats = (): void => {
+        if (gameKey) {
+            setUsingModal(true);
+            displayTopLevelComponent(
+                cheatsModalKey,
+                <CheatsModal
+                    gameKey={gameKey}
+                    onClose={() => {
+                        removeTopLevelComponent(cheatsModalKey);
+                        setUsingModal(false);
+                    }}
+                />,
+            );
+        }
     };
 
     useEffect(() => {
@@ -164,6 +214,7 @@ const Interface = (): JSX.Element => {
         />
     ) : (
         <StandardView
+            gameKey={gameKey}
             playing={playing}
             paused={paused}
             romBuffer={romBuffer}
@@ -176,7 +227,8 @@ const Interface = (): JSX.Element => {
             onReset={startReset}
             onFullscreen={setFullscreen}
             onScreenshot={downloadScreenshot}
-            onOpenSettings={openSettings}
+            onOpenControls={openControls}
+            onOpenCheats={openCheats}
             canvasRef={canvasRef}
         />
     );

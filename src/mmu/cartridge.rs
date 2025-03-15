@@ -33,6 +33,7 @@ pub trait CartridgeMapper: std::fmt::Debug {
     fn write_ram(&mut self, address: u16, value: u8);
     fn get_cartridge(&self) -> &Cartridge;
     fn set_cartridge_ram(&mut self, ram: Vec<u8>);
+    fn get_ram_bank(&self) -> u8;
 }
 
 const SUPPORTED_CARTRIDGE_TYPES: [u8; 15] = [CART_TYPE_ROM_ONLY,

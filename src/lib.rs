@@ -9,4 +9,5 @@ pub mod emulator;
 pub mod wasm;
 pub mod speed_switch;
 pub mod serial;
+pub mod cheats;
 mod bios;

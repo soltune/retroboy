@@ -17,7 +17,10 @@ const invert = (keyMap: Record<string, string>): Record<string, string> => {
     );
 };
 
-export const useKeyListeners = (playing: boolean): void => {
+export const useKeyListeners = (
+    playing: boolean,
+    usingModal: boolean,
+): void => {
     const { settings } = useSettingsStore();
 
     const keyMap = settings.keyMap;
@@ -27,7 +30,7 @@ export const useKeyListeners = (playing: boolean): void => {
 
     const handleKeyDown = (event: KeyboardEvent): void => {
         const key = asKeyMapping(event.key);
-        if (keys.includes(key)) {
+        if (keys.includes(key) && !usingModal) {
             event.preventDefault();
             pressKey(invertedKeyMap[key]);
         }
@@ -35,7 +38,7 @@ export const useKeyListeners = (playing: boolean): void => {
 
     const handleKeyUp = (event: KeyboardEvent): void => {
         const key = asKeyMapping(event.key);
-        if (keys.includes(key)) {
+        if (keys.includes(key) && !usingModal) {
             event.preventDefault();
             releaseKey(invertedKeyMap[key]);
         }
@@ -53,5 +56,5 @@ export const useKeyListeners = (playing: boolean): void => {
                 window.removeEventListener("keyup", handleKeyUp);
             }
         };
-    }, [playing]);
+    }, [playing, usingModal]);
 };
