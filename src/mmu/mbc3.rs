@@ -1,3 +1,4 @@
+use crate::mmu::bank_utils::{banked_read, banked_write};
 use crate::mmu::cartridge::{Cartridge, CartridgeMapper};
 use crate::mmu::constants::*;
 
@@ -126,9 +127,7 @@ impl CartridgeMapper for MBC3 {
             0x0000..=0x3FFF =>
                 self.cartridge.rom[address as usize],
             0x4000..=0x7FFF => {
-                let base_location = self.rom_bank_number as u32 * 0x4000;
-                let calculated_address = base_location + ((address & 0x3FFF) as u32);
-                self.cartridge.rom[calculated_address as usize]
+                banked_read(&self.cartridge.rom, 0x4000, address, self.rom_bank_number as u16)
             },
             _ => panic!("Invalid ROM address: {:#X}", address),
         }
@@ -178,8 +177,7 @@ impl CartridgeMapper for MBC3 {
     
             match ram_rtc_selection {
                 0x00..=0x03 if ram_supported(&self.cartridge) => {
-                    let calculated_address = (self.ram_rtc_selection as u16 * 0x2000) + address;
-                    self.cartridge.ram[calculated_address as usize]
+                    banked_read(&self.cartridge.ram, 0x2000, address, self.ram_rtc_selection as u16)
                 },
                 0x08..=0x0C if timer_supported(&self.cartridge) => {
                     match self.ram_rtc_selection {
@@ -213,8 +211,7 @@ impl CartridgeMapper for MBC3 {
     
             match ram_rtc_selection {
                 0x00..=0x03 if ram_supported(&self.cartridge) => {
-                    let calculated_address = (self.ram_rtc_selection as u16 * 0x2000) + address;
-                    self.cartridge.ram[calculated_address as usize] = value;
+                    banked_write(&mut self.cartridge.ram, 0x2000, address, self.ram_rtc_selection as u16, value);
                     if battery_supported(&self.cartridge) {
                         self.save_ram();
                     }

@@ -1,3 +1,4 @@
+use crate::mmu::bank_utils::{banked_read, banked_write};
 use crate::mmu::cartridge::{Cartridge, CartridgeMapper};
 use crate::mmu::constants::*;
 
@@ -42,9 +43,7 @@ impl CartridgeMapper for MBC1 {
             0x0000..=0x3FFF =>
                 self.cartridge.rom[address as usize],
             0x4000..=0x7FFF => {
-                let base_location = self.rom_bank_number as u32 * 0x4000;
-                let calculated_address = base_location + ((address & 0x3FFF) as u32);
-                self.cartridge.rom[calculated_address as usize]
+                banked_read(&self.cartridge.rom, 0x4000, address, self.rom_bank_number as u16)
             },
             _ => panic!("Invalid ROM address: {:#X}", address),
         }
@@ -58,7 +57,7 @@ impl CartridgeMapper for MBC1 {
                 }
             },
             0x2000..=0x3FFF => {
-                let masked_value = value & 0x1F;
+                let masked_value = value & 0x3F;
                 let mut bank_value = if masked_value == 0 { 1 as u8 } else { masked_value };
     
                 let max_bank_mask = ((self.cartridge.header.max_banks - 1) & 0x1F) as u8;
@@ -83,18 +82,16 @@ impl CartridgeMapper for MBC1 {
     }
     
     fn read_ram(&self, address: u16) -> u8 {
-        let calculated_address = (self.ram_bank_number as u16 * 0x2000) + address;
         if self.ram_enabled && self.cartridge.header.max_ram_banks > 0 {
-            self.cartridge.ram[calculated_address as usize]
+            banked_read(&self.cartridge.ram, 0x2000, address, self.ram_bank_number as u16)
         } else {
             0xFF
         }
     }
 
     fn write_ram(&mut self, address: u16, value: u8) {
-        let calculated_address = (self.ram_bank_number as u16 * 0x2000) + address;
         if self.ram_enabled && self.cartridge.header.max_ram_banks > 0 {
-            self.cartridge.ram[calculated_address as usize] = value;
+            banked_write(&mut self.cartridge.ram, 0x2000, address, self.ram_bank_number as u16, value);
             if battery_supported(&self.cartridge) {
                 self.cartridge.effects.save_ram(&self.cartridge.header.title, &self.cartridge.ram);
             }

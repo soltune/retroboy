@@ -3,6 +3,7 @@ use std::io;
 
 use crate::mmu::constants::*;
 use crate::mmu::effects::CartridgeEffects;
+use crate::mmu::huc1::initialize_huc1;
 use crate::mmu::mbc1::initialize_mbc1;
 use crate::mmu::mbc3::initialize_mbc3;
 use crate::mmu::mbc5::initialize_mbc5;
@@ -36,7 +37,7 @@ pub trait CartridgeMapper: std::fmt::Debug {
     fn get_ram_bank(&self) -> u8;
 }
 
-const SUPPORTED_CARTRIDGE_TYPES: [u8; 15] = [CART_TYPE_ROM_ONLY,
+const SUPPORTED_CARTRIDGE_TYPES: [u8; 16] = [CART_TYPE_ROM_ONLY,
     CART_TYPE_MBC1,
     CART_TYPE_MBC1_WITH_RAM,
     CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY,
@@ -50,7 +51,8 @@ const SUPPORTED_CARTRIDGE_TYPES: [u8; 15] = [CART_TYPE_ROM_ONLY,
     CART_TYPE_MBC5_RAM_BATTERY,
     CART_TYPE_MBC5_RUMBLE,
     CART_TYPE_MBC5_RUMBLE_RAM,
-    CART_TYPE_MBC5_RUMBLE_RAM_BATTERY];
+    CART_TYPE_MBC5_RUMBLE_RAM_BATTERY,
+    CART_TYPE_HUC1_RAM_BATTERY];
 
 pub fn initialize_cartridge(effects: Box<dyn CartridgeEffects>) -> Cartridge {
     Cartridge {
@@ -115,12 +117,17 @@ fn is_mbc5(type_code: u8) -> bool {
         | CART_TYPE_MBC5_RUMBLE_RAM_BATTERY)
 }
 
+fn is_huc1(type_code: u8) -> bool {
+    type_code == CART_TYPE_HUC1_RAM_BATTERY
+}
+
 fn is_battery_backed(type_code: u8) -> bool {
     matches!(type_code, CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY
         | CART_TYPE_MBC3_TIMER_BATTERY
         | CART_TYPE_MBC3_TIMER_RAM_BATTERY
         | CART_TYPE_MBC3_RAM_BATTERY
-        | CART_TYPE_MBC5_RAM_BATTERY)
+        | CART_TYPE_MBC5_RAM_BATTERY
+        | CART_TYPE_HUC1_RAM_BATTERY)
 }
 
 fn set_ram_size(cartridge: &mut Cartridge) {
@@ -170,7 +177,7 @@ pub fn convert_cartridge_type_to_text(type_code: u8) -> String {
         0xFC => "POCKET CAMERA",
         0xFD => "BANDAI TAMA5",
         0xFE => "HuC3",
-        0xFF => "HuC1+RAM+",
+        0xFF => "HuC1+RAM+BATTERY",
         _ => "UNKNOWN"
     }.to_string()
 }
@@ -178,6 +185,8 @@ pub fn convert_cartridge_type_to_text(type_code: u8) -> String {
 fn as_mapper(cartridge: Cartridge, type_code: u8) -> Box<dyn CartridgeMapper> {
     if is_mbc_rom_only(type_code) {
         Box::new(initialize_mbc_rom_only(cartridge))
+    } else if is_huc1(type_code) {
+        Box::new(initialize_huc1(cartridge))
     } else if is_mbc1(type_code) {
         Box::new(initialize_mbc1(cartridge))
     } else if is_mbc3(type_code) {
@@ -235,7 +244,7 @@ pub fn load_rom_buffer(buffer: Vec<u8>, effects: Box<dyn CartridgeEffects>) -> i
             let given_cartridge_type = convert_cartridge_type_to_text(type_code);
 
             let error_message = format!(r#"Sorry, but Retro Boy currently only supports
-                ROM-only, MBC1, MBC3, or MBC5 cartridges.
+                ROM-only, MBC1, MBC3, MBC5, and HuC1 cartridges.
                 The cartridge you provided is of type {}."#, given_cartridge_type);
 
             Err(io::Error::new(io::ErrorKind::Other, error_message))

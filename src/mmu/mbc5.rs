@@ -1,3 +1,4 @@
+use crate::mmu::bank_utils::{banked_read, banked_write};
 use crate::mmu::cartridge::{Cartridge, CartridgeMapper};
 use crate::mmu::constants::*;
 
@@ -58,9 +59,7 @@ impl CartridgeMapper for MBC5 {
             0x0000..=0x3FFF =>
                 self.cartridge.rom[address as usize],
             0x4000..=0x7FFF => {
-                let base_location = self.rom_bank_number as u32 * 0x4000;
-                let calculated_address = base_location + ((address & 0x3FFF) as u32);
-                self.cartridge.rom[calculated_address as usize]
+                banked_read(&self.cartridge.rom, 0x4000, address, self.rom_bank_number)
             },
             _ => panic!("Invalid ROM address: {:#X}", address),
         }
@@ -97,18 +96,16 @@ impl CartridgeMapper for MBC5 {
     }
     
     fn read_ram(&self, address: u16) -> u8 {
-        let calculated_address = (self.ram_bank_number as u32 * 0x2000) + address as u32;
         if self.ram_enabled {
-            self.cartridge.ram[calculated_address as usize]
+            banked_read(&self.cartridge.ram, 0x2000, address, self.ram_bank_number as u16)
         } else {
             0xFF
         }
     }
 
     fn write_ram(&mut self, address: u16, value: u8) {
-        let calculated_address = (self.ram_bank_number as u32 * 0x2000) + address as u32;
         if self.ram_enabled {
-            self.cartridge.ram[calculated_address as usize] = value;
+            banked_write(&mut self.cartridge.ram, 0x2000, address, self.ram_bank_number as u16, value);
             if battery_supported(&self.cartridge) {
                 self.cartridge.effects.save_ram(&self.cartridge.header.title, &self.cartridge.ram);
             }   

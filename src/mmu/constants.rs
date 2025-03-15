@@ -19,6 +19,7 @@ pub const CART_TYPE_MBC5_RAM_BATTERY: u8 = 0x1B;
 pub const CART_TYPE_MBC5_RUMBLE: u8 = 0x1C;
 pub const CART_TYPE_MBC5_RUMBLE_RAM: u8 = 0x1D;
 pub const CART_TYPE_MBC5_RUMBLE_RAM_BATTERY: u8 = 0x1E;
+pub const CART_TYPE_HUC1_RAM_BATTERY: u8 = 0xFF;
 
 pub const TITLE_START_ADDRESS: usize = 0x134;
 pub const TITLE_END_ADDRESS: usize = 0x143;
