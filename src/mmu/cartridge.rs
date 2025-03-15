@@ -244,7 +244,7 @@ pub fn load_rom_buffer(buffer: Vec<u8>, effects: Box<dyn CartridgeEffects>) -> i
             let given_cartridge_type = convert_cartridge_type_to_text(type_code);
 
             let error_message = format!(r#"Sorry, but Retro Boy currently only supports
-                ROM-only, MBC1, MBC3, MBC5, and HuC1 cartridges.
+                ROM-only, MBC1, MBC3, MBC5, or HuC1 cartridges.
                 The cartridge you provided is of type {}."#, given_cartridge_type);
 
             Err(io::Error::new(io::ErrorKind::Other, error_message))
