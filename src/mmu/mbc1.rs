@@ -57,7 +57,7 @@ impl CartridgeMapper for MBC1 {
                 }
             },
             0x2000..=0x3FFF => {
-                let masked_value = value & 0x3F;
+                let masked_value = value & 0x1F;
                 let mut bank_value = if masked_value == 0 { 1 as u8 } else { masked_value };
     
                 let max_bank_mask = ((self.cartridge.header.max_banks - 1) & 0x1F) as u8;
