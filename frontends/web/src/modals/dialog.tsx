@@ -7,6 +7,7 @@ export const MessageDialog = ({
     message,
     heading,
 }: MessageDialogProps): JSX.Element => {
+    const isMobile = useIsMobile();
     return (
         <Modal heading={heading} open={true} onClose={onClose}>
             <CssGrid orientation={Orientation.vertical} gap={GapSize.large}>
@@ -15,6 +16,7 @@ export const MessageDialog = ({
                     variant="contained"
                     color="primary"
                     onClick={onClose}
+                    isMobile={isMobile}
                 >
                     OK
                 </ModalGridButton>
