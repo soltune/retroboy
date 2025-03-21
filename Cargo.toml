@@ -1,6 +1,7 @@
 workspace = { members = ["frontends/json_test_runner"] }
 [package]
 name = "retroboy"
+license = "Apache-2.0"
 version = "0.1.0"
 edition = "2021"
 
