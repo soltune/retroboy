@@ -169,6 +169,18 @@ const Interface = (): JSX.Element => {
         );
     };
 
+    const handleRomBufferChange = (
+        fileObject: FileBufferObject | null,
+    ): void => {
+        if (
+            fileObject?.filename.endsWith(".gbc") &&
+            mode === gameBoyModes.dmg
+        ) {
+            setMode(gameBoyModes.cgb);
+        }
+        setRomBuffer(fileObject);
+    };
+
     const openCheats = (): void => {
         if (gameKey) {
             setUsingModal(true);
@@ -219,7 +231,7 @@ const Interface = (): JSX.Element => {
             paused={paused}
             romBuffer={romBuffer}
             mode={mode}
-            onRomBufferChange={setRomBuffer}
+            onRomBufferChange={handleRomBufferChange}
             onModeChange={setMode}
             onPlay={playGame}
             onPause={pauseGame}
