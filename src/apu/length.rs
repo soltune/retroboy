@@ -1,4 +1,6 @@
-#[derive(Debug)]
+use bincode::{Encode, Decode};
+
+#[derive(Clone, Debug, Encode, Decode)]
 pub struct Length {
     pub initial_settings: u8,
     pub timer: u16

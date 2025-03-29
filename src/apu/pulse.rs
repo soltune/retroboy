@@ -8,8 +8,9 @@ use crate::apu::sweep;
 use crate::apu::sweep::{initialize_sweep, Sweep};
 use crate::apu::utils::{bounded_wrapping_add, length_enabled};
 use crate::utils::{get_bit, is_bit_set};
+use bincode::{Encode, Decode};
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Encode, Decode)]
 pub struct PulseChannel {
     pub enabled: bool,
     pub dac_enabled: bool,

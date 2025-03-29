@@ -1,6 +1,8 @@
 use crate::emulator::{is_cgb, Emulator};
 use crate::utils::is_bit_set;
+use bincode::{Encode, Decode};
 
+#[derive(Clone, Encode, Decode)]
 pub struct SerialState {
     pub data: u8,
     pub clock: u16,

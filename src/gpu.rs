@@ -7,8 +7,9 @@ use crate::gpu::scanline::write_scanline;
 use crate::gpu::utils::{get_lcd_enabled_mode, get_window_enabled_mode};
 use crate::utils::get_t_cycle_increment;
 use crate::utils::is_bit_set;
+use bincode::{Encode, Decode};
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Encode, Decode)]
 pub struct GpuRegisters {
     pub lcdc: u8,
     pub scy: u8,
@@ -25,7 +26,7 @@ pub struct GpuRegisters {
     pub key0: u8
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Encode, Decode)]
 pub struct GpuState {
     pub mode: u8,
     pub mode_clock: u16,

@@ -6,8 +6,9 @@ use crate::apu::pulse::{initialize_pulse_channel, reset_pulse_channel, PulseChan
 use crate::apu::utils::{bounded_wrapping_add, as_dac_output};
 use crate::emulator::{in_color_bios, is_cgb, Emulator};
 use crate::utils::{get_bit, get_t_cycle_increment, is_bit_set};
+use bincode::{Decode, Encode};
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Encode, Decode)]
 pub struct ApuState {
     pub enabled: bool,
     pub sound_panning: u8,

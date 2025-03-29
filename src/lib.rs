@@ -10,4 +10,5 @@ pub mod wasm;
 pub mod speed_switch;
 pub mod serial;
 pub mod cheats;
+pub mod save_state;
 mod bios;

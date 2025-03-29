@@ -4,6 +4,7 @@ import { FileBufferObject } from "./components/bufferFileUpload";
 import { gameBoyModes } from "./components/modeSwitch";
 import {
     EmulatorSettings,
+    encodeSomeState,
     initializeEmulator,
     registerGamegenieCheat,
     registerGamesharkCheat,
@@ -96,6 +97,8 @@ const Interface = (): JSX.Element => {
                 openErrorDialog(error);
                 resetGame();
             } else if (metadata) {
+                const result = encodeSomeState();
+                console.log("result: ", result);
                 setGameKey(metadata.title);
                 registerCheats(metadata.title);
                 setPlaying(true);

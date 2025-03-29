@@ -1,4 +1,4 @@
-use crate::mmu::cartridge::{Cartridge, CartridgeMapper};
+use crate::mmu::cartridge::{Cartridge, CartridgeMapper, CartridgeMapperSnapshot, MBCSnapshot};
 
 #[derive(Debug)]
 pub struct MBCRomOnlyCartridgeMapper {
@@ -38,5 +38,16 @@ impl CartridgeMapper for MBCRomOnlyCartridgeMapper {
 
     fn get_ram_bank(&self) -> u8 {
         0
+    }
+
+    fn get_snapshot(&self) -> CartridgeMapperSnapshot {
+        CartridgeMapperSnapshot {
+            ram: self.cartridge.ram.clone(),
+            mbc: MBCSnapshot::RomOnly
+        }
+    }
+
+    fn apply_snapshot(&mut self, snapshot: CartridgeMapperSnapshot) {
+        self.cartridge.ram = snapshot.ram;
     }
 }
