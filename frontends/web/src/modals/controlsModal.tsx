@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { CssGrid, GapSize, Orientation, Position } from "../components/cssGrid";
 import { ListGrid, ListItemGrid } from "../components/list";
 import { Modal, ModalGridButton } from "../components/modal";
-import { asKeyMapping } from "../hooks/useKeyListeners";
 import { useIsMobile } from "../hooks/useResponsiveBreakpoint";
 import { useSettingsStore } from "../hooks/useSettingsStore";
 
@@ -32,15 +31,21 @@ export const gameControls = {
 };
 
 export const initialKeyMap = {
-    [gameControls.up]: "ArrowUp",
-    [gameControls.down]: "ArrowDown",
-    [gameControls.left]: "ArrowLeft",
-    [gameControls.right]: "ArrowRight",
-    [gameControls.start]: "Enter",
-    [gameControls.select]: "Space",
-    [gameControls.b]: "x",
-    [gameControls.a]: "z",
-} as Record<string, string>;
+    [gameControls.up]: { key: "ArrowUp", code: "ArrowUp" },
+    [gameControls.down]: { key: "ArrowDown", code: "ArrowDown" },
+    [gameControls.left]: { key: "ArrowLeft", code: "ArrowLeft" },
+    [gameControls.right]: { key: "ArrowRight", code: "ArrowRight" },
+    [gameControls.start]: { key: "Enter", code: "Enter" },
+    [gameControls.select]: { key: " ", code: "Space" },
+    [gameControls.b]: { key: "x", code: "KeyX" },
+    [gameControls.a]: { key: "z", code: "KeyZ" },
+} as Record<string, string | KeyMapping>;
+
+const buildKeyDisplay = (keyMapping: string | KeyMapping): string => {
+    const usingLegacyApproach = typeof keyMapping === "string";
+    const display = usingLegacyApproach ? keyMapping : keyMapping.key;
+    return display === " " ? "Space" : display;
+};
 
 export const ControlsModal = ({ onClose }: ControlsModalProps): JSX.Element => {
     const isMobile = useIsMobile();
@@ -57,7 +62,10 @@ export const ControlsModal = ({ onClose }: ControlsModalProps): JSX.Element => {
 
                 const updatedMap = {
                     ...keyMap,
-                    [selectedControl]: asKeyMapping(event.key),
+                    [selectedControl]: {
+                        key: event.key,
+                        code: event.code,
+                    },
                 };
 
                 storeSettings({ ...settings, keyMap: updatedMap });
@@ -96,7 +104,7 @@ export const ControlsModal = ({ onClose }: ControlsModalProps): JSX.Element => {
                             selected={control === selectedControl}
                         >
                             <Typography variant="body1">{control}</Typography>
-                            <Key>{keyMapping}</Key>
+                            <Key>{buildKeyDisplay(keyMapping)}</Key>
                         </ListItemGrid>
                     ))}
                 </ListGrid>
@@ -111,6 +119,11 @@ export const ControlsModal = ({ onClose }: ControlsModalProps): JSX.Element => {
         </Modal>
     );
 };
+
+export interface KeyMapping {
+    key: string;
+    code: string;
+}
 
 interface ControlsModalProps {
     readonly onClose: () => void;

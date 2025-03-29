@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
 import { Cheat } from "../modals/cheatsModal";
-import { initialKeyMap } from "../modals/controlsModal";
+import { initialKeyMap, KeyMapping } from "../modals/controlsModal";
 
 const initialSettings = {
     keyMap: initialKeyMap,
@@ -53,7 +53,7 @@ interface SettingsStoreState {
 }
 
 interface EmulatorSettings {
-    readonly keyMap: Record<string, string>;
+    readonly keyMap: Record<string, string | KeyMapping>;
     readonly cheats?: Record<string, Record<string, Cheat>>;
 }
 

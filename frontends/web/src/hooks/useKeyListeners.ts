@@ -3,16 +3,22 @@ import { useEffect } from "react";
 import { useSettingsStore } from "./useSettingsStore";
 
 import { pressKey, releaseKey } from "../core/retroboyCore";
+import { KeyMapping } from "../modals/controlsModal";
 
-export const asKeyMapping = (eventKey: string): string =>
-    eventKey === " " ? "Space" : eventKey;
-
-const invert = (keyMap: Record<string, string>): Record<string, string> => {
+const buildGameBoyControls = (
+    keyMap: Record<string, string | KeyMapping>,
+): Record<string, string> => {
     return Object.entries(keyMap).reduce(
-        (acc, [key, value]) => ({
-            ...acc,
-            [value]: key,
-        }),
+        (controls, [gameBoyKey, keyMapping]) => {
+            const usingLegacyApproach = typeof keyMapping === "string";
+            const mappedKey = usingLegacyApproach
+                ? keyMapping
+                : keyMapping.code;
+            return {
+                ...controls,
+                [mappedKey]: gameBoyKey,
+            };
+        },
         {} as Record<string, string>,
     );
 };
@@ -25,22 +31,23 @@ export const useKeyListeners = (
 
     const keyMap = settings.keyMap;
 
-    const invertedKeyMap = invert(keyMap);
-    const keys = Object.keys(invertedKeyMap);
+    const gameBoyControls = buildGameBoyControls(keyMap);
 
     const handleKeyDown = (event: KeyboardEvent): void => {
-        const key = asKeyMapping(event.key);
-        if (keys.includes(key) && !usingModal) {
+        const control =
+            gameBoyControls[event.code] || gameBoyControls[event.key];
+        if (control && !usingModal) {
             event.preventDefault();
-            pressKey(invertedKeyMap[key]);
+            pressKey(control);
         }
     };
 
     const handleKeyUp = (event: KeyboardEvent): void => {
-        const key = asKeyMapping(event.key);
-        if (keys.includes(key) && !usingModal) {
+        const control =
+            gameBoyControls[event.code] || gameBoyControls[event.key];
+        if (control && !usingModal) {
             event.preventDefault();
-            releaseKey(invertedKeyMap[key]);
+            releaseKey(control);
         }
     };
 
