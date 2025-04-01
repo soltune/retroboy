@@ -15,7 +15,6 @@ impl SaveStateResult {
             save_state
         }
     }
-
     #[wasm_bindgen(getter)]
     pub fn error(&self) -> Option<String> {
         self.error.clone()
