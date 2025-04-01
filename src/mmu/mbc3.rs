@@ -288,6 +288,8 @@ impl CartridgeMapper for MBC3CartridgeMapper {
         } else {
             panic!("Invalid snapshot type for MBC3");
         }
+
+        self.cartridge.ram = snapshot.ram;
     }
 }
 
