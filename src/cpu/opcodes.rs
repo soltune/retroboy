@@ -33,7 +33,7 @@ fn update_interrupt_flag_after_delay(cpu: &mut CpuState) {
 }
 
 fn reset_instruction_clock_cycles(cpu: &mut CpuState) {
-    cpu.clock.instruction_clock_cycles = 0;
+    cpu.instruction_clock_cycles = 0;
 }
 
 fn reset_last_opcode_bus_activity(emulator: &mut Emulator) {

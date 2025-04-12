@@ -267,7 +267,6 @@ mod tests {
         }
 
         assert_eq!(emulator.hdma.hblank_started, false);
-        assert_eq!(emulator.cpu.clock.total_clock_cycles, 32);
     }
 
     #[test]
@@ -293,7 +292,5 @@ mod tests {
         for i in 0..32 {
             assert_eq!(emulator.gpu.video_ram[0x11A0 + i], 0xA1);
         }
-
-        assert_eq!(emulator.cpu.clock.total_clock_cycles, 64);
     }
 }

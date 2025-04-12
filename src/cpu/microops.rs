@@ -7,10 +7,7 @@ use crate::utils::get_t_cycle_increment;
 pub fn step_one_machine_cycle(emulator: &mut Emulator) {
     let double_speed_mode = emulator.speed_switch.cgb_double_speed;
     let t_cycle_increment = get_t_cycle_increment(double_speed_mode);
-
-    emulator.cpu.clock.total_clock_cycles = emulator.cpu.clock.total_clock_cycles.wrapping_add(t_cycle_increment as u32);
-    emulator.cpu.clock.instruction_clock_cycles = emulator.cpu.clock.instruction_clock_cycles.wrapping_add(t_cycle_increment);
-    
+    emulator.cpu.instruction_clock_cycles = emulator.cpu.instruction_clock_cycles.wrapping_add(t_cycle_increment);
     emulator::sync(emulator);
 }
 
@@ -23,7 +20,7 @@ pub fn step_machine_cycles(emulator: &mut Emulator, cycles: u8) {
 fn record_bus_activity(emulator: &mut Emulator, bus_activity_entry: BusActivityEntry) {
     let double_speed_mode = emulator.speed_switch.cgb_double_speed;
     let t_cycle_increment = get_t_cycle_increment(double_speed_mode);
-    let current_machine_cycle = (emulator.cpu.clock.instruction_clock_cycles / t_cycle_increment) as usize;
+    let current_machine_cycle = (emulator.cpu.instruction_clock_cycles / t_cycle_increment) as usize;
     let recorded_cycles = emulator.cpu.opcode_bus_activity.len();
     let cycles_with_no_activity = (current_machine_cycle - 1) - recorded_cycles;
 

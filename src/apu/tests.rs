@@ -13,7 +13,7 @@ fn prep_div_apu_for_next_step(emulator: &mut Emulator, step: u8) {
 
 fn step_apu_multiple_times(emulator: &mut Emulator, n: u8) {
     for _ in 0..n {
-        emulator.cpu.clock.instruction_clock_cycles = 4;
+        emulator.cpu.instruction_clock_cycles = 4;
         step(emulator);
     }
 }
@@ -38,7 +38,6 @@ fn should_not_decrement_period_divider_when_apu_is_off() {
     emulator.apu.channel1.period.divider = 742;
     emulator.apu.channel1.period.low = 26;
     emulator.apu.channel1.period.high = 197;
-    emulator.cpu.clock.instruction_clock_cycles = 4;
     step(&mut emulator);
     assert_eq!(emulator.apu.channel1.period.divider, 742); 
 }
@@ -51,7 +50,6 @@ fn should_not_decrement_period_divider_if_channel_1_is_off() {
     emulator.apu.channel1.period.divider = 742;
     emulator.apu.channel1.period.low = 26;
     emulator.apu.channel1.period.high = 197;
-    emulator.cpu.clock.instruction_clock_cycles = 4;
     step(&mut emulator);
     assert_eq!(emulator.apu.channel1.period.divider, 742); 
 }
@@ -64,7 +62,7 @@ fn should_decrement_period_divider_for_channel_1() {
     emulator.apu.channel1.period.divider = 742;
     emulator.apu.channel1.period.low = 26;
     emulator.apu.channel1.period.high = 197;
-    emulator.cpu.clock.instruction_clock_cycles = 4;
+    emulator.cpu.instruction_clock_cycles = 4;
     step(&mut emulator);
     assert_eq!(emulator.apu.channel1.period.divider, 741);
 }
@@ -77,7 +75,7 @@ fn should_decrement_period_divider_for_channel_2() {
     emulator.apu.channel2.period.divider = 742;
     emulator.apu.channel2.period.low = 26;
     emulator.apu.channel2.period.high = 197;
-    emulator.cpu.clock.instruction_clock_cycles = 4;
+    emulator.cpu.instruction_clock_cycles = 4;
     step(&mut emulator);
     assert_eq!(emulator.apu.channel2.period.divider, 741); 
 }

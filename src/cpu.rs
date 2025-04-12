@@ -16,12 +16,6 @@ pub struct Registers {
 }
 
 #[derive(Debug)]
-pub struct Clock {
-    pub instruction_clock_cycles: u8,
-    total_clock_cycles: u32
-}
-
-#[derive(Debug)]
 pub struct Interrupts {
     enable_delay: u8,
     disable_delay: u8,
@@ -46,10 +40,10 @@ pub struct BusActivityEntry {
 #[derive(Debug)]
 pub struct CpuState {
     pub registers: Registers,
-    pub clock: Clock,
     pub halted: bool,
     pub halt_bug: bool,
     pub interrupts: Interrupts,
+    pub instruction_clock_cycles: u8,
     pub opcode_bus_activity: Vec<Option<BusActivityEntry>>
 }
 
@@ -89,10 +83,6 @@ pub fn initialize_cpu() -> CpuState {
             program_counter: 0,
             stack_pointer: 0
         },
-        clock: Clock {
-            instruction_clock_cycles: 0,
-            total_clock_cycles: 0,
-        },
         halted: false,
         halt_bug: false,
         interrupts: Interrupts {
@@ -100,6 +90,7 @@ pub fn initialize_cpu() -> CpuState {
             disable_delay: 0,
             enabled: false
         },
+        instruction_clock_cycles: 0,
         opcode_bus_activity: Vec::new()
     }
 }
