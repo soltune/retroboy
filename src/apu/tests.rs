@@ -38,6 +38,7 @@ fn should_not_decrement_period_divider_when_apu_is_off() {
     emulator.apu.channel1.period.divider = 742;
     emulator.apu.channel1.period.low = 26;
     emulator.apu.channel1.period.high = 197;
+    emulator.cpu.instruction_clock_cycles = 4;
     step(&mut emulator);
     assert_eq!(emulator.apu.channel1.period.divider, 742); 
 }
@@ -50,6 +51,7 @@ fn should_not_decrement_period_divider_if_channel_1_is_off() {
     emulator.apu.channel1.period.divider = 742;
     emulator.apu.channel1.period.low = 26;
     emulator.apu.channel1.period.high = 197;
+    emulator.cpu.instruction_clock_cycles = 4;
     step(&mut emulator);
     assert_eq!(emulator.apu.channel1.period.divider, 742); 
 }
