@@ -3,10 +3,9 @@ use crate::gpu::constants::{GB_SCREEN_WIDTH, BYTES_PER_COLOR};
 use crate::gpu::sprites::read_sprite_pixel_color;
 use crate::gpu::background::read_bg_color;
 use crate::gpu::prioritization::resolve_highest_priority_pixel;
+use crate::gpu::sprites::collect_scanline_sprites;
 use crate::gpu::window::read_window_color;
 use crate::gpu::utils::get_bg_and_window_enabled_mode;
-
-use super::sprites::collect_scanline_sprites;
 
 pub fn write_scanline(emulator: &mut Emulator) {
     let ly = emulator.gpu.registers.ly;
