@@ -1,6 +1,7 @@
 use crate::emulator::{initialize_screenless_emulator, Mode};
 use crate::gpu::colors::{Color, Palettes, BLACK, DARK_GRAY, LIGHT_GRAY, WHITE};
 use crate::gpu::sprites::Sprite;
+use crate::utils::set_bit;
 use super::*;
 
 const BLACK_TILE: [u8; 16] = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
@@ -34,8 +35,20 @@ fn write_tile_attributes(emulator: &mut Emulator, index: u16, attributes: u8) {
     emulator.gpu.video_ram[(0x3800 + index) as usize] = attributes;
 }
 
-fn write_sprite_to_sprite_buffer(emulator: &mut Emulator, sprite: Sprite) {
-    emulator.gpu.sprite_buffer.push(sprite);
+fn write_sprite_to_oam(emulator: &mut Emulator, sprite: Sprite) {
+    let oam_index = sprite.oam_index;
+    emulator.gpu.object_attribute_memory[oam_index as usize] = (sprite.y_pos + 16) as u8;
+    emulator.gpu.object_attribute_memory[(oam_index + 1) as usize] = (sprite.x_pos + 8) as u8;
+    emulator.gpu.object_attribute_memory[(oam_index + 2) as usize] = sprite.tile_index;
+
+    let mut attributes = 0;
+    if sprite.priority { attributes = set_bit(attributes, 7); }
+    if sprite.y_flip { attributes = set_bit(attributes, 6); }
+    if sprite.x_flip { attributes = set_bit(attributes, 5); }
+    if sprite.dmg_palette == 1 { attributes = set_bit(attributes, 4); }
+    if sprite.cgb_from_bank_one { attributes = set_bit(attributes, 3); }
+    attributes |= sprite.cgb_palette;
+    emulator.gpu.object_attribute_memory[(oam_index + 3) as usize] = attributes;
 }
 
 fn write_window_tile_index_to_memory(emulator: &mut Emulator, position_index: u16, tile_index: u8) {
@@ -435,7 +448,7 @@ fn should_render_tile_line_with_sprite() {
     write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
     write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
 
-    write_sprite_to_sprite_buffer(&mut emulator, Sprite {
+    write_sprite_to_oam(&mut emulator, Sprite {
         y_pos: 0,
         x_pos: 2,
         tile_index: 1,
@@ -469,7 +482,7 @@ fn should_render_sprite_with_white_background_if_background_and_window_enabled_i
     write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
     write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
 
-    write_sprite_to_sprite_buffer(&mut emulator, Sprite {
+    write_sprite_to_oam(&mut emulator, Sprite {
         y_pos: 0,
         x_pos: 2,
         tile_index: 1,
@@ -503,7 +516,7 @@ fn should_render_tile_line_with_sprite_having_negative_y_pos() {
     write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
     write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
 
-    write_sprite_to_sprite_buffer(&mut emulator, Sprite {
+    write_sprite_to_oam(&mut emulator, Sprite {
         y_pos: -2,
         x_pos: 2,
         tile_index: 1,
@@ -537,7 +550,7 @@ fn should_flip_sprite_on_x_axis() {
     write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
     write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
 
-    write_sprite_to_sprite_buffer(&mut emulator, Sprite {
+    write_sprite_to_oam(&mut emulator, Sprite {
         y_pos: -2,
         x_pos: 2,
         tile_index: 1,
@@ -571,7 +584,7 @@ fn should_flip_sprite_on_y_axis() {
     write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
     write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
 
-    write_sprite_to_sprite_buffer(&mut emulator, Sprite {
+    write_sprite_to_oam(&mut emulator, Sprite {
         y_pos: -2,
         x_pos: 2,
         tile_index: 1,
@@ -606,7 +619,7 @@ fn should_render_eight_by_sixteen_sprite() {
     write_tile_to_obj_memory(&mut emulator, 2, SAMPLE_TILE_A);
     write_tile_to_obj_memory(&mut emulator, 3, SAMPLE_TILE_B);
 
-    write_sprite_to_sprite_buffer(&mut emulator, Sprite {
+    write_sprite_to_oam(&mut emulator, Sprite {
         y_pos: 0,
         x_pos: 2,
         tile_index: 3,
@@ -647,7 +660,7 @@ fn should_prioritize_non_color_id_zero_background_colors_when_sprite_priority_fl
     write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
     write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
     
-    write_sprite_to_sprite_buffer(&mut emulator, Sprite {
+    write_sprite_to_oam(&mut emulator, Sprite {
         y_pos: 0,
         x_pos: 2,
         tile_index: 1,
@@ -681,7 +694,7 @@ fn should_prioritize_background_colors_when_lcdc_bit_1_is_off() {
     write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
     write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
 
-    write_sprite_to_sprite_buffer(&mut emulator, Sprite {
+    write_sprite_to_oam(&mut emulator, Sprite {
         y_pos: 0,
         x_pos: 2,
         tile_index: 1,

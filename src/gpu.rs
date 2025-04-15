@@ -4,7 +4,6 @@ use crate::cpu::hdma;
 use crate::gpu::colors::{initialize_palettes, Palettes};
 use crate::gpu::constants::{GB_SCREEN_HEIGHT, GB_SCREEN_WIDTH, BYTES_PER_COLOR};
 use crate::gpu::scanline::write_scanline;
-use crate::gpu::sprites::{collect_scanline_sprites, Sprite};
 use crate::gpu::utils::{get_lcd_enabled_mode, get_window_enabled_mode};
 use crate::utils::get_t_cycle_increment;
 use crate::utils::is_bit_set;
@@ -32,7 +31,6 @@ pub struct GpuState {
     pub mode_clock: u16,
     pub registers: GpuRegisters,
     pub frame_buffer: Vec<u8>,
-    pub sprite_buffer: Vec<Sprite>,
     pub video_ram: [u8; 0x4000],
     pub object_attribute_memory: [u8; 0xa0]
 }
@@ -82,7 +80,6 @@ pub fn initialize_gpu() -> GpuState {
             key0: 0
         },
         frame_buffer: initialize_blank_frame(),
-        sprite_buffer: Vec::new(),
         video_ram: [0; 0x4000],
         object_attribute_memory: [0; 0xa0]
     }
@@ -139,7 +136,6 @@ pub fn step(emulator: &mut Emulator) {
         match emulator.gpu.mode {
             OAM_MODE => {
                 if emulator.gpu.mode_clock >= OAM_TIME {
-                    emulator.gpu.sprite_buffer = collect_scanline_sprites(emulator);
                     emulator.gpu.mode_clock = 0;
                     update_mode(emulator, VRAM_MODE);
                 }
@@ -329,7 +325,6 @@ pub fn set_lcdc(emulator: &mut Emulator, value: u8) {
         emulator.gpu.mode = HBLANK_MODE;
         emulator.gpu.registers.stat = (emulator.gpu.registers.stat & 0b11111100) | HBLANK_MODE;
         emulator.gpu.frame_buffer = initialize_blank_frame();
-        emulator.gpu.sprite_buffer = Vec::new();
     }
 }
 

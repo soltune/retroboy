@@ -104,21 +104,15 @@ pub fn collect_scanline_sprites(emulator: &Emulator) -> Vec<Sprite> {
     sprites 
 }
 
-fn lookup_possible_sprites(emulator: &Emulator, x: u8, y: u8, eight_by_sixteen_mode: bool) -> Vec<&Sprite> {
+fn lookup_possible_sprites(sprite_buffer: &Vec<Sprite>, x: u8, y: u8, eight_by_sixteen_mode: bool) -> Vec<&Sprite> {
     let mut found_sprites = Vec::new();
 
-    for sprite_number in 0..TOTAL_SPRITES {
-        let sprite_number_usize = sprite_number as usize;
+    for sprite in sprite_buffer {
+        let x_int  = x as i16;
+        let y_int = y as i16;
 
-        if sprite_number_usize < emulator.gpu.sprite_buffer.len() {
-            let sprite = &emulator.gpu.sprite_buffer[sprite_number_usize];
-
-            let x_int  = x as i16;
-            let y_int = y as i16;
-            
-            if sprite_overlaps_coordinates(sprite.x_pos, sprite.y_pos, x_int, y_int, eight_by_sixteen_mode) {
-                found_sprites.push(sprite);
-            }   
+        if sprite_overlaps_coordinates(sprite.x_pos, sprite.y_pos, x_int, y_int, eight_by_sixteen_mode) {
+            found_sprites.push(sprite);
         }
     }
 
@@ -204,14 +198,14 @@ fn calculate_tile_index(sprite: &Sprite, y_int: i16, eight_by_sixteen_mode: bool
     }
 }
 
-pub fn read_sprite_pixel_color(emulator: &Emulator, viewport_x: u8) -> Option<SpritePixel> {
+pub fn read_sprite_pixel_color(emulator: &Emulator, sprite_buffer: &Vec<Sprite>, viewport_x: u8) -> Option<SpritePixel> {
     let lcdc = emulator.gpu.registers.lcdc;
     let ly = emulator.gpu.registers.ly;
 
     let eight_by_sixteen_mode = get_obj_size_mode(lcdc);
     let sprites_enabled = get_obj_enabled_mode(lcdc);
 
-    let possible_sprites = lookup_possible_sprites(emulator, viewport_x, ly, eight_by_sixteen_mode);
+    let possible_sprites = lookup_possible_sprites(sprite_buffer, viewport_x, ly, eight_by_sixteen_mode);
     
     if sprites_enabled {
         match resolve_highest_priority_sprite(emulator, possible_sprites, viewport_x, ly) {
