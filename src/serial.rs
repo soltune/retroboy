@@ -8,7 +8,6 @@ pub struct SerialState {
     pub is_master: bool,
     pub transfer_enabled: bool,
     pub bits_transferred: u8,
-    pub serial_exchange: fn(bool) -> bool
 }
 
 fn serial_disconnected_exchange(_: bool) -> bool {
@@ -25,7 +24,6 @@ pub fn initialize_serial() -> SerialState {
         is_master: false,
         transfer_enabled: false,
         bits_transferred: 0,
-        serial_exchange: serial_disconnected_exchange
     }
 }
 
@@ -44,7 +42,7 @@ fn fire_serial_interrupt(emulator: &mut Emulator) {
 fn exchange_bits(emulator: &mut Emulator) {
     let outgoing_bit = is_bit_set(emulator.serial.data, 7);
     emulator.serial.data <<= 1;
-    let incoming_bit = (emulator.serial.serial_exchange)(outgoing_bit);
+    let incoming_bit = serial_disconnected_exchange(outgoing_bit);
     if incoming_bit {
         emulator.serial.data |= 1;
     }
