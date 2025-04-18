@@ -1,17 +1,17 @@
 use crate::mmu::cartridge::{Cartridge, CartridgeMapper};
 
 #[derive(Debug)]
-pub struct MBCRomOnly {
+pub struct MBCRomOnlyCartridgeMapper {
     cartridge: Cartridge
 }
 
-pub fn initialize_mbc_rom_only(cartridge: Cartridge) -> MBCRomOnly {
-    MBCRomOnly {
+pub fn initialize_mbc_rom_only_mapper(cartridge: Cartridge) -> MBCRomOnlyCartridgeMapper {
+    MBCRomOnlyCartridgeMapper {
         cartridge
     }
 }
 
-impl CartridgeMapper for MBCRomOnly {
+impl CartridgeMapper for MBCRomOnlyCartridgeMapper {
     fn read_rom(&self, address: u16) -> u8 {
         self.cartridge.rom[address as usize]
     }

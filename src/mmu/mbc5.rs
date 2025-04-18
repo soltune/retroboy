@@ -3,21 +3,32 @@ use crate::mmu::cartridge::{Cartridge, CartridgeMapper};
 use crate::mmu::constants::*;
 
 #[derive(Debug)]
-pub struct MBC5 {
-    cartridge: Cartridge,
+pub struct MBC5State {
     ram_enabled: bool,
     rumble: bool,
     rom_bank_number: u16,
     ram_bank_number: u8,
 }
 
-pub fn initialize_mbc5(cartridge: Cartridge) -> MBC5 {
-    MBC5 {
-        cartridge,
+#[derive(Debug)]
+pub struct MBC5CartridgeMapper {
+    cartridge: Cartridge,
+    state: MBC5State,
+}
+
+pub fn initialize_mbc5() -> MBC5State {
+    MBC5State {
         ram_enabled: false,
         rumble: false,
         rom_bank_number: 1,
         ram_bank_number: 0,
+    }
+}
+
+pub fn initialize_mbc5_mapper(cartridge: Cartridge) -> MBC5CartridgeMapper {
+    MBC5CartridgeMapper {
+        cartridge,
+        state: initialize_mbc5(),
     }
 }
 
@@ -39,27 +50,27 @@ fn battery_supported(cartridge: &Cartridge) -> bool {
     cartridge.header.type_code == CART_TYPE_MBC5_RUMBLE_RAM_BATTERY
 }
 
-impl MBC5 {
+impl MBC5CartridgeMapper {
     fn set_rom_bank_number(&mut self, next_rom_bank_number: u16) {
         if next_rom_bank_number < self.cartridge.header.max_banks {
-            self.rom_bank_number = next_rom_bank_number;
+            self.state.rom_bank_number = next_rom_bank_number;
         }
     }
 
     fn set_ram_bank_number(&mut self, next_ram_bank_number: u8) {
         if next_ram_bank_number < self.cartridge.header.max_ram_banks {
-            self.ram_bank_number = next_ram_bank_number;
+            self.state.ram_bank_number = next_ram_bank_number;
         }
     }
 }
 
-impl CartridgeMapper for MBC5 {
+impl CartridgeMapper for MBC5CartridgeMapper {
     fn read_rom(&self, address: u16) -> u8 {
         match address {
             0x0000..=0x3FFF =>
                 self.cartridge.rom[address as usize],
             0x4000..=0x7FFF => {
-                banked_read(&self.cartridge.rom, 0x4000, address, self.rom_bank_number)
+                banked_read(&self.cartridge.rom, 0x4000, address, self.state.rom_bank_number)
             },
             _ => panic!("Invalid ROM address: {:#X}", address),
         }
@@ -69,20 +80,20 @@ impl CartridgeMapper for MBC5 {
         match address {
             0x0000..=0x1FFF => {
                 if ram_supported(&self.cartridge) {
-                    self.ram_enabled = (value & 0xF) == 0x0A;
+                    self.state.ram_enabled = (value & 0xF) == 0x0A;
                 }
             },
             0x2000..=0x2FFF => {
-                let next_rom_bank_number = (self.rom_bank_number & 0x100) | (value as u16 & 0xFF);
+                let next_rom_bank_number = (self.state.rom_bank_number & 0x100) | (value as u16 & 0xFF);
                 self.set_rom_bank_number(next_rom_bank_number);
             },
             0x3000..=0x3FFF => {
-                let next_rom_bank_number = (self.rom_bank_number & 0xFF) | ((value as u16 & 0x1) << 8);
+                let next_rom_bank_number = (self.state.rom_bank_number & 0xFF) | ((value as u16 & 0x1) << 8);
                 self.set_rom_bank_number(next_rom_bank_number);
             },
             0x4000..=0x5FFF => {
                 let next_ram_bank_number = if rumble_supported(&self.cartridge) {
-                    self.rumble = (value & 0x8) == 0x1;
+                    self.state.rumble = (value & 0x8) == 0x1;
                     value & 0x7
                 }
                 else {
@@ -96,16 +107,16 @@ impl CartridgeMapper for MBC5 {
     }
     
     fn read_ram(&self, address: u16) -> u8 {
-        if self.ram_enabled {
-            banked_read(&self.cartridge.ram, 0x2000, address, self.ram_bank_number as u16)
+        if self.state.ram_enabled {
+            banked_read(&self.cartridge.ram, 0x2000, address, self.state.ram_bank_number as u16)
         } else {
             0xFF
         }
     }
 
     fn write_ram(&mut self, address: u16, value: u8) {
-        if self.ram_enabled {
-            banked_write(&mut self.cartridge.ram, 0x2000, address, self.ram_bank_number as u16, value);
+        if self.state.ram_enabled {
+            banked_write(&mut self.cartridge.ram, 0x2000, address, self.state.ram_bank_number as u16, value);
             if battery_supported(&self.cartridge) {
                 self.cartridge.effects.save_ram(&self.cartridge.header.title, &self.cartridge.ram);
             }   
@@ -121,7 +132,7 @@ impl CartridgeMapper for MBC5 {
     }
 
     fn get_ram_bank(&self) -> u8 {
-        self.ram_bank_number
+        self.state.ram_bank_number
     }
 }
 

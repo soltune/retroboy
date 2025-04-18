@@ -3,11 +3,11 @@ use std::io;
 
 use crate::mmu::constants::*;
 use crate::mmu::effects::CartridgeEffects;
-use crate::mmu::huc1::initialize_huc1;
-use crate::mmu::mbc1::initialize_mbc1;
-use crate::mmu::mbc3::initialize_mbc3;
-use crate::mmu::mbc5::initialize_mbc5;
-use crate::mmu::mbc_rom_only::initialize_mbc_rom_only;
+use crate::mmu::huc1::initialize_huc1_mapper;
+use crate::mmu::mbc1::initialize_mbc1_mapper;
+use crate::mmu::mbc3::initialize_mbc3_mapper;
+use crate::mmu::mbc5::initialize_mbc5_mapper;
+use crate::mmu::mbc_rom_only::initialize_mbc_rom_only_mapper;
 
 #[derive(Debug, Clone)]
 pub struct CartridgeHeader {
@@ -71,7 +71,7 @@ pub fn initialize_cartridge(effects: Box<dyn CartridgeEffects>) -> Cartridge {
 }
 
 pub fn initialize_cartridge_mapper(effects: Box<dyn CartridgeEffects>) -> Box<dyn CartridgeMapper> {
-    Box::new(initialize_mbc_rom_only(initialize_cartridge(effects)))
+    Box::new(initialize_mbc_rom_only_mapper(initialize_cartridge(effects)))
 }
 
 fn cartridge_type_supported(type_code: u8) -> bool {
@@ -184,15 +184,15 @@ pub fn convert_cartridge_type_to_text(type_code: u8) -> String {
 
 fn as_mapper(cartridge: Cartridge, type_code: u8) -> Box<dyn CartridgeMapper> {
     if is_mbc_rom_only(type_code) {
-        Box::new(initialize_mbc_rom_only(cartridge))
+        Box::new(initialize_mbc_rom_only_mapper(cartridge))
     } else if is_huc1(type_code) {
-        Box::new(initialize_huc1(cartridge))
+        Box::new(initialize_huc1_mapper(cartridge))
     } else if is_mbc1(type_code) {
-        Box::new(initialize_mbc1(cartridge))
+        Box::new(initialize_mbc1_mapper(cartridge))
     } else if is_mbc3(type_code) {
-        Box::new(initialize_mbc3(cartridge))
+        Box::new(initialize_mbc3_mapper(cartridge))
     } else if is_mbc5(type_code) {
-        Box::new(initialize_mbc5(cartridge))
+        Box::new(initialize_mbc5_mapper(cartridge))
     } else {
         panic!("Unsupported cartridge type: {}", type_code);
     }
