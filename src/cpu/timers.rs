@@ -15,6 +15,18 @@ pub struct TimerRegisters {
     pub control: u8
 }
 
+pub fn initialize_timer_registers() -> TimerRegisters {
+    TimerRegisters {
+        m_cycles_clock: 0,
+        divider_clock: 0,
+        base_clock: 0,
+        divider: 0,
+        counter: 0,
+        modulo: 0,
+        control: 0
+    }
+}
+
 fn get_counter_rate(timer_registers: &TimerRegisters) -> Option<u8> {
     let control = timer_registers.control;
     match control & 0x07 {

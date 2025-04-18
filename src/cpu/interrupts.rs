@@ -16,6 +16,13 @@ pub struct InterruptRegisters {
     pub flags: u8
 }
 
+pub fn initialize_innterrupt_registers() -> InterruptRegisters {
+    InterruptRegisters {
+        enabled: 0,
+        flags: 0
+    }
+}
+
 fn get_fired_interrupt_bits(emulator: &Emulator) -> u8 {
     emulator.interrupts.enabled & emulator.interrupts.flags & 0x1F
 }

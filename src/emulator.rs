@@ -2,8 +2,8 @@ use crate::apu;
 use crate::apu::{initialize_apu, ApuState};
 use crate::cheats::{initialize_cheats, CheatState};
 use crate::cpu::{self, initialize_cpu, timers, CpuState};
-use crate::cpu::interrupts::InterruptRegisters;
-use crate::cpu::timers::TimerRegisters;
+use crate::cpu::interrupts::{initialize_innterrupt_registers, InterruptRegisters};
+use crate::cpu::timers::{initialize_timer_registers, TimerRegisters};
 use crate::cpu::hdma::{HDMAState, initialize_hdma};
 use crate::dma;
 use crate::dma::{initialize_dma, DMAState};
@@ -46,19 +46,8 @@ pub struct Emulator {
 pub fn initialize_emulator(render: fn(&[u8])) -> Emulator {
     Emulator {
         cpu: initialize_cpu(),
-        interrupts: InterruptRegisters {
-            enabled: 0,
-            flags: 0
-        },
-        timers: TimerRegisters {
-            m_cycles_clock: 0,
-            base_clock: 0,
-            divider_clock: 0,
-            divider: 0,
-            counter: 0,
-            modulo: 0,
-            control: 0
-        },
+        interrupts: initialize_innterrupt_registers(),
+        timers: initialize_timer_registers(),
         memory: initialize_memory(),
         gpu: initialize_gpu(),
         keys: initialize_keys(),
