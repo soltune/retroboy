@@ -283,8 +283,6 @@ impl CartridgeMapper for MBC3CartridgeMapper {
     fn apply_snapshot(&mut self, snapshot: CartridgeMapperSnapshot) {
         if let MBCSnapshot::MBC3(mbc3_state) = snapshot.mbc {
             self.state = mbc3_state;
-
-            self.cartridge.ram = snapshot.ram;
         } else {
             panic!("Invalid snapshot type for MBC3");
         }

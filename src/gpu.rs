@@ -86,6 +86,10 @@ pub fn initialize_gpu() -> GpuState {
     }
 }
 
+pub fn reset_frame_buffer(emulator: &mut Emulator) {
+    emulator.gpu.frame_buffer = initialize_blank_frame();
+}
+
 fn fire_vblank_interrupt(emulator: &mut Emulator) {
     emulator.interrupts.flags |= 0x1;
 }

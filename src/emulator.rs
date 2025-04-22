@@ -13,7 +13,7 @@ use crate::mmu::{self, Memory, initialize_memory};
 use crate::serial::{self, initialize_serial, SerialState};
 use crate::speed_switch::{initialize_speed_switch, SpeedSwitch};
 use std::cell::{Ref, RefMut};
-use std::io;
+use std::io::Result;
 
 pub use crate::mmu::effects::CartridgeEffects;
 pub use crate::mmu::{CartridgeHeader, RTCState};
@@ -59,51 +59,6 @@ pub fn initialize_emulator(render: fn(&[u8])) -> Emulator {
         mode: Mode::DMG,
         speed_switch: initialize_speed_switch(),
         processor_test_mode: false
-    }
-}
-
-pub fn as_snapshot(emulator: &Emulator) -> EmulatorSnapshot {
-    EmulatorSnapshot {
-        cpu: cpu::as_snapshot(&emulator.cpu),
-        interrupts: emulator.interrupts.clone(),
-        timers: emulator.timers.clone(),
-        memory: mmu::as_snapshot(&emulator.memory),
-        gpu: gpu::as_snapshot(&emulator.gpu),
-        apu: apu::as_snapshot(&emulator.apu),
-        dma: emulator.dma.clone(),
-        hdma: emulator.hdma.clone(),
-        serial: serial::as_snapshot(&emulator.serial),
-        speed_switch: emulator.speed_switch.clone()
-    }
-}
-
-pub fn apply_snapshot(emulator: &mut Emulator, snapshot: EmulatorSnapshot) {
-    cpu::apply_snapshot(emulator, snapshot.cpu);
-    emulator.interrupts = snapshot.interrupts;
-    emulator.timers = snapshot.timers;
-    mmu::apply_snapshot(emulator, snapshot.memory);
-    gpu::apply_snapshot(emulator, snapshot.gpu);
-    apu::apply_snapshot(emulator, snapshot.apu);
-    emulator.dma = snapshot.dma;
-    emulator.hdma = snapshot.hdma;
-    serial::apply_snapshot(emulator, snapshot.serial);
-    emulator.speed_switch = snapshot.speed_switch;
-}
-
-pub fn encode(emulator: &Emulator) -> Result<Vec<u8>> {
-    let config = config::standard();
-    let snapshot = as_snapshot(emulator);
-    match bincode::encode_to_vec(snapshot, config) {
-        Ok(data) => Ok(data),
-        Err(e) => Err(Error::new(ErrorKind::InvalidData, e.to_string())),
-    }
-}
-
-pub fn decode(data: &[u8]) -> Result<EmulatorSnapshot> {
-    let config = config::standard();
-    match bincode::decode_from_slice(data, config) {
-        Ok((snapshot, _)) => Ok(snapshot),
-        Err(e) => Err(Error::new(ErrorKind::InvalidData, e.to_string())),
     }
 }
 

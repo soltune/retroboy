@@ -2,7 +2,7 @@ use crate::{cpu::CpuState, emulator::Emulator};
 use crate::cpu::interrupts::InterruptRegisters;
 use crate::cpu::timers::TimerRegisters;
 use crate::cpu::hdma::HDMAState;
-use crate::gpu::GpuState;
+use crate::gpu::{self, GpuState};
 use crate::apu::ApuState;
 use crate::dma::DMAState;
 use crate::mmu::{self, MemorySnapshot};
@@ -65,6 +65,8 @@ fn load_save_state(emulator: &mut Emulator, save_state: EmulatorSaveState) {
     emulator.hdma = save_state.hdma;
     emulator.serial = save_state.serial;
     emulator.speed_switch = save_state.speed_switch;
+
+    gpu::reset_frame_buffer(emulator);
 }
 
 pub fn encode_save_state(emulator: &Emulator) -> Result<Vec<u8>> {
