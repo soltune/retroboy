@@ -25,6 +25,7 @@ pub struct Memory {
 
 #[derive(Clone, Encode, Decode)]
 pub struct MemorySnapshot {
+    pub in_bios: bool,
     pub working_ram: [u8; 0x10000],
     pub zero_page_ram: [u8; 0x80],
     pub svbk: u8,
@@ -45,6 +46,7 @@ pub fn initialize_memory() -> Memory {
 
 pub fn as_snapshot(memory: &Memory) -> MemorySnapshot {
     MemorySnapshot {
+        in_bios: memory.in_bios,
         working_ram: memory.working_ram,
         zero_page_ram: memory.zero_page_ram,
         svbk: memory.svbk,
@@ -53,6 +55,7 @@ pub fn as_snapshot(memory: &Memory) -> MemorySnapshot {
 }
 
 pub fn apply_snapshot(emulator: &mut Emulator, snapshot: MemorySnapshot) {
+    emulator.memory.in_bios = snapshot.in_bios;
     emulator.memory.working_ram = snapshot.working_ram;
     emulator.memory.zero_page_ram = snapshot.zero_page_ram;
     emulator.memory.svbk = snapshot.svbk;
