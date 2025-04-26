@@ -185,21 +185,24 @@ pub fn unregister_cheat(cheat_id: &str) {
     })
 }
 
-#[wasm_bindgen(js_name = encodeEmulatorState)]
-pub fn encode_emulator_state() -> SaveStateResult {
+#[wasm_bindgen(js_name = encodeSaveState)]
+pub fn encode_save_state() -> SaveStateResult {
     EMULATOR.with(|emulator_cell| {
         let emulator = emulator_cell.borrow();
         match save_state::encode_save_state(&emulator) {
-            Ok(snapshot) => SaveStateResult::new(None, Some(snapshot)),
+            Ok(state_bytes) => SaveStateResult::new(None, Some(state_bytes)),
             Err(e) => SaveStateResult::new(Some(e.to_string()), None)
         }
     })
 }
 
-#[wasm_bindgen(js_name = decodeEmulatorState)]
-pub fn decode_emulator_state(data: &[u8]) -> Option<String> {
+#[wasm_bindgen(js_name = applySaveState)]
+pub fn apply_save_state(data: &[u8]) -> Option<String> {
     EMULATOR.with(|emulator_cell| {
         let mut emulator = emulator_cell.borrow_mut();
-        save_state::decode_save_state(&mut emulator, data)
+        match save_state::apply_save_state(&mut emulator, data) {
+            Ok(_) => None,
+            Err(e) => Some(e.to_string())
+        }
     })
 }

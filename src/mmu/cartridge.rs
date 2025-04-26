@@ -56,6 +56,10 @@ pub trait CartridgeMapper: std::fmt::Debug {
 
     fn get_snapshot(&self) -> CartridgeMapperSnapshot;
     fn apply_snapshot(&mut self, snapshot: CartridgeMapperSnapshot);
+
+    fn title(&self) -> String {
+        self.get_cartridge().header.title.clone()
+    }
 }
 
 const SUPPORTED_CARTRIDGE_TYPES: [u8; 16] = [CART_TYPE_ROM_ONLY,

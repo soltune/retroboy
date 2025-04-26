@@ -3,9 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { FileBufferObject } from "./components/bufferFileUpload";
 import { gameBoyModes } from "./components/modeSwitch";
 import {
-    decodeEmulatorState,
+    applySaveState,
     EmulatorSettings,
-    encodeEmulatorState,
+    encodeSaveState,
     initializeEmulator,
     registerGamegenieCheat,
     registerGamesharkCheat,
@@ -209,7 +209,7 @@ const Interface = (): JSX.Element => {
                 if (file) {
                     const reader = new FileReader();
                     reader.onload = async () => {
-                        const error = decodeEmulatorState(
+                        const error = applySaveState(
                             new Uint8Array(reader.result as ArrayBuffer),
                         );
                         if (error) {
@@ -225,7 +225,7 @@ const Interface = (): JSX.Element => {
 
     const exportSaveState = (): void => {
         if (gameKey) {
-            const result = encodeEmulatorState();
+            const result = encodeSaveState();
             if (result.error) {
                 openErrorDialog(result.error);
             } else if (result.saveState) {

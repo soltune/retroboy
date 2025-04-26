@@ -152,7 +152,7 @@ fn track_digital_outputs(emulator: &mut Emulator, weight: f32) {
     emulator.apu.summed_channel4_sample += channel4_output * weight;
 }
 
-fn clear_summed_samples(emulator: &mut Emulator) {
+pub fn clear_summed_samples(emulator: &mut Emulator) {
     emulator.apu.summed_channel1_sample = 0.0;
     emulator.apu.summed_channel2_sample = 0.0;
     emulator.apu.summed_channel3_sample = 0.0;
