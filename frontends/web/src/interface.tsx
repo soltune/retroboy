@@ -199,7 +199,7 @@ const Interface = (): JSX.Element => {
         }
     };
 
-    const importSaveState = (): void => {
+    const loadState = (): void => {
         if (gameKey) {
             const input = document.createElement("input");
             input.type = "file";
@@ -223,7 +223,7 @@ const Interface = (): JSX.Element => {
         }
     };
 
-    const exportSaveState = (): void => {
+    const saveState = (): void => {
         if (gameKey) {
             const result = encodeSaveState();
             if (result.error) {
@@ -235,7 +235,8 @@ const Interface = (): JSX.Element => {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
                 a.href = url;
-                a.download = "save_state.rbs";
+                const filename = `${gameKey.replaceAll(" ", "").toLowerCase()}.rbs`;
+                a.download = filename;
                 a.click();
                 URL.revokeObjectURL(url);
             }
@@ -286,8 +287,8 @@ const Interface = (): JSX.Element => {
             onScreenshot={downloadScreenshot}
             onOpenControls={openControls}
             onOpenCheats={openCheats}
-            onImportSaveState={importSaveState}
-            onExportSaveState={exportSaveState}
+            onLoadState={loadState}
+            onSaveState={saveState}
             canvasRef={canvasRef}
         />
     );

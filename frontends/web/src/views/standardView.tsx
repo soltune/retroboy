@@ -64,8 +64,8 @@ const StandardView = ({
     onFullscreen,
     onModeChange,
     onRomBufferChange,
-    onImportSaveState,
-    onExportSaveState,
+    onLoadState,
+    onSaveState,
     canvasRef,
 }: StandardViewProps): JSX.Element => {
     const breakpoint = useResponsiveBreakpoint();
@@ -142,20 +142,20 @@ const StandardView = ({
                                         key: "screenshot",
                                     },
                                     {
-                                        display: "Import Save State",
+                                        display: "Load State",
                                         icon: (
                                             <FileUploadIcon fontSize="small" />
                                         ),
-                                        action: onImportSaveState,
-                                        key: "import-save-state",
+                                        action: onLoadState,
+                                        key: "load-state",
                                     },
                                     {
-                                        display: "Export Save State",
+                                        display: "Save State",
                                         icon: (
                                             <FileDownloadIcon fontSize="small" />
                                         ),
-                                        action: onExportSaveState,
-                                        key: "export-save-state",
+                                        action: onSaveState,
+                                        key: "save-state",
                                     },
                                 ]}
                             >
@@ -270,8 +270,8 @@ interface StandardViewProps {
     readonly onFullscreen: () => void;
     readonly onModeChange: (mode: GameBoyMode) => void;
     readonly onRomBufferChange: (romBuffer: FileBufferObject | null) => void;
-    readonly onImportSaveState: () => void;
-    readonly onExportSaveState: () => void;
+    readonly onLoadState: () => void;
+    readonly onSaveState: () => void;
     readonly canvasRef: RefObject<HTMLCanvasElement>;
 }
 
