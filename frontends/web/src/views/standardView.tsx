@@ -55,7 +55,7 @@ const StandardView = ({
     playing,
     paused,
     mode,
-    romBuffer,
+    rom,
     onPlay,
     onPause,
     onResume,
@@ -63,7 +63,7 @@ const StandardView = ({
     onReset,
     onFullscreen,
     onModeChange,
-    onRomBufferChange,
+    onRomChange,
     onLoadState,
     onSaveState,
     canvasRef,
@@ -181,8 +181,8 @@ const StandardView = ({
                     >
                         <BufferFileUpload
                             label="Load ROM"
-                            onFileSelect={onRomBufferChange}
-                            uploadedFile={romBuffer}
+                            onFileSelect={onRomChange}
+                            uploadedFile={rom}
                             variant="contained"
                             accept=".gb,.gbc"
                             startIcon={<FileUploadIcon />}
@@ -207,7 +207,7 @@ const StandardView = ({
                         {!playing || paused ? (
                             <Button
                                 variant="contained"
-                                disabled={!romBuffer}
+                                disabled={!rom}
                                 onClick={paused ? onResume : onPlay}
                                 startIcon={<PlayArrowIcon />}
                             >
@@ -259,7 +259,7 @@ interface StandardViewProps {
     readonly playing: boolean;
     readonly paused: boolean;
     readonly mode: GameBoyMode;
-    readonly romBuffer: FileBufferObject | null;
+    readonly rom: FileBufferObject | null;
     readonly onOpenControls: () => void;
     readonly onOpenCheats: () => void;
     readonly onPlay: () => void;
@@ -269,7 +269,7 @@ interface StandardViewProps {
     readonly onReset: () => void;
     readonly onFullscreen: () => void;
     readonly onModeChange: (mode: GameBoyMode) => void;
-    readonly onRomBufferChange: (romBuffer: FileBufferObject | null) => void;
+    readonly onRomChange: (rom: FileBufferObject | null) => void;
     readonly onLoadState: () => void;
     readonly onSaveState: () => void;
     readonly canvasRef: RefObject<HTMLCanvasElement>;
