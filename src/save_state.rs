@@ -76,6 +76,7 @@ fn load_state_snapshot(emulator: &mut Emulator, save_state: SaveStateSnapshot) {
     emulator.hdma = save_state.hdma;
     emulator.serial = save_state.serial;
     emulator.speed_switch = save_state.speed_switch;
+    emulator.apu = save_state.apu;
 
     gpu::reset_frame_buffer(emulator);
     apu::clear_summed_samples(emulator);
