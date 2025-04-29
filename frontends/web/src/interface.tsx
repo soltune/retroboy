@@ -208,11 +208,20 @@ const Interface = (): JSX.Element => {
             input.onchange = async () => {
                 const file = input.files?.[0];
                 if (file) {
-                    const bufferObject = await buildFileBufferObject(file);
-                    const error = applySaveState(bufferObject.data);
-                    if (error) {
-                        openErrorDialog(error);
+                    try {
+                        const bufferObject = await buildFileBufferObject(file);
+                        const error = applySaveState(bufferObject.data);
+                        if (error) {
+                            openErrorDialog(error);
+                        }
+                    } catch (err) {
+                        openErrorDialog(
+                            "An error occurred while loading the save state.",
+                        );
+                        console.error("Error loading save state:", err);
                     }
+                } else {
+                    openErrorDialog("Unable to read uploaded file.");
                 }
             };
             input.click();
