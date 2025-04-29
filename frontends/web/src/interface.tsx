@@ -202,11 +202,11 @@ const Interface = (): JSX.Element => {
             const input = document.createElement("input");
             input.type = "file";
             input.accept = ".rbs";
-            input.onchange = async () => {
+            input.onchange = () => {
                 const file = input.files?.[0];
                 if (file) {
                     const reader = new FileReader();
-                    reader.onload = async () => {
+                    reader.onload = () => {
                         const error = applySaveState(
                             new Uint8Array(reader.result as ArrayBuffer),
                         );
