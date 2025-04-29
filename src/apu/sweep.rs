@@ -1,8 +1,9 @@
 use crate::utils::is_bit_set;
 use crate::apu::period::calculate_period_value;
 use crate::apu::pulse::{disable, PulseChannel};
+use bincode::{Encode, Decode};
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Encode, Decode)]
 pub struct Sweep {
     pub initial_settings: u8,
     pub enabled: bool,

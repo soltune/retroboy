@@ -5,8 +5,9 @@ use crate::apu::length::{initialize_length, Length};
 use crate::apu::utils::{bounded_wrapping_add, length_enabled};
 use crate::emulator::{is_cgb, Emulator};
 use crate::utils::is_bit_set;
+use bincode::{Encode, Decode};
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Encode, Decode)]
 pub struct WaveChannel {
     pub enabled: bool,
     pub dac_enabled: bool,

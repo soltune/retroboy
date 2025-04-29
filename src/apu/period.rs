@@ -1,4 +1,6 @@
-#[derive(Debug)]
+use bincode::{Encode, Decode};
+
+#[derive(Clone, Debug, Encode, Decode)]
 pub struct Period {
     pub low: u8,
     pub high: u8,

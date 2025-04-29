@@ -4,8 +4,9 @@ use crate::apu::length;
 use crate::apu::length::{initialize_length, Length};
 use crate::utils::is_bit_set;
 use crate::apu::utils::length_enabled;
+use bincode::{Encode, Decode};
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Encode, Decode)]
 pub struct NoiseChannel {
     pub enabled: bool,
     pub dac_enabled: bool,

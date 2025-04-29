@@ -1,6 +1,9 @@
+import BuildIcon from "@mui/icons-material/Build";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import GamepadIcon from "@mui/icons-material/Gamepad";
+import MenuIcon from "@mui/icons-material/Menu";
 import PauseIcon from "@mui/icons-material/Pause";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
@@ -16,6 +19,7 @@ import {
 import { CssGrid, GapSize, Orientation, Position } from "../components/cssGrid";
 import GamePad from "../components/gamePad";
 import GameScreen from "../components/gameScreen";
+import { MenuButton } from "../components/menuButton";
 import { GameBoyMode, ModeSwitch } from "../components/modeSwitch";
 import {
     ResponsiveBreakpoint,
@@ -36,13 +40,9 @@ const GameSelectionGrid = styled(CssGrid)`
     margin: 16px;
 `;
 
-const GameScreenGrid = styled(CssGrid, {
-    shouldForwardProp: prop => prop !== "isMobile",
-})<{ isMobile?: boolean }>(({ isMobile }) => ({
-    marginBottom: "32px",
-    justifySelf: isMobile ? "stretch" : undefined,
-    margin: "16px",
-}));
+const GameScreenWrapper = styled("div")`
+    margin-bottom: 32px;
+`;
 
 const Logo = (): JSX.Element => (
     <img src="/retroboy/logo.png" width="150" height="150" />
@@ -55,7 +55,7 @@ const StandardView = ({
     playing,
     paused,
     mode,
-    romBuffer,
+    rom,
     onPlay,
     onPause,
     onResume,
@@ -63,7 +63,9 @@ const StandardView = ({
     onReset,
     onFullscreen,
     onModeChange,
-    onRomBufferChange,
+    onRomChange,
+    onLoadState,
+    onSaveState,
     canvasRef,
 }: StandardViewProps): JSX.Element => {
     const breakpoint = useResponsiveBreakpoint();
@@ -105,23 +107,60 @@ const StandardView = ({
                             alignItems={Position.center}
                         >
                             <Logo />
-                            <Button
+                            {!isMobile && !isTablet && (
+                                <Button
+                                    variant="contained"
+                                    color="secondary"
+                                    startIcon={<GamepadIcon />}
+                                    onClick={onOpenControls}
+                                >
+                                    Controls
+                                </Button>
+                            )}
+                            <MenuButton
                                 variant="contained"
                                 color="secondary"
-                                startIcon={<GamepadIcon />}
-                                onClick={onOpenControls}
-                            >
-                                Controls
-                            </Button>
-                            <Button
-                                variant="contained"
-                                color="secondary"
-                                startIcon={<VideogameAssetIcon />}
-                                onClick={onOpenCheats}
                                 disabled={!gameKey}
+                                startIcon={<BuildIcon />}
+                                withMobileMenu={true}
+                                mobileMenuTitle="Game Tools"
+                                menuItems={[
+                                    {
+                                        display: "Cheats",
+                                        icon: (
+                                            <VideogameAssetIcon fontSize="small" />
+                                        ),
+                                        action: onOpenCheats,
+                                        key: "cheats",
+                                    },
+                                    {
+                                        display: "Screenshot",
+                                        icon: (
+                                            <PhotoCameraIcon fontSize="small" />
+                                        ),
+                                        action: onScreenshot,
+                                        key: "screenshot",
+                                    },
+                                    {
+                                        display: "Load State",
+                                        icon: (
+                                            <FileUploadIcon fontSize="small" />
+                                        ),
+                                        action: onLoadState,
+                                        key: "load-state",
+                                    },
+                                    {
+                                        display: "Save State",
+                                        icon: (
+                                            <FileDownloadIcon fontSize="small" />
+                                        ),
+                                        action: onSaveState,
+                                        key: "save-state",
+                                    },
+                                ]}
                             >
-                                Cheats
-                            </Button>
+                                Game Tools
+                            </MenuButton>
                         </HeaderGrid>
                         <Divider />
                     </div>
@@ -142,8 +181,8 @@ const StandardView = ({
                     >
                         <BufferFileUpload
                             label="Load ROM"
-                            onFileSelect={onRomBufferChange}
-                            uploadedFile={romBuffer}
+                            onFileSelect={onRomChange}
+                            uploadedFile={rom}
                             variant="contained"
                             accept=".gb,.gbc"
                             startIcon={<FileUploadIcon />}
@@ -168,7 +207,7 @@ const StandardView = ({
                         {!playing || paused ? (
                             <Button
                                 variant="contained"
-                                disabled={!romBuffer}
+                                disabled={!rom}
                                 onClick={paused ? onResume : onPlay}
                                 startIcon={<PlayArrowIcon />}
                             >
@@ -201,28 +240,14 @@ const StandardView = ({
                         </Button>
                     </CssGrid>
                 </GameSelectionGrid>
-                <GameScreenGrid
-                    gap={GapSize.large}
-                    orientation={Orientation.vertical}
-                    justifyItems={isMobile ? undefined : Position.start}
-                    isMobile={isMobile}
-                >
-                    <Button
-                        startIcon={<PhotoCameraIcon />}
-                        onClick={onScreenshot}
-                        disabled={!playing && !paused}
-                        color="secondary"
-                        variant="contained"
-                    >
-                        Screenshot
-                    </Button>
+                <GameScreenWrapper>
                     <GameScreen
                         playing={playing}
                         paused={paused}
                         ref={canvasRef}
                         fullscreen={false}
                     />
-                </GameScreenGrid>
+                </GameScreenWrapper>
             </CssGrid>
             {(isTablet || isMobile) && <GamePad playing={playing} />}
         </AppGrid>
@@ -234,7 +259,7 @@ interface StandardViewProps {
     readonly playing: boolean;
     readonly paused: boolean;
     readonly mode: GameBoyMode;
-    readonly romBuffer: FileBufferObject | null;
+    readonly rom: FileBufferObject | null;
     readonly onOpenControls: () => void;
     readonly onOpenCheats: () => void;
     readonly onPlay: () => void;
@@ -244,7 +269,9 @@ interface StandardViewProps {
     readonly onReset: () => void;
     readonly onFullscreen: () => void;
     readonly onModeChange: (mode: GameBoyMode) => void;
-    readonly onRomBufferChange: (romBuffer: FileBufferObject | null) => void;
+    readonly onRomChange: (rom: FileBufferObject | null) => void;
+    readonly onLoadState: () => void;
+    readonly onSaveState: () => void;
     readonly canvasRef: RefObject<HTMLCanvasElement>;
 }
 

@@ -2,14 +2,15 @@ use crate::cpu::microops;
 use crate::emulator::{is_cgb, Emulator};
 use crate::mmu;
 use crate::utils::is_bit_set;
+use bincode::{Encode, Decode};
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Encode, Decode, Debug, PartialEq, Eq)]
 pub enum VRAMTransferMode {
     GeneralPurpose,
     HBlank
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Encode, Decode)]
 pub struct HDMAState {
     pub hdma1: u8,
     pub hdma2: u8,

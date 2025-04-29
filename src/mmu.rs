@@ -1,11 +1,12 @@
 use crate::bios::{CGB_BOOT, DMG_BOOTIX};
-use crate::mmu::cartridge::{initialize_cartridge_mapper, CartridgeMapper};
 use crate::{apu, cheats, dma, gpu, serial};
 use crate::cpu::hdma;
 use crate::emulator::{is_cgb, Emulator};
+use crate::mmu::cartridge::{initialize_cartridge_mapper, CartridgeMapper, CartridgeMapperSnapshot};
 use crate::mmu::effects::empty_cartridge_effects;
 use crate::speed_switch;
 use crate::keys;
+use bincode::{Decode, Encode};
 use std::io;
 
 pub use crate::mmu::cartridge::CartridgeHeader;
@@ -22,6 +23,15 @@ pub struct Memory {
     pub processor_test_ram: [u8; 0xFFFF]
 }
 
+#[derive(Clone, Encode, Decode)]
+pub struct MemorySnapshot {
+    pub in_bios: bool,
+    pub working_ram: [u8; 0x10000],
+    pub zero_page_ram: [u8; 0x80],
+    pub svbk: u8,
+    pub cartridge: CartridgeMapperSnapshot
+}
+
 pub fn initialize_memory() -> Memory {
     Memory {
         in_bios: true,
@@ -32,6 +42,24 @@ pub fn initialize_memory() -> Memory {
         cartridge_mapper: initialize_cartridge_mapper(empty_cartridge_effects()),
         processor_test_ram: [0; 0xFFFF]
     }
+}
+
+pub fn as_snapshot(memory: &Memory) -> MemorySnapshot {
+    MemorySnapshot {
+        in_bios: memory.in_bios,
+        working_ram: memory.working_ram,
+        zero_page_ram: memory.zero_page_ram,
+        svbk: memory.svbk,
+        cartridge: memory.cartridge_mapper.get_snapshot()
+    }
+}
+
+pub fn apply_snapshot(emulator: &mut Emulator, snapshot: MemorySnapshot) {
+    emulator.memory.in_bios = snapshot.in_bios;
+    emulator.memory.working_ram = snapshot.working_ram;
+    emulator.memory.zero_page_ram = snapshot.zero_page_ram;
+    emulator.memory.svbk = snapshot.svbk;
+    emulator.memory.cartridge_mapper.apply_snapshot(snapshot.cartridge);
 }
 
 pub fn load_bios(emulator: &mut Emulator) {

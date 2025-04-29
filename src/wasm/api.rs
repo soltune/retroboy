@@ -4,8 +4,10 @@ use crate::emulator::Emulator;
 use crate::emulator::Mode;
 use crate::emulator::CartridgeHeader;
 use crate::keys::{self, Key};
+use crate::save_state;
 use crate::wasm::emulator_settings::EmulatorSettings;
 use crate::wasm::rom_metadata::{RomMetadata, RomMetadataResult};
+use crate::wasm::save_state_result::SaveStateResult;
 use crate::wasm::wasm_cartridge_effects::WasmCartridgeEffects;
 use crate::wasm::wasm_rtc_state::WasmRTCState;
 use std::cell::RefCell;
@@ -180,5 +182,27 @@ pub fn unregister_cheat(cheat_id: &str) {
     EMULATOR.with(|emulator_cell| {
         let mut emulator = emulator_cell.borrow_mut();
         cheats::unregister_cheat(&mut emulator, cheat_id)
+    })
+}
+
+#[wasm_bindgen(js_name = encodeSaveState)]
+pub fn encode_save_state() -> SaveStateResult {
+    EMULATOR.with(|emulator_cell| {
+        let emulator = emulator_cell.borrow();
+        match save_state::encode_save_state(&emulator) {
+            Ok(state_bytes) => SaveStateResult::new(None, Some(state_bytes)),
+            Err(e) => SaveStateResult::new(Some(e.to_string()), None)
+        }
+    })
+}
+
+#[wasm_bindgen(js_name = applySaveState)]
+pub fn apply_save_state(data: &[u8]) -> Option<String> {
+    EMULATOR.with(|emulator_cell| {
+        let mut emulator = emulator_cell.borrow_mut();
+        match save_state::apply_save_state(&mut emulator, data) {
+            Ok(_) => None,
+            Err(e) => Some(e.to_string())
+        }
     })
 }

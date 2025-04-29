@@ -1,10 +1,11 @@
 use crate::cpu::interrupts::InterruptRegisters;
 use crate::emulator::Emulator;
+use bincode::{Encode, Decode};
 
 const BASE_SPEED_RATE: u8 = 4;
 const DIVIDER_RATE: u8 = 16;
 
-#[derive(Debug)]
+#[derive(Clone, Encode, Decode, Debug)]
 pub struct TimerRegisters {
     pub m_cycles_clock: u8,
     pub divider_clock: u8,

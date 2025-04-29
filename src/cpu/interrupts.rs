@@ -1,6 +1,7 @@
 use crate::cpu::jumps;
 use crate::cpu::microops;
 use crate::emulator::Emulator;
+use bincode::{Encode, Decode};
 
 pub enum InterruptType {
     VBlank,
@@ -10,7 +11,7 @@ pub enum InterruptType {
     JoypadPress
 }
 
-#[derive(Debug)]
+#[derive(Clone, Encode, Decode, Debug)]
 pub struct InterruptRegisters {
     pub enabled: u8,
     pub flags: u8

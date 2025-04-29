@@ -1,6 +1,7 @@
 use crate::emulator::Emulator;
+use bincode::{Encode, Decode};
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Encode, Decode)]
 pub struct Registers {
     pub a: u8,
     pub b: u8,
@@ -15,29 +16,27 @@ pub struct Registers {
     pub stack_pointer: u16
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Encode, Decode)]
 pub struct Interrupts {
     enable_delay: u8,
     disable_delay: u8,
     enabled: bool
 }
 
-#[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(Clone, Debug, Encode, Decode, PartialEq)]
 pub enum BusActivityType {
     Read,
     Write
 }
 
-#[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(Clone, Debug, PartialEq, Encode, Decode)]
 pub struct BusActivityEntry {
     pub address: u16,
     pub value: u8,
     pub activity_type: BusActivityType
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Encode, Decode)]
 pub struct CpuState {
     pub registers: Registers,
     pub halted: bool,

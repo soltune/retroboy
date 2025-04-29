@@ -1,6 +1,8 @@
 use crate::utils::is_bit_set;
+use bincode::{Encode, Decode};
 
-#[derive(Debug)]
+
+#[derive(Clone, Debug, Encode, Decode)]
 pub struct Envelope {
     pub initial_settings: u8,
     pub current_volume: u8,

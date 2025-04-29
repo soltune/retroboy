@@ -3,7 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { FileBufferObject } from "./components/bufferFileUpload";
 import { gameBoyModes } from "./components/modeSwitch";
 import {
+    applySaveState,
     EmulatorSettings,
+    encodeSaveState,
     initializeEmulator,
     registerGamegenieCheat,
     registerGamesharkCheat,
@@ -31,7 +33,7 @@ const Interface = (): JSX.Element => {
     const { displayTopLevelComponent, removeTopLevelComponent } =
         useTopLevelRenderer();
 
-    const [romBuffer, setRomBuffer] = useState(null as FileBufferObject | null);
+    const [rom, setRom] = useState(null as FileBufferObject | null);
 
     const [gameKey, setGameKey] = useState(null as string | null);
     const [playing, setPlaying] = useState(false);
@@ -49,7 +51,7 @@ const Interface = (): JSX.Element => {
         setPlaying(false);
         setPaused(false);
         resetEmulator();
-        setRomBuffer(null);
+        setRom(null);
     };
 
     const [audioContextRef, startReset] = useAudioSync(playing, resetGame);
@@ -78,7 +80,7 @@ const Interface = (): JSX.Element => {
     };
 
     const playGame = () => {
-        if (romBuffer) {
+        if (rom) {
             if (!audioContextRef.current) {
                 audioContextRef.current = new AudioContext();
             }
@@ -88,7 +90,7 @@ const Interface = (): JSX.Element => {
                 audioContextRef.current.sampleRate,
             );
             const { error, metadata } = initializeEmulator(
-                romBuffer.data,
+                rom.data,
                 emulatorSettings,
             );
 
@@ -169,16 +171,14 @@ const Interface = (): JSX.Element => {
         );
     };
 
-    const handleRomBufferChange = (
-        fileObject: FileBufferObject | null,
-    ): void => {
+    const handleRomChange = (fileObject: FileBufferObject | null): void => {
         if (
             fileObject?.filename.endsWith(".gbc") &&
             mode === gameBoyModes.dmg
         ) {
             setMode(gameBoyModes.cgb);
         }
-        setRomBuffer(fileObject);
+        setRom(fileObject);
     };
 
     const openCheats = (): void => {
@@ -194,6 +194,58 @@ const Interface = (): JSX.Element => {
                     }}
                 />,
             );
+        }
+    };
+
+    const loadState = (): void => {
+        if (gameKey) {
+            const input = document.createElement("input");
+            input.type = "file";
+            input.accept = ".rbs";
+            input.onchange = async () => {
+                const file = input.files?.[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = async () => {
+                        const error = applySaveState(
+                            new Uint8Array(reader.result as ArrayBuffer),
+                        );
+                        if (error) {
+                            openErrorDialog(error);
+                        }
+                    };
+                    reader.onerror = () => {
+                        console.error("Failed to read file:", reader.error);
+                        openErrorDialog(
+                            "Failed to read file. Please try again.",
+                        );
+                    };
+
+                    reader.readAsArrayBuffer(file);
+                }
+            };
+            input.click();
+        }
+    };
+
+    const saveState = (): void => {
+        if (gameKey && rom) {
+            const result = encodeSaveState();
+            if (result.error) {
+                openErrorDialog(result.error);
+            } else if (result.saveState) {
+                const blob = new Blob([result.saveState], {
+                    type: "application/octet-stream",
+                });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                const saveStateName = rom.filename.split(".")[0];
+                const filename = `${saveStateName}.rbs`;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
         }
     };
 
@@ -229,9 +281,9 @@ const Interface = (): JSX.Element => {
             gameKey={gameKey}
             playing={playing}
             paused={paused}
-            romBuffer={romBuffer}
+            rom={rom}
             mode={mode}
-            onRomBufferChange={handleRomBufferChange}
+            onRomChange={handleRomChange}
             onModeChange={setMode}
             onPlay={playGame}
             onPause={pauseGame}
@@ -241,6 +293,8 @@ const Interface = (): JSX.Element => {
             onScreenshot={downloadScreenshot}
             onOpenControls={openControls}
             onOpenCheats={openCheats}
+            onLoadState={loadState}
+            onSaveState={saveState}
             canvasRef={canvasRef}
         />
     );

@@ -1,7 +1,8 @@
 use crate::emulator::Emulator;
 use crate::{gpu, mmu};
+use bincode::{Encode, Decode};
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Encode, Decode)]
 pub struct DMAState {
     pub source: u16,
     pub offset: u8,

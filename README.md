@@ -17,6 +17,7 @@ Retro Boy is a cycle-accurate Game Boy emulator written in Rust. It uses `wasm-p
 - RTC support for MBC3 cartridges
 - Cartridge RAM that persists to browser local storage for battery-backed cartridges
 - Support for GameShark or GameGenie cheats
+- Basic support for save states
 - A web frontend that supports:
   - Fullscreen mode
   - Pausing/resuming
