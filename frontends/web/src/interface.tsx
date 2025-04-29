@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 
-import { FileBufferObject } from "./components/bufferFileUpload";
+import {
+    buildFileBufferObject,
+    FileBufferObject,
+} from "./components/bufferFileUpload";
 import { gameBoyModes } from "./components/modeSwitch";
 import {
     applySaveState,
@@ -202,26 +205,14 @@ const Interface = (): JSX.Element => {
             const input = document.createElement("input");
             input.type = "file";
             input.accept = ".rbs";
-            input.onchange = () => {
+            input.onchange = async () => {
                 const file = input.files?.[0];
                 if (file) {
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                        const error = applySaveState(
-                            new Uint8Array(reader.result as ArrayBuffer),
-                        );
-                        if (error) {
-                            openErrorDialog(error);
-                        }
-                    };
-                    reader.onerror = () => {
-                        console.error("Failed to read file:", reader.error);
-                        openErrorDialog(
-                            "Failed to read file. Please try again.",
-                        );
-                    };
-
-                    reader.readAsArrayBuffer(file);
+                    const bufferObject = await buildFileBufferObject(file);
+                    const error = applySaveState(bufferObject.data);
+                    if (error) {
+                        openErrorDialog(error);
+                    }
                 }
             };
             input.click();

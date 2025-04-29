@@ -3,20 +3,16 @@ import { FileUploadButton, FileUploadButtonProps } from "./fileUploadButton";
 
 import { useIsMobile } from "../hooks/useResponsiveBreakpoint";
 
-const processFile = (
-    uploadedFile: File | null,
-): Promise<FileBufferObject | null> =>
+export const buildFileBufferObject = (
+    uploadedFile: File,
+): Promise<FileBufferObject> =>
     new Promise(resolve => {
-        if (uploadedFile) {
-            uploadedFile.arrayBuffer().then(buffer => {
-                resolve({
-                    filename: uploadedFile.name,
-                    data: new Uint8Array(buffer),
-                });
+        uploadedFile.arrayBuffer().then(buffer => {
+            resolve({
+                filename: uploadedFile.name,
+                data: new Uint8Array(buffer),
             });
-        } else {
-            resolve(null);
-        }
+        });
     });
 
 const getFieldFileUploadLabel = (value: FileBufferObject | null): string => {
@@ -47,16 +43,19 @@ export const BufferFileUpload = ({
 
                     const file = fileList[0];
 
-                    try {
-                        const bufferObject = await processFile(file);
-                        if (bufferObject) {
-                            onFileSelect(bufferObject);
+                    if (file) {
+                        try {
+                            const bufferObject =
+                                await buildFileBufferObject(file);
+                            if (bufferObject) {
+                                onFileSelect(bufferObject);
+                            }
+                        } catch (err) {
+                            console.error(
+                                "An error occurred while processing the file",
+                                err,
+                            );
                         }
-                    } catch (err) {
-                        console.error(
-                            "An error occurred while processing the file",
-                            err,
-                        );
                     }
                 }}
             >
