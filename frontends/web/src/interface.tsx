@@ -214,6 +214,13 @@ const Interface = (): JSX.Element => {
                             openErrorDialog(error);
                         }
                     };
+                    reader.onerror = () => {
+                        console.error("Failed to read file:", reader.error);
+                        openErrorDialog(
+                            "Failed to read file. Please try again.",
+                        );
+                    };
+
                     reader.readAsArrayBuffer(file);
                 }
             };
