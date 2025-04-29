@@ -47,9 +47,7 @@ export const BufferFileUpload = ({
                         try {
                             const bufferObject =
                                 await buildFileBufferObject(file);
-                            if (bufferObject) {
-                                onFileSelect(bufferObject);
-                            }
+                            onFileSelect(bufferObject);
                         } catch (err) {
                             console.error(
                                 "An error occurred while processing the file",
