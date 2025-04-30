@@ -224,6 +224,7 @@ const Interface = (): JSX.Element => {
                     openErrorDialog("Unable to read uploaded file.");
                 }
             };
+            input.value = "";
             input.click();
         }
     };
