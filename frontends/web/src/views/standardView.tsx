@@ -3,7 +3,6 @@ import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import GamepadIcon from "@mui/icons-material/Gamepad";
-import MenuIcon from "@mui/icons-material/Menu";
 import PauseIcon from "@mui/icons-material/Pause";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
@@ -17,8 +16,10 @@ import {
     FileBufferObject,
 } from "../components/bufferFileUpload";
 import { CssGrid, GapSize, Orientation, Position } from "../components/cssGrid";
+import { openFileDialog } from "../components/fileUploadButton";
 import GamePad from "../components/gamePad";
 import GameScreen from "../components/gameScreen";
+import { HiddenInput } from "../components/inputStyles";
 import { MenuButton } from "../components/menuButton";
 import { GameBoyMode, ModeSwitch } from "../components/modeSwitch";
 import {
@@ -64,9 +65,10 @@ const StandardView = ({
     onFullscreen,
     onModeChange,
     onRomChange,
-    onLoadState,
+    onLoadStateChange,
     onSaveState,
     canvasRef,
+    loadStateRef,
 }: StandardViewProps): JSX.Element => {
     const breakpoint = useResponsiveBreakpoint();
 
@@ -78,6 +80,12 @@ const StandardView = ({
             justifyContent={isTablet || isMobile ? undefined : Position.center}
             alignItems={isTablet || isMobile ? Position.end : Position.center}
         >
+            <HiddenInput
+                type="file"
+                accept=".rbs"
+                ref={loadStateRef}
+                onChange={onLoadStateChange}
+            />
             <CssGrid
                 gap={isTablet || isMobile ? GapSize.large : GapSize.giant}
                 alignItems={Position.center}
@@ -146,7 +154,9 @@ const StandardView = ({
                                         icon: (
                                             <FileUploadIcon fontSize="small" />
                                         ),
-                                        action: onLoadState,
+                                        action: () => {
+                                            openFileDialog(loadStateRef);
+                                        },
                                         key: "load-state",
                                     },
                                     {
@@ -270,9 +280,12 @@ interface StandardViewProps {
     readonly onFullscreen: () => void;
     readonly onModeChange: (mode: GameBoyMode) => void;
     readonly onRomChange: (rom: FileBufferObject | null) => void;
-    readonly onLoadState: () => void;
+    readonly onLoadStateChange: (
+        event: React.ChangeEvent<HTMLInputElement>,
+    ) => Promise<void>;
     readonly onSaveState: () => void;
     readonly canvasRef: RefObject<HTMLCanvasElement>;
+    readonly loadStateRef: RefObject<HTMLInputElement>;
 }
 
 export default StandardView;

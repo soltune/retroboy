@@ -2,9 +2,7 @@ import Button, { ButtonProps } from "@mui/material/Button";
 import { styled } from "@mui/material/styles";
 import { useRef } from "react";
 
-const HiddenFileInput = styled("input")`
-    display: none;
-`;
+import { HiddenInput } from "./inputStyles";
 
 const UploadButton = styled(Button)`
     width: 100%;
@@ -27,7 +25,7 @@ export const FileUploadButton = ({
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     return (
         <div>
-            <HiddenFileInput
+            <HiddenInput
                 type="file"
                 accept={accept}
                 ref={fileInputRef}

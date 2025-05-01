@@ -48,6 +48,7 @@ const Interface = (): JSX.Element => {
     useKeyListeners(playing, usingModal);
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const loadStateRef = useRef<HTMLInputElement>(null);
 
     const resetGame = (): void => {
         setGameKey(null);
@@ -200,32 +201,29 @@ const Interface = (): JSX.Element => {
         }
     };
 
-    const loadState = (): void => {
-        if (gameKey) {
-            const input = document.createElement("input");
-            input.type = "file";
-            input.accept = ".rbs";
-            input.onchange = async () => {
-                const file = input.files?.[0];
-                if (file) {
-                    try {
-                        const bufferObject = await buildFileBufferObject(file);
-                        const error = applySaveState(bufferObject.data);
-                        if (error) {
-                            openErrorDialog(error);
-                        }
-                    } catch (err) {
-                        openErrorDialog(
-                            "An error occurred while loading the save state.",
-                        );
-                        console.error("Error loading save state:", err);
-                    }
-                } else {
-                    openErrorDialog("Unable to read uploaded file.");
+    const handleLoadStateChange = async (
+        event: React.ChangeEvent<HTMLInputElement>,
+    ): Promise<void> => {
+        const fileList = event.target.files;
+        if (!fileList) return;
+        const file = fileList[0];
+        if (file) {
+            try {
+                const bufferObject = await buildFileBufferObject(file);
+                const error = applySaveState(bufferObject.data);
+                if (error) {
+                    openErrorDialog(error);
                 }
-            };
-            input.value = "";
-            input.click();
+            } catch (err) {
+                openErrorDialog(
+                    "An error occurred while loading the save state.",
+                );
+                console.error("Error loading save state:", err);
+            }
+
+            if (loadStateRef.current) {
+                loadStateRef.current.value = "";
+            }
         }
     };
 
@@ -294,9 +292,10 @@ const Interface = (): JSX.Element => {
             onScreenshot={downloadScreenshot}
             onOpenControls={openControls}
             onOpenCheats={openCheats}
-            onLoadState={loadState}
+            onLoadStateChange={handleLoadStateChange}
             onSaveState={saveState}
             canvasRef={canvasRef}
+            loadStateRef={loadStateRef}
         />
     );
 };
