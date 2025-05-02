@@ -59,9 +59,10 @@ const loadRam = (key: string): Uint8Array | null => {
 };
 
 const saveRam = debounce((key: string, value: Uint8Array) => {
-    const encodedCartridgeRam = btoa(
-        String.fromCharCode.apply(null, Array.from(value)),
-    );
+    const binaryString = Array.from(value)
+        .map(byte => String.fromCharCode(byte))
+        .join("");
+    const encodedCartridgeRam = btoa(binaryString);
     localStorage.setItem(key, encodedCartridgeRam);
 }, DEBOUNCE_DELAY);
 
