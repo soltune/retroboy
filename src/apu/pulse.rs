@@ -110,7 +110,7 @@ pub fn trigger(channel: &mut PulseChannel, with_sweep: bool) {
     }
     period::trigger(&mut channel.period);
     length::reload_timer_with_maximum(&mut channel.length);
-    envelope::trigger(&mut channel.envelope);
+    envelope::reset_settings(&mut channel.envelope);
     if with_sweep {
         sweep::trigger(channel);
     }

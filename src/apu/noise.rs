@@ -125,7 +125,7 @@ pub fn trigger(channel: &mut NoiseChannel) {
     channel.period_divider = calculate_period_divider(channel);
     channel.lfsr = 0;
     length::reload_timer_with_maximum(&mut channel.length);
-    envelope::trigger(&mut channel.envelope);
+    envelope::reset_settings(&mut channel.envelope);
 }
 
 pub fn disable(channel: &mut NoiseChannel) {

@@ -43,7 +43,7 @@ pub fn step(envelope: &mut Envelope) {
     }
 }
 
-pub fn trigger(envelope: &mut Envelope) {
+pub fn reset_settings(envelope: &mut Envelope) {
     let initial_timer = envelope.initial_settings & 0b00000111;
     let initial_volume = (envelope.initial_settings & 0b11110000) >> 4;
     envelope.timer = initial_timer;

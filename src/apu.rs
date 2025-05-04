@@ -370,6 +370,7 @@ pub fn set_ch4_control(emulator: &mut Emulator, new_control_value: u8) {
 pub fn set_ch1_envelope_settings(emulator: &mut Emulator, new_envelope_settings: u8) {
     if emulator.apu.enabled{
         emulator.apu.channel1.envelope.initial_settings = new_envelope_settings;
+        envelope::reset_settings(&mut emulator.apu.channel1.envelope);
 
         let should_disable = should_disable_dac(&emulator.apu.channel1.envelope);
     
@@ -384,6 +385,7 @@ pub fn set_ch1_envelope_settings(emulator: &mut Emulator, new_envelope_settings:
 pub fn set_ch2_envelope_settings(emulator: &mut Emulator, new_envelope_settings: u8) {
     if emulator.apu.enabled {
         emulator.apu.channel2.envelope.initial_settings = new_envelope_settings;
+        envelope::reset_settings(&mut emulator.apu.channel2.envelope);
 
         let should_disable = should_disable_dac(&emulator.apu.channel2.envelope);
     
@@ -410,6 +412,7 @@ pub fn set_ch3_dac_enabled(emulator: &mut Emulator, new_dac_enabled_register_val
 pub fn set_ch4_envelope_settings(emulator: &mut Emulator, new_envelope_settings: u8) {
     if emulator.apu.enabled {
         emulator.apu.channel4.envelope.initial_settings = new_envelope_settings;
+        envelope::reset_settings(&mut emulator.apu.channel4.envelope);
 
         let should_disable = should_disable_dac(&emulator.apu.channel4.envelope);
     
