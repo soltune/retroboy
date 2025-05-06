@@ -1,4 +1,4 @@
-name: Rust
+name: Deployment
 
 on: [push]
 
@@ -12,10 +12,31 @@ jobs:
     steps:
       - name: Install WASM Pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
       - uses: actions/checkout@v4
+
       - name: Build
         run: cargo build --verbose
+
       - name: Run tests
         run: cargo test --verbose
+
       - name: Build WASM
         run: sh ./build-wasm.sh
+
+      - name: Set Node.js 16.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.x
+
+      - name: Run install
+        uses: borales/actions-yarn@v4
+        working-directory: ./frontends/web
+        with:
+          cmd: install
+
+      - name: Build production bundle
+        uses: borales/actions-yarn@v4
+        working-directory: ./frontends/web
+        with:
+          cmd: build
