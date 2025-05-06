@@ -3,7 +3,7 @@ name: Push to gh-pages branch
 on:
   push:
     branches:
-      - actions-workflow
+      - main
 
 permissions:
   contents: write
