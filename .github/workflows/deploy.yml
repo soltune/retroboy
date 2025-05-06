@@ -1,6 +1,9 @@
 name: Push to gh-pages branch
 
-on: [push]
+on:
+  push:
+    branches:
+      - actions-workflow
 
 env:
   CARGO_TERM_COLOR: always
@@ -41,7 +44,7 @@ jobs:
           cmd: build
           dir: ./frontends/web
 
-      - name: Deploy
+      - name: Push to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
