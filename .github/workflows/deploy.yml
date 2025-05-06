@@ -1,4 +1,4 @@
-name: Deploy to Github Pages
+name: Push to gh-pages branch
 
 on: [push]
 
@@ -45,4 +45,4 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./frontends/web/public
+          publish_dir: ./frontends/web/build
