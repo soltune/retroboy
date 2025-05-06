@@ -33,10 +33,10 @@ jobs:
         uses: borales/actions-yarn@v4
         with:
           cmd: install
-          working-directory: ./frontends/web
+          dir: ./frontends/web
 
       - name: Build production bundle
         uses: borales/actions-yarn@v4
         with:
           cmd: build
-          working-directory: ./frontends/web
+          dir: ./frontends/web
