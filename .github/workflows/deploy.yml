@@ -31,12 +31,12 @@ jobs:
 
       - name: Run install
         uses: borales/actions-yarn@v4
-        working-directory: ./frontends/web
         with:
           cmd: install
+          working-directory: ./frontends/web
 
       - name: Build production bundle
         uses: borales/actions-yarn@v4
-        working-directory: ./frontends/web
         with:
           cmd: build
+          working-directory: ./frontends/web
