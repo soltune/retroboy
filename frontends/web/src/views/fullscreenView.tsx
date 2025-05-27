@@ -17,6 +17,9 @@ const FullscreenWrapperGrid = styled(CssGrid)`
     height: 100%;
     width: 100%;
     background: black;
+    touch-action: none;
+    overscroll-behavior: none;
+    overflow: hidden;
 `;
 
 const ExitFullscreenButton = styled(Button)`
