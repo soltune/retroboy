@@ -37,8 +37,8 @@ export const initialKeyMap = {
     [gameControls.right]: { key: "ArrowRight", code: "ArrowRight" },
     [gameControls.start]: { key: "Enter", code: "Enter" },
     [gameControls.select]: { key: " ", code: "Space" },
-    [gameControls.b]: { key: "x", code: "KeyX" },
-    [gameControls.a]: { key: "z", code: "KeyZ" },
+    [gameControls.b]: { key: "d", code: "KeyD" },
+    [gameControls.a]: { key: "f", code: "KeyF" },
 } as Record<string, string | KeyMapping>;
 
 const buildKeyDisplay = (keyMapping: string | KeyMapping): string => {

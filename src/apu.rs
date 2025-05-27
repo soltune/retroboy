@@ -72,7 +72,7 @@ const MAX_DIV_APU_STEPS: u8 = 7;
 
 const CPU_RATE: u32 = 4194304;
 const DEFAULT_SAMPLE_RATE: u32 = 44100;
-const MAX_AUDIO_BUFFER_SIZE: usize = 512;
+const MAX_AUDIO_BUFFER_SIZE: usize = 768; // 512 is too small for some PC browsers
 
 const CHANNEL_STEP_RATE: u8 = 4;
 

@@ -5,6 +5,7 @@ import {
     FileBufferObject,
 } from "./components/bufferFileUpload";
 import { gameBoyModes } from "./components/modeSwitch";
+import { RomInfo } from "./components/romSelector";
 import {
     applySaveState,
     EmulatorSettings,
@@ -37,6 +38,10 @@ const Interface = (): JSX.Element => {
         useTopLevelRenderer();
 
     const [rom, setRom] = useState(null as FileBufferObject | null);
+    const [selectedRomInfo, setSelectedRomInfo] = useState(
+        null as RomInfo | null,
+    );
+    const [loadingRom, setLoadingRom] = useState(false);
 
     const [gameKey, setGameKey] = useState(null as string | null);
     const [playing, setPlaying] = useState(false);
@@ -56,6 +61,7 @@ const Interface = (): JSX.Element => {
         setPaused(false);
         resetEmulator();
         setRom(null);
+        //setSelectedRomInfo(null);
     };
 
     const [audioContextRef, startReset] = useAudioSync(playing, resetGame);
@@ -175,14 +181,50 @@ const Interface = (): JSX.Element => {
         );
     };
 
-    const handleRomChange = (fileObject: FileBufferObject | null): void => {
-        if (
-            fileObject?.filename.endsWith(".gbc") &&
-            mode === gameBoyModes.dmg
-        ) {
-            setMode(gameBoyModes.cgb);
+    const handleRomSelect = async (romInfo: RomInfo | null): Promise<void> => {
+        // If a game is currently running, stop it first
+        if (playing || paused) {
+            startReset();
         }
-        setRom(fileObject);
+
+        if (!romInfo) {
+            setRom(null);
+            setSelectedRomInfo(null);
+            return;
+        }
+
+        setLoadingRom(true);
+        setSelectedRomInfo(romInfo);
+
+        try {
+            const response = await fetch(romInfo.path);
+            if (!response.ok) {
+                throw new Error(`Failed to load ROM: ${response.statusText}`);
+            }
+
+            const arrayBuffer = await response.arrayBuffer();
+            const data = new Uint8Array(arrayBuffer);
+            const filename = romInfo.path.split("/").pop() || romInfo.name;
+
+            const fileObject: FileBufferObject = {
+                filename,
+                data,
+            };
+
+            if (filename.endsWith(".gbc") && mode === gameBoyModes.dmg) {
+                setMode(gameBoyModes.cgb);
+            }
+
+            setRom(fileObject);
+        } catch (error) {
+            console.error("Error loading ROM:", error);
+            openErrorDialog(
+                `Failed to load ROM: ${error instanceof Error ? error.message : "Unknown error"}`,
+            );
+            setSelectedRomInfo(null);
+        } finally {
+            setLoadingRom(false);
+        }
     };
 
     const openCheats = (): void => {
@@ -281,8 +323,9 @@ const Interface = (): JSX.Element => {
             playing={playing}
             paused={paused}
             rom={rom}
+            selectedRomInfo={selectedRomInfo}
             mode={mode}
-            onRomChange={handleRomChange}
+            onRomSelect={handleRomSelect}
             onModeChange={setMode}
             onPlay={playGame}
             onPause={pauseGame}

@@ -11,10 +11,7 @@ import VideogameAssetIcon from "@mui/icons-material/VideogameAsset";
 import { Button, Typography, styled, Divider } from "@mui/material";
 import { RefObject } from "react";
 
-import {
-    BufferFileUpload,
-    FileBufferObject,
-} from "../components/bufferFileUpload";
+import { FileBufferObject } from "../components/bufferFileUpload";
 import { CssGrid, GapSize, Orientation, Position } from "../components/cssGrid";
 import { openFileDialog } from "../components/fileUploadButton";
 import GamePad from "../components/gamePad";
@@ -22,10 +19,12 @@ import GameScreen from "../components/gameScreen";
 import { HiddenInput } from "../components/inputStyles";
 import { MenuButton } from "../components/menuButton";
 import { GameBoyMode, ModeSwitch } from "../components/modeSwitch";
+import { RomSelector, RomInfo } from "../components/romSelector";
 import {
     ResponsiveBreakpoint,
     useResponsiveBreakpoint,
 } from "../hooks/useResponsiveBreakpoint";
+import { availableRoms } from "../romList";
 
 const AppGrid = styled(CssGrid)`
     height: 100%;
@@ -57,6 +56,7 @@ const StandardView = ({
     paused,
     mode,
     rom,
+    selectedRomInfo,
     onPlay,
     onPause,
     onResume,
@@ -64,7 +64,7 @@ const StandardView = ({
     onReset,
     onFullscreen,
     onModeChange,
-    onRomChange,
+    onRomSelect,
     onLoadStateChange,
     onSaveState,
     canvasRef,
@@ -176,9 +176,8 @@ const StandardView = ({
                     </div>
                     <Typography>
                         Retro Boy is a Game Boy emulator that can be played on
-                        the web. To use, simply click "Load ROM" to load your
-                        game ROM. Only .gb and .gbc files are supported. Then
-                        click "Play".
+                        the web. To use, simply select a ROM from the dropdown
+                        menu below and click "Play".
                     </Typography>
                     <CssGrid
                         orientation={
@@ -189,13 +188,10 @@ const StandardView = ({
                         gap={isMobile ? GapSize.large : undefined}
                         template="1fr auto"
                     >
-                        <BufferFileUpload
-                            label="Load ROM"
-                            onFileSelect={onRomChange}
-                            uploadedFile={rom}
-                            variant="contained"
-                            accept=".gb,.gbc"
-                            startIcon={<FileUploadIcon />}
+                        <RomSelector
+                            selectedRomName={selectedRomInfo?.name || null}
+                            onRomSelect={onRomSelect}
+                            roms={availableRoms}
                         />
                         <ModeSwitch
                             disabled={playing || paused}
@@ -270,6 +266,7 @@ interface StandardViewProps {
     readonly paused: boolean;
     readonly mode: GameBoyMode;
     readonly rom: FileBufferObject | null;
+    readonly selectedRomInfo: RomInfo | null;
     readonly onOpenControls: () => void;
     readonly onOpenCheats: () => void;
     readonly onPlay: () => void;
@@ -279,7 +276,7 @@ interface StandardViewProps {
     readonly onReset: () => void;
     readonly onFullscreen: () => void;
     readonly onModeChange: (mode: GameBoyMode) => void;
-    readonly onRomChange: (rom: FileBufferObject | null) => void;
+    readonly onRomSelect: (romInfo: RomInfo | null) => void;
     readonly onLoadStateChange: (
         event: React.ChangeEvent<HTMLInputElement>,
     ) => Promise<void>;
