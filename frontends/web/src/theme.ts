@@ -53,6 +53,7 @@ const theme = createTheme({
                 body: {
                     lineHeight: 1.25,
                     height: "100%",
+                    userSelect: "none",
                 },
                 html: {
                     height: "100%",
