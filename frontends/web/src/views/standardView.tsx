@@ -8,6 +8,8 @@ import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import VideogameAssetIcon from "@mui/icons-material/VideogameAsset";
+import VolumeOffIcon from "@mui/icons-material/VolumeOff";
+import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 import { Button, Typography, styled, Divider } from "@mui/material";
 import { RefObject } from "react";
 
@@ -57,6 +59,7 @@ const StandardView = ({
     mode,
     rom,
     selectedRomInfo,
+    muted,
     onPlay,
     onPause,
     onResume,
@@ -67,6 +70,7 @@ const StandardView = ({
     onRomSelect,
     onLoadStateChange,
     onSaveState,
+    onMuteToggle,
     canvasRef,
     loadStateRef,
 }: StandardViewProps): JSX.Element => {
@@ -108,7 +112,9 @@ const StandardView = ({
                                     : Orientation.horizontal
                             }
                             gap={GapSize.large}
-                            template={isMobile ? undefined : "1fr auto auto"}
+                            template={
+                                isMobile ? undefined : "1fr auto auto auto"
+                            }
                             justifyContent={
                                 isMobile ? Position.stretch : undefined
                             }
@@ -169,8 +175,18 @@ const StandardView = ({
                                     },
                                 ]}
                             >
-                                Game Tools
+                                Tools
                             </MenuButton>
+                            <Button
+                                variant="contained"
+                                color="secondary"
+                                onClick={onMuteToggle}
+                                startIcon={
+                                    muted ? <VolumeOffIcon /> : <VolumeUpIcon />
+                                }
+                            >
+                                {muted ? "Unmute" : "Mute"}
+                            </Button>
                         </HeaderGrid>
                         <Divider />
                     </div>
@@ -267,6 +283,7 @@ interface StandardViewProps {
     readonly mode: GameBoyMode;
     readonly rom: FileBufferObject | null;
     readonly selectedRomInfo: RomInfo | null;
+    readonly muted: boolean;
     readonly onOpenControls: () => void;
     readonly onOpenCheats: () => void;
     readonly onPlay: () => void;
@@ -281,6 +298,7 @@ interface StandardViewProps {
         event: React.ChangeEvent<HTMLInputElement>,
     ) => Promise<void>;
     readonly onSaveState: () => void;
+    readonly onMuteToggle: () => void;
     readonly canvasRef: RefObject<HTMLCanvasElement>;
     readonly loadStateRef: RefObject<HTMLInputElement>;
 }

@@ -4,6 +4,7 @@ import { stepUntilNextAudioBuffer } from "../core/retroboyCore";
 
 const useAudioSync = (
     playing: boolean,
+    muted: boolean,
     resetGameCallback: () => void,
 ): [MutableRefObject<AudioContext | null>, () => void] => {
     const audioContextRef = useRef<AudioContext | null>(null);
@@ -71,7 +72,9 @@ const useAudioSync = (
 
                 const duration = bufferLength / audioContext.sampleRate;
 
-                bufferSource.connect(audioContext.destination);
+                if (!muted) {
+                    bufferSource.connect(audioContext.destination);
+                }
 
                 bufferSource.start(nextPlayTimeRef.current);
 
@@ -85,7 +88,7 @@ const useAudioSync = (
                     : duration;
             }
         };
-    }, [playing]);
+    }, [playing, muted]);
 
     useEffect(() => {
         if (playing) {

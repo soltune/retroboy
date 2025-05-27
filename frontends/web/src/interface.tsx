@@ -49,6 +49,7 @@ const Interface = (): JSX.Element => {
     const [mode, setMode] = useState(gameBoyModes.dmg);
     const [fullscreenMode, setFullscreenMode] = useState(false);
     const [usingModal, setUsingModal] = useState(false);
+    const [muted, setMuted] = useState(false);
 
     useKeyListeners(playing, usingModal);
 
@@ -64,7 +65,11 @@ const Interface = (): JSX.Element => {
         //setSelectedRomInfo(null);
     };
 
-    const [audioContextRef, startReset] = useAudioSync(playing, resetGame);
+    const [audioContextRef, startReset] = useAudioSync(
+        playing,
+        muted,
+        resetGame,
+    );
 
     const scrollToGamePad = ({ smooth }: { smooth: boolean }) => {
         window.scrollTo({
@@ -145,6 +150,10 @@ const Interface = (): JSX.Element => {
         if (document.exitFullscreen) {
             document.exitFullscreen().catch(() => {});
         }
+    };
+
+    const toggleMute = (): void => {
+        setMuted(!muted);
     };
 
     const downloadScreenshot = (): void => {
@@ -325,6 +334,7 @@ const Interface = (): JSX.Element => {
             rom={rom}
             selectedRomInfo={selectedRomInfo}
             mode={mode}
+            muted={muted}
             onRomSelect={handleRomSelect}
             onModeChange={setMode}
             onPlay={playGame}
@@ -337,6 +347,7 @@ const Interface = (): JSX.Element => {
             onOpenCheats={openCheats}
             onLoadStateChange={handleLoadStateChange}
             onSaveState={saveState}
+            onMuteToggle={toggleMute}
             canvasRef={canvasRef}
             loadStateRef={loadStateRef}
         />
