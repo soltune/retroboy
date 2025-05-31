@@ -37,7 +37,10 @@ pub fn set_key1(emulator: &mut Emulator, value: u8) {
 pub fn toggle(emulator: &mut Emulator) {
     if is_cgb(emulator) && emulator.speed_switch.armed {
         emulator.speed_switch.armed = false;
-        emulator.speed_switch.cgb_double_speed = !emulator.speed_switch.cgb_double_speed;
+
+        let new_cgb_double_speed = !emulator.speed_switch.cgb_double_speed;
+        emulator.speed_switch.cgb_double_speed = new_cgb_double_speed;
+        emulator.apu.set_cgb_double_speed(new_cgb_double_speed);
     }
 }
 

@@ -83,36 +83,36 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.keys.column = 0x10;
     emulator.keys.select_buttons = 0x04;
 
-    emulator.apu.enabled = true;
-    emulator.apu.sound_panning = 0xF2;
-    emulator.apu.master_volume = 0xC1;
-    emulator.apu.audio_buffer_clock = 84;
+    emulator.apu.set_enabled(true);
+    emulator.apu.set_sound_panning(0xF2);
+    emulator.apu.set_master_volume(0xC1);
+    emulator.apu.set_audio_buffer_clock(84);
 
-    emulator.apu.channel1.sweep.initial_settings = 0xDD;
-    emulator.apu.channel1.length.initial_settings = 0xB0;
-    emulator.apu.channel1.envelope.initial_settings = 0xAA;
-    emulator.apu.channel1.period.low = 0xB2;
-    emulator.apu.channel1.period.high = 0xC2;
+    emulator.apu.channel1().sweep().set_initial_settings(0xDD);
+    emulator.apu.channel1().length().set_initial_settings(0xB0);
+    emulator.apu.channel1().envelope().set_initial_settings(0xAA);
+    emulator.apu.channel1().period().set_low(0xB2);
+    emulator.apu.channel1().period().set_high(0xC2);
 
-    emulator.apu.channel2.length.initial_settings = 0xC0;
-    emulator.apu.channel2.envelope.initial_settings = 0xC1;
-    emulator.apu.channel2.period.low = 0x14;
-    emulator.apu.channel2.period.high = 0x24;
+    emulator.apu.channel2().length().set_initial_settings(0xC0);
+    emulator.apu.channel2().envelope().set_initial_settings(0xC1);
+    emulator.apu.channel2().period().set_low(0x14);
+    emulator.apu.channel2().period().set_high(0x24);
 
-    emulator.apu.channel3.enabled = true;
-    emulator.apu.channel3.dac_enabled = true;
-    emulator.apu.channel3.volume = 0x60;
-    emulator.apu.channel3.period.low = 0xFF;
-    emulator.apu.channel3.period.high = 0x44;
-    emulator.apu.channel3.period.divider = 0x301;
-    emulator.apu.channel3.period.reloaded = true;
-    emulator.apu.channel3.wave_pattern_ram[0x0] = 0xB1;
-    emulator.apu.channel3.wave_pattern_ram[0x1] = 0xD2;
+    emulator.apu.channel3().set_enabled(true);
+    emulator.apu.channel3().set_dac_enabled(true);
+    emulator.apu.channel3().set_volume(0x60);
+    emulator.apu.channel3().period().set_low(0xFF);
+    emulator.apu.channel3().period().set_high(0x44);
+    emulator.apu.channel3().period().set_divider(0x301);
+    emulator.apu.channel3().period().set_reloaded(true);
+    emulator.apu.channel3().write_to_wave_ram(0x0, 0xB1);
+    emulator.apu.channel3().write_to_wave_ram(0x1, 0xD2);
 
-    emulator.apu.channel4.length.initial_settings = 0x1A;
-    emulator.apu.channel4.envelope.initial_settings = 0xD2;
-    emulator.apu.channel4.polynomial = 0xCE;
-    emulator.apu.channel4.control = 0xC0;
+    emulator.apu.channel4().length().set_initial_settings(0x1A);
+    emulator.apu.channel4().envelope().set_initial_settings(0xD2);
+    emulator.apu.channel4().set_polynomial(0xCE);
+    emulator.apu.channel4().set_control(0xC0);
 
     emulator.memory.in_bios = false;
 
@@ -359,7 +359,7 @@ fn reads_from_audio_master_control() {
 fn writes_to_audio_master_control() {
     let mut emulator = setup_emulator_with_test_memory();
     write_byte(&mut emulator, 0xFF26, 0x0);
-    assert_eq!(emulator.apu.enabled, false);
+    assert_eq!(emulator.apu.enabled(), false);
 }
 
 #[test]

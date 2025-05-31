@@ -1,5 +1,4 @@
-use crate::apu;
-use crate::apu::{initialize_apu, ApuState};
+use crate::apu::Apu;
 use crate::cheats::{initialize_cheats, CheatState};
 use crate::cpu::{self, initialize_cpu, timers, CpuState};
 use crate::cpu::interrupts::{initialize_innterrupt_registers, InterruptRegisters};
@@ -31,7 +30,7 @@ pub struct Emulator {
     pub memory: Memory,
     pub gpu: GpuState,
     pub keys: KeyState,
-    pub apu: ApuState,
+    pub apu: Apu,
     pub dma: DMAState,
     pub hdma: HDMAState,
     pub serial: SerialState,
@@ -50,7 +49,7 @@ pub fn initialize_emulator(render: fn(&[u8])) -> Emulator {
         memory: initialize_memory(),
         gpu: initialize_gpu(),
         keys: initialize_keys(),
-        apu: initialize_apu(),
+        apu: Apu::new(),
         dma: initialize_dma(),
         hdma: initialize_hdma(),
         serial: initialize_serial(),
@@ -87,21 +86,25 @@ pub fn get_cartridge_ram(emulator: &Ref<Emulator>) -> Vec<u8> {
     mmu::get_cartridge_ram(&emulator.memory)
 }
 
-pub fn sync(emulator: &mut Emulator) {
+pub fn sync(emulator: &mut Emulator) {    
     timers::step(emulator);
     dma::step(emulator);
     gpu::step(emulator);
-    apu::step(emulator);
+    emulator.apu.step(in_color_bios(emulator), emulator.timers.divider);
     serial::step(emulator);
 }
 
 pub fn set_mode(emulator: &mut Emulator, mode: Mode) {
     emulator.mode = mode;
+
+    let is_cgb = is_cgb(emulator);
+    emulator.apu.set_cgb_mode(is_cgb);
+    
     mmu::load_bios(emulator);
 }
 
 pub fn set_sample_rate(emulator: &mut Emulator, sample_rate: u32) {
-    apu::set_sample_rate(emulator, sample_rate);
+    emulator.apu.set_sample_rate(sample_rate);
 }
 
 pub fn step(emulator: &mut Emulator) {
@@ -109,14 +112,14 @@ pub fn step(emulator: &mut Emulator) {
 }
 
 pub fn step_until_next_audio_buffer(emulator: &mut Emulator) -> (&[f32], &[f32]) {
-    apu::clear_audio_buffers(emulator);
+    emulator.apu.clear_audio_buffers();
 
-    while !apu::audio_buffers_full(emulator) {
+    while !emulator.apu.audio_buffers_full() {
         step(emulator);
     }
 
-    let left_samples_slice = apu::get_left_sample_queue(emulator);
-    let right_samples_slice = apu::get_right_sample_queue(emulator);
+    let left_samples_slice = emulator.apu.get_left_sample_queue();
+    let right_samples_slice = emulator.apu.get_right_sample_queue();
 
     (left_samples_slice, right_samples_slice)
 }
