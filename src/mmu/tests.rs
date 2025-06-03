@@ -80,8 +80,8 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.gpu.registers.palettes.obp0 = 0x1B;
     emulator.gpu.registers.palettes.obp1 = 0xE4;
 
-    emulator.keys.column = 0x10;
-    emulator.keys.select_buttons = 0x04;
+    emulator.joypad.set_column(0x10);
+    emulator.joypad.set_select_buttons(0x4);
 
     emulator.apu.set_enabled(true);
     emulator.apu.set_sound_panning(0xF2);

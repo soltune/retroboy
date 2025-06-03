@@ -4,7 +4,7 @@ pub mod gpu;
 pub mod dma;
 pub mod apu;
 pub mod utils;
-pub mod keys;
+pub mod joypad;
 pub mod emulator;
 pub mod wasm;
 pub mod speed_switch;

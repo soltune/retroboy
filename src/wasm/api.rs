@@ -3,7 +3,7 @@ use crate::emulator;
 use crate::emulator::Emulator;
 use crate::emulator::Mode;
 use crate::emulator::CartridgeHeader;
-use crate::keys::{self, Key};
+use crate::joypad::Key;
 use crate::save_state;
 use crate::wasm::emulator_settings::EmulatorSettings;
 use crate::wasm::rom_metadata::{RomMetadata, RomMetadataResult};
@@ -136,17 +136,19 @@ pub fn press_key(key_code: &str) {
     as_maybe_key(key_code).map(|key| {
         EMULATOR.with(|emulator_cell| {
             let mut emulator = emulator_cell.borrow_mut();
-            keys::handle_key_press(&mut emulator, &key);
+            let Emulator { joypad, interrupts, .. } = &mut *emulator;
+            joypad.handle_key_press(interrupts, &key);
         })
     });
 }
+
 
 #[wasm_bindgen(js_name = releaseKey)]
 pub fn release_key(key_code: &str) {
     as_maybe_key(key_code).map(|key| {
         EMULATOR.with(|emulator_cell| {
             let mut emulator = emulator_cell.borrow_mut();
-            keys::handle_key_release(&mut emulator, &key);
+            emulator.joypad.handle_key_release(&key);
         })
     });
 }

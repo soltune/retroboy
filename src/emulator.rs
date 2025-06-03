@@ -7,7 +7,7 @@ use crate::cpu::hdma::{HDMAState, initialize_hdma};
 use crate::dma;
 use crate::dma::{initialize_dma, DMAState};
 use crate::gpu::{self, initialize_gpu, GpuState};
-use crate::keys::{initialize_keys, KeyState};
+use crate::joypad::Joypad;
 use crate::mmu::{self, Memory, initialize_memory};
 use crate::serial::{self, initialize_serial, SerialState};
 use crate::speed_switch::{initialize_speed_switch, SpeedSwitch};
@@ -29,7 +29,7 @@ pub struct Emulator {
     pub timers: TimerRegisters,
     pub memory: Memory,
     pub gpu: GpuState,
-    pub keys: KeyState,
+    pub joypad: Joypad,
     pub apu: Apu,
     pub dma: DMAState,
     pub hdma: HDMAState,
@@ -48,7 +48,7 @@ pub fn initialize_emulator(render: fn(&[u8])) -> Emulator {
         timers: initialize_timer_registers(),
         memory: initialize_memory(),
         gpu: initialize_gpu(),
-        keys: initialize_keys(),
+        joypad: Joypad::new(),
         apu: Apu::new(),
         dma: initialize_dma(),
         hdma: initialize_hdma(),
