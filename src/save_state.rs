@@ -31,7 +31,7 @@ pub struct SaveStateSnapshot {
     pub speed_switch: SpeedSwitch
 }
 
-pub const MAJOR_VERSION: u8 = 2;
+pub const MAJOR_VERSION: u8 = 3;
 pub const HEADER_IDENTIFIER: &str = "HEADER";
 pub const STATE_IDENTIFIER: &str = "STATE";
 pub const FORMAT_ERROR: &str = "The provided save state file is in an invalid format.";
