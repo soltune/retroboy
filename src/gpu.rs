@@ -1,9 +1,7 @@
-use crate::emulator::Emulator;
-use crate::emulator::Mode;
-use crate::cpu::hdma;
-use crate::gpu::colors::{initialize_palettes, Palettes};
+use crate::cpu::interrupts::InterruptRegisters;
+use crate::cpu::hdma::{self, HDMAState};
+use crate::gpu::palettes::Palettes;
 use crate::gpu::constants::{GB_SCREEN_HEIGHT, GB_SCREEN_WIDTH, BYTES_PER_COLOR};
-use crate::gpu::scanline::write_scanline;
 use crate::gpu::utils::{get_lcd_enabled_mode, get_window_enabled_mode};
 use crate::utils::get_t_cycle_increment;
 use crate::utils::is_bit_set;
@@ -11,29 +9,38 @@ use bincode::{Encode, Decode};
 
 #[derive(Clone, Debug, Encode, Decode)]
 pub struct GpuRegisters {
-    pub lcdc: u8,
-    pub scy: u8,
-    pub scx: u8,
-    pub wx: u8,
-    pub wy: u8,
-    pub wly: u8,
-    pub ly: u8,
-    pub lyc: u8,
-    pub stat: u8,
-    pub palettes: Palettes,
-    pub cgb_vbk: u8,
-    pub cgb_opri: u8,
-    pub key0: u8
+    lcdc: u8,
+    scy: u8,
+    scx: u8,
+    wx: u8,
+    wy: u8,
+    wly: u8,
+    ly: u8,
+    lyc: u8,
+    stat: u8,
+    palettes: Palettes,
+    cgb_vbk: u8,
+    cgb_opri: u8,
+    key0: u8
 }
 
 #[derive(Clone, Debug, Encode, Decode)]
-pub struct GpuState {
-    pub mode: u8,
-    pub mode_clock: u16,
-    pub registers: GpuRegisters,
-    pub frame_buffer: Vec<u8>,
-    pub video_ram: [u8; 0x4000],
-    pub object_attribute_memory: [u8; 0xa0]
+pub struct Gpu {
+    mode: u8,
+    mode_clock: u16,
+    registers: GpuRegisters,
+    frame_buffer: Vec<u8>,
+    video_ram: [u8; 0x4000],
+    object_attribute_memory: [u8; 0xa0],
+    cgb_mode: bool,
+    cgb_double_speed: bool,
+}
+
+pub struct GpuParams<'a> {
+    pub interrupt_registers: &'a mut InterruptRegisters,
+    pub hdma: &'a mut HDMAState,
+    pub in_color_bios: bool,
+    pub renderer: fn(&[u8]),
 }
 
 const OAM_MODE: u8 = 2;
@@ -61,299 +68,314 @@ fn initialize_blank_frame() -> Vec<u8> {
     vec![0xFF; (GB_SCREEN_WIDTH * GB_SCREEN_HEIGHT * BYTES_PER_COLOR) as usize]
 }
 
-pub fn initialize_gpu() -> GpuState {
-    GpuState {
-        mode: 2,
-        mode_clock: 0,
-        registers: GpuRegisters {
-            lcdc: 0,
-            scy: 0,
-            scx: 0,
-            wx: 0,
-            wy: 0,
-            wly: 0,
-            ly: 0,
-            lyc: 0,
-            stat: 0,
-            palettes: initialize_palettes(),
-            cgb_vbk: 0,
-            cgb_opri: 0,
-            key0: 0
-        },
-        frame_buffer: initialize_blank_frame(),
-        video_ram: [0; 0x4000],
-        object_attribute_memory: [0; 0xa0]
-    }
-}
-
-pub fn reset_frame_buffer(emulator: &mut Emulator) {
-    emulator.gpu.frame_buffer = initialize_blank_frame();
-}
-
-fn fire_vblank_interrupt(emulator: &mut Emulator) {
-    emulator.interrupts.flags |= 0x1;
-}
-
-fn lyc_check_enabled(emulator: &Emulator) -> bool {
-    is_bit_set(emulator.gpu.registers.stat, STAT_INTERRUPT_LYC_CHECK_BIT) 
-}
-
-fn fire_stat_interrupt(emulator: &mut Emulator) {
-    emulator.interrupts.flags |= 0x2;
-}
-
-fn update_mode(emulator: &mut Emulator, new_mode: u8) {
-    emulator.gpu.mode = new_mode;
-
-    let stat = (emulator.gpu.registers.stat & 0b11111100) | new_mode;
-    emulator.gpu.registers.stat = stat;
-
-    let fire_interrupt_on_mode_switch = (new_mode == OAM_MODE && is_bit_set(stat, OAM_MODE_STAT_SOURCE_BIT))
-        || (new_mode == VBLANK_MODE && is_bit_set(stat, VBLANK_MODE_STAT_SOURCE_BIT))
-        || (new_mode == HBLANK_MODE && is_bit_set(stat, HBLANK_MODE_STAT_SOURCE_BIT));
-
-    if fire_interrupt_on_mode_switch {
-        fire_stat_interrupt(emulator);
-    }
-}
-
-fn compare_ly_and_lyc(emulator: &mut Emulator) {
-    if emulator.gpu.registers.ly == emulator.gpu.registers.lyc {
-        emulator.gpu.registers.stat = emulator.gpu.registers.stat | 0b00000100;
-        
-        if lyc_check_enabled(emulator) {
-            fire_stat_interrupt(emulator);
+impl Gpu {
+    pub fn new() -> Self {
+        Gpu {
+            mode: 2,
+            mode_clock: 0,
+            registers: GpuRegisters {
+                lcdc: 0,
+                scy: 0,
+                scx: 0,
+                wx: 0,
+                wy: 0,
+                wly: 0,
+                ly: 0,
+                lyc: 0,
+                stat: 0,
+                palettes: Palettes::new(),
+                cgb_vbk: 0,
+                cgb_opri: 0,
+                key0: 0
+            },
+            frame_buffer: initialize_blank_frame(),
+            video_ram: [0; 0x4000],
+            object_attribute_memory: [0; 0xa0],
+            cgb_mode: false,
+            cgb_double_speed: false,
         }
     }
-    else {
-        emulator.gpu.registers.stat = emulator.gpu.registers.stat & 0b11111011;
+
+    pub fn reset_frame_buffer(&mut self) {
+        self.frame_buffer = initialize_blank_frame();
     }
-}
 
-pub fn step(emulator: &mut Emulator) {
-    let lcdc = emulator.gpu.registers.lcdc;
-    let lcd_enabled = get_lcd_enabled_mode(lcdc);
+    fn fire_vblank_interrupt(&mut self, interrupts: &mut InterruptRegisters) {
+        interrupts.flags |= 0x1;
+    }
 
-    if lcd_enabled {
-        let double_speed_mode = emulator.speed_switch.cgb_double_speed;
-        emulator.gpu.mode_clock += get_t_cycle_increment(double_speed_mode) as u16;
-    
-        match emulator.gpu.mode {
-            OAM_MODE => {
-                if emulator.gpu.mode_clock >= OAM_TIME {
-                    emulator.gpu.mode_clock = 0;
-                    update_mode(emulator, VRAM_MODE);
-                }
+    fn lyc_check_enabled(&self) -> bool {
+        is_bit_set(self.registers.stat, STAT_INTERRUPT_LYC_CHECK_BIT)
+    }
+
+    fn fire_stat_interrupt(&mut self, interrupts: &mut InterruptRegisters) {
+        interrupts.flags |= 0x2;
+    }
+
+    fn update_mode(&mut self, new_mode: u8, interrupts: &mut InterruptRegisters) {
+        self.mode = new_mode;
+
+        let stat = (self.registers.stat & 0b11111100) | new_mode;
+        self.registers.stat = stat;
+
+        let fire_interrupt_on_mode_switch = (new_mode == OAM_MODE && is_bit_set(stat, OAM_MODE_STAT_SOURCE_BIT))
+            || (new_mode == VBLANK_MODE && is_bit_set(stat, VBLANK_MODE_STAT_SOURCE_BIT))
+            || (new_mode == HBLANK_MODE && is_bit_set(stat, HBLANK_MODE_STAT_SOURCE_BIT));
+
+        if fire_interrupt_on_mode_switch {
+            self.fire_stat_interrupt(interrupts);
+        }
+    }
+
+    fn compare_ly_and_lyc(&mut self, interrupts: &mut InterruptRegisters) {
+        if self.registers.ly == self.registers.lyc {
+            self.registers.stat |= 0b00000100;
+            
+            if self.lyc_check_enabled() {
+                self.fire_stat_interrupt(interrupts);
             }
-            VRAM_MODE => {
-                if emulator.gpu.mode_clock >= VRAM_TIME {
-                    emulator.gpu.mode_clock = 0;
-                    update_mode(emulator, HBLANK_MODE);
-                    hdma::set_hblank_started(emulator, true);
-                    write_scanline(emulator);
+        }
+        else {
+            self.registers.stat &= 0b11111011;
+        }
+    }
+
+    pub fn step(&mut self, params: GpuParams) {
+        let lcdc = self.registers.lcdc;
+        let lcd_enabled = get_lcd_enabled_mode(lcdc);
+
+        if lcd_enabled {
+            self.mode_clock += get_t_cycle_increment(self.cgb_double_speed) as u16;
+
+            match self.mode {
+                OAM_MODE => {
+                    if self.mode_clock >= OAM_TIME {
+                        self.mode_clock = 0;
+                        self.update_mode(VRAM_MODE, params.interrupt_registers);
+                    }
                 }
-            }
-            HBLANK_MODE => {
-                if emulator.gpu.mode_clock >= HBLANK_TIME {
-                    let wx = emulator.gpu.registers.wx;
-                    let wy = emulator.gpu.registers.wy;
-                    let window_enabled = get_window_enabled_mode(lcdc);
-                    let window_visible = (wx < 7 || wx - 7 < GB_SCREEN_WIDTH as u8) && wy < GB_SCREEN_HEIGHT as u8;
-                    
-                    if window_enabled && window_visible && emulator.gpu.registers.ly >= wy {
-                        emulator.gpu.registers.wly += 1;
-                    }
-
-                    if emulator.gpu.registers.ly == FRAME_SCANLINE_COUNT - VBLANK_SCANLINE_COUNT - 1 {
-                        update_mode(emulator, VBLANK_MODE);
-                        (emulator.render)(&emulator.gpu.frame_buffer);
-                        fire_vblank_interrupt(emulator);
-                    }
-                    else {
-                        update_mode(emulator, OAM_MODE);
-                    }
-    
-                    emulator.gpu.registers.ly += 1;
-                    emulator.gpu.mode_clock = 0;
-    
-                    compare_ly_and_lyc(emulator);
+                VRAM_MODE => {
+                    if self.mode_clock >= VRAM_TIME {
+                        self.mode_clock = 0;
+                        self.update_mode(HBLANK_MODE, params.interrupt_registers);
+                        hdma::set_hblank_started(params.hdma, true);
+                        if !params.in_color_bios {
+                            self.write_scanline();
+                        }
+                     }
                 }
-            }
-            VBLANK_MODE => {
-                if emulator.gpu.mode_clock >= SCANLINE_RENDER_TIME {
-                    emulator.gpu.mode_clock = 0;
-                    emulator.gpu.registers.ly += 1;
-    
-                    if emulator.gpu.registers.ly > FRAME_SCANLINE_COUNT - 1 {
-                        emulator.gpu.registers.ly = 0;
-                        emulator.gpu.registers.wly = 0;
-                        update_mode(emulator, OAM_MODE);
+                HBLANK_MODE => {
+                    if self.mode_clock >= HBLANK_TIME {
+                        let wx = self.registers.wx;
+                        let wy = self.registers.wy;
+                        let window_enabled = get_window_enabled_mode(lcdc);
+                        let window_visible = (wx < 7 || wx - 7 < GB_SCREEN_WIDTH as u8) && wy < GB_SCREEN_HEIGHT as u8;
+
+                        if window_enabled && window_visible && self.registers.ly >= wy {
+                            self.registers.wly += 1;
+                        }
+
+                        if self.registers.ly == FRAME_SCANLINE_COUNT - VBLANK_SCANLINE_COUNT - 1 {
+                            self.update_mode(VBLANK_MODE, params.interrupt_registers);
+                            (params.renderer)(&self.frame_buffer);
+                            self.fire_vblank_interrupt(params.interrupt_registers);
+                        }
+                        else {
+                            self.update_mode(OAM_MODE, params.interrupt_registers);
+                        }
+
+                        self.registers.ly += 1;
+                        self.mode_clock = 0;
+
+                        self.compare_ly_and_lyc(params.interrupt_registers);
                     }
-    
-                    compare_ly_and_lyc(emulator);
                 }
+                VBLANK_MODE => {
+                    if self.mode_clock >= SCANLINE_RENDER_TIME {
+                        self.mode_clock = 0;
+                        self.registers.ly += 1;
+
+                        if self.registers.ly > FRAME_SCANLINE_COUNT - 1 {
+                            self.registers.ly = 0;
+                            self.registers.wly = 0;
+                            self.update_mode(OAM_MODE, params.interrupt_registers);
+                        }
+
+                        self.compare_ly_and_lyc(params.interrupt_registers);
+                    }
+                }
+                _ => ()
             }
-            _ => ()
-        }   
+        }
     }
-}
 
-pub fn get_cgb_bcpd(emulator: &Emulator) -> u8 {
-    if emulator.mode == Mode::CGB {
-        colors::get_cgb_bcpd(&emulator.gpu.registers.palettes)
+    pub fn palettes(&mut self) -> &mut Palettes {
+        &mut self.registers.palettes
     }
-    else {
-        0xFF
+
+    pub fn palettes_readonly(&self) -> &Palettes {
+        &self.registers.palettes
     }
-}
 
-pub fn set_cgb_bcpd(emulator: &mut Emulator, value: u8) {
-    if emulator.mode == Mode::CGB {
-        colors::set_cgb_bcpd(&mut emulator.gpu.registers.palettes, value);
+    fn calculate_video_ram_index(&self, index: u16) -> u16 {
+        if self.cgb_mode {
+            let bank = self.registers.cgb_vbk & 0b1;
+            if bank == 1 { index + 0x2000 } else { index }
+        } else {
+            index
+        }
     }
-}
-
-pub fn get_cgb_bcps(emulator: &Emulator) -> u8 {
-    if emulator.mode == Mode::CGB {
-        colors::get_cgb_bcps(&emulator.gpu.registers.palettes)
+    pub fn get_video_ram_byte(&self, index: u16) -> u8 {
+        let calculated_index = self.calculate_video_ram_index(index);
+        self.video_ram[calculated_index as usize]
     }
-    else {
-        0xFF
+
+    pub fn set_video_ram_byte(&mut self, index: u16, value: u8) {
+        let calculated_index = self.calculate_video_ram_index(index);
+        self.video_ram[calculated_index as usize] = value;
     }
-}
 
-pub fn set_cgb_bcps(emulator: &mut Emulator, value: u8) {
-    if emulator.mode == Mode::CGB {
-        colors::set_cgb_bcps(&mut emulator.gpu.registers.palettes, value);
+    pub fn get_object_attribute_memory_byte(&self, index: u16) -> u8 {
+        self.object_attribute_memory[index as usize]
     }
-}
 
-pub fn get_cgb_ocpd(emulator: &Emulator) -> u8 {
-    if emulator.mode == Mode::CGB {
-        colors::get_cgb_ocpd(&emulator.gpu.registers.palettes)
+    pub fn set_object_attribute_memory_byte(&mut self, index: u16, value: u8) {
+        self.object_attribute_memory[index as usize] = value;
     }
-    else {
-        0xFF
+
+    pub fn cgb_vbk(&self) -> u8 {
+        if self.cgb_mode {
+            self.registers.cgb_vbk | 0b11111110
+        } else {
+            0xFF
+        }
     }
-}
-
-pub fn set_cgb_ocpd(emulator: &mut Emulator, value: u8) {
-    if emulator.mode == Mode::CGB {
-        colors::set_cgb_ocpd(&mut emulator.gpu.registers.palettes, value);
+    pub fn set_cgb_vbk(&mut self, value: u8) {
+        if self.cgb_mode {
+            self.registers.cgb_vbk = value;
+        }
     }
-}
 
-pub fn get_cgb_ocps(emulator: &Emulator) -> u8 {
-    if emulator.mode == Mode::CGB {
-        colors::get_cgb_ocps(&emulator.gpu.registers.palettes)
+    pub fn cgb_opri(&self) -> u8 {
+        if self.cgb_mode {
+            self.registers.cgb_opri & 0b1
+        } else {
+            0xFF
+        }
     }
-    else {
-        0xFF
+    pub fn set_cgb_opri(&mut self, value: u8) {
+        if self.cgb_mode {
+            self.registers.cgb_opri = value & 0b1;
+        }
     }
-}
 
-pub fn set_cgb_ocps(emulator: &mut Emulator, value: u8) {
-    if emulator.mode == Mode::CGB {
-        colors::set_cgb_ocps(&mut emulator.gpu.registers.palettes, value);
+    pub fn lcdc(&self) -> u8 {
+        self.registers.lcdc
     }
-}
-
-fn calculate_video_ram_index(emulator: &Emulator, index: u16) -> u16 {
-    if emulator.mode == Mode::CGB {
-        let bank = emulator.gpu.registers.cgb_vbk & 0b1;
-        if bank == 1 { index + 0x2000 } else { index }
+    
+    pub fn set_lcdc(&mut self, value: u8) {
+        self.registers.lcdc = value;
+        let lcd_enabled = get_lcd_enabled_mode(value);
+        if !lcd_enabled {
+            self.registers.ly = 0;
+            self.registers.wly = 0;
+            self.mode_clock = 0;
+            self.mode = HBLANK_MODE;
+            self.registers.stat = (self.registers.stat & 0b11111100) | HBLANK_MODE;
+            self.frame_buffer = initialize_blank_frame();
+        }
     }
-    else {
-        index
+
+    pub fn key0(&self) -> u8 {
+        self.registers.key0
     }
-}
 
-pub fn get_video_ram_byte(emulator: &Emulator, index: u16) -> u8 {
-    let calculated_index = calculate_video_ram_index(emulator, index);
-    emulator.gpu.video_ram[calculated_index as usize]
-}
-
-pub fn set_video_ram_byte(emulator: &mut Emulator, index: u16, value: u8) {
-    let calculated_index = calculate_video_ram_index(emulator, index);
-    emulator.gpu.video_ram[calculated_index as usize] = value;
-}
-
-pub fn get_object_attribute_memory_byte(emulator: &Emulator, index: u16) -> u8 {
-    emulator.gpu.object_attribute_memory[index as usize]
-}
-
-pub fn set_object_attribute_memory_byte(emulator: &mut Emulator, index: u16, value: u8) {
-    emulator.gpu.object_attribute_memory[index as usize] = value;
-}
-
-pub fn get_cgb_vbk(emulator: &Emulator) -> u8 {
-    if emulator.mode == Mode::CGB {
-        emulator.gpu.registers.cgb_vbk | 0b11111110
+    pub fn set_key0(&mut self, value: u8) {
+        self.registers.key0 = value;
     }
-    else {
-        0xFF
+    
+    pub fn has_dmg_compatability(&self) -> bool {
+        self.registers.key0 == 0x04
     }
-}
 
-pub fn set_cgb_vbk(emulator: &mut Emulator, value: u8) {
-    if emulator.mode == Mode::CGB {
-        emulator.gpu.registers.cgb_vbk = value;
+    pub fn stat(&self) -> u8 {
+        self.registers.stat
     }
-}
 
-pub fn get_cgb_opri(emulator: &Emulator) -> u8 {
-    if emulator.mode == Mode::CGB {
-        emulator.gpu.registers.cgb_opri & 0b1
+    pub fn set_stat(&mut self, value: u8) {
+        self.registers.stat = value;
     }
-    else {
-        0xFF
+
+    pub fn scy(&self) -> u8 {
+        self.registers.scy
     }
-}
 
-pub fn set_cgb_opri(emulator: &mut Emulator, value: u8) {
-    if emulator.mode == Mode::CGB {
-        emulator.gpu.registers.cgb_opri = value & 0b1;
+    pub fn set_scy(&mut self, value: u8) {
+        self.registers.scy = value;
     }
-}
 
-pub fn get_lcdc(emulator: &Emulator) -> u8 {
-    emulator.gpu.registers.lcdc
-}
-
-pub fn set_lcdc(emulator: &mut Emulator, value: u8) {
-    emulator.gpu.registers.lcdc = value;
-    let lcd_enabled = get_lcd_enabled_mode(emulator.gpu.registers.lcdc);
-    if !lcd_enabled {
-        emulator.gpu.registers.ly = 0;
-        emulator.gpu.registers.wly = 0;
-        emulator.gpu.mode_clock = 0;
-        emulator.gpu.mode = HBLANK_MODE;
-        emulator.gpu.registers.stat = (emulator.gpu.registers.stat & 0b11111100) | HBLANK_MODE;
-        emulator.gpu.frame_buffer = initialize_blank_frame();
+    pub fn scx(&self) -> u8 {
+        self.registers.scx
     }
-}
 
-pub fn set_key0(emulator: &mut Emulator, value: u8) {
-    emulator.gpu.registers.key0 = value;
-}
+    pub fn set_scx(&mut self, value: u8) {
+        self.registers.scx = value;
+    }
 
-pub fn get_key0(emulator: &Emulator) -> u8 {
-    emulator.gpu.registers.key0
-}
+    pub fn ly(&self) -> u8 {
+        self.registers.ly
+    }
 
-pub fn has_dmg_compatability(emulator: &Emulator) -> bool {
-    emulator.gpu.registers.key0 == 0x04
+    pub fn set_ly(&mut self, value: u8) {
+        self.registers.ly = value;
+    }
+
+    pub fn lyc(&self) -> u8 {
+        self.registers.lyc
+    }
+
+    pub fn set_lyc(&mut self, value: u8) {
+        self.registers.lyc = value;
+    }
+
+    pub fn wy(&self) -> u8 {
+        self.registers.wy
+    }
+
+    pub fn set_wy(&mut self, value: u8) {
+        self.registers.wy = value;
+    }
+
+    pub fn wx(&self) -> u8 {
+        self.registers.wx
+    }
+
+    pub fn set_wx(&mut self, value: u8) {
+        self.registers.wx = value;
+    }
+
+    pub fn set_mode(&mut self, value: u8) {
+        self.mode = value;
+    }
+
+    pub fn set_cgb_mode(&mut self, cgb_mode: bool) {
+        self.cgb_mode = cgb_mode;
+    }
+
+    pub fn set_cgb_double_speed(&mut self, cgb_double_speed: bool) {
+        self.cgb_double_speed = cgb_double_speed;
+    }
 }
 
 #[cfg(test)]
 mod tests;
 
-mod colors;
+mod palettes;
 mod constants;
 mod line_addressing;
 mod background;
 mod window;
 mod prioritization;
-pub mod scanline;
-pub mod sprites;
-pub mod utils;
+mod scanline;
+mod sprites;
+mod utils;

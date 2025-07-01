@@ -4,12 +4,12 @@ fn step_div_apu(apu: &mut Apu, step: u8) {
     apu.divider_apu = step;
     // DIV-APU only steps when fourth bit in divider falls from 1 to 0.
     apu.last_divider_time = 0b10011111;
-    apu.step(false, 0b10100000);
+    apu.step(as_params(false, 0b10100000));
 }
 
 fn step_apu_multiple_times(apu: &mut Apu, n: u8) {
     for _ in 0..n {
-        apu.step(false, 0);
+        apu.step(as_params(false, 0));
     }
 }
 
@@ -25,6 +25,13 @@ fn initialize_disabled_noise_channel(apu: &mut Apu) {
     apu.channel4().set_enabled(false);
 }
 
+fn as_params(in_color_bios: bool, divider: u8) -> ApuParams {
+    ApuParams {
+        in_color_bios,
+        divider,
+    }
+}
+
 #[test]
 fn should_not_decrement_period_divider_when_apu_is_off() {
     let mut apu = Apu::new();
@@ -33,7 +40,7 @@ fn should_not_decrement_period_divider_when_apu_is_off() {
     apu.channel1().period().set_divider(742);
     apu.channel1().period().set_low(26);
     apu.channel1().period().set_high(197);
-    apu.step(false, 0);
+    apu.step(as_params(false, 0));
     assert_eq!(apu.channel1().period().divider(), 742); 
 }
 
@@ -45,7 +52,7 @@ fn should_not_decrement_period_divider_if_channel_1_is_off() {
     apu.channel1().period().set_divider(742);
     apu.channel1().period().set_low(26);
     apu.channel1().period().set_high(197);
-    apu.step(false, 0);
+    apu.step(as_params(false, 0));
     assert_eq!(apu.channel1().period().divider(), 742); 
 }
 
@@ -57,7 +64,7 @@ fn should_decrement_period_divider_for_channel_1() {
     apu.channel1().period().set_divider(742);
     apu.channel1().period().set_low(26);
     apu.channel1().period().set_high(197);
-    apu.step(false, 0);
+    apu.step(as_params(false, 0));
     assert_eq!(apu.channel1().period().divider(), 741);
 }
 
@@ -69,7 +76,7 @@ fn should_decrement_period_divider_for_channel_2() {
     apu.channel2().period().set_divider(742);
     apu.channel2().period().set_low(26);
     apu.channel2().period().set_high(197);
-    apu.step(false, 0);
+    apu.step(as_params(false, 0));
     assert_eq!(apu.channel2().period().divider(), 741); 
 }
 
@@ -81,7 +88,7 @@ fn should_reload_period_divider_once_it_reaches_zero() {
     apu.channel1().period().set_divider(1);
     apu.channel1().period().set_low(26);
     apu.channel1().period().set_high(197);
-    apu.step(false, 0);
+    apu.step(as_params(false, 0));
     assert_eq!(apu.channel1().period().divider(), 742);
 }
 
@@ -94,7 +101,7 @@ fn should_properly_wrap_period_divider_value_when_decrementing_it() {
     apu.channel1().period().set_low(26);
     apu.channel1().period().set_high(197);
     for _ in 1..=2 {
-        apu.step(false, 0);
+        apu.step(as_params(false, 0));
     }
     assert_eq!(apu.channel1().period().divider(), 741);  
 }
@@ -108,7 +115,7 @@ fn should_increment_wave_duty_position_when_period_divider_reaches_zero() {
     apu.channel1().period().set_low(26);
     apu.channel1().period().set_high(197);
     apu.channel1().set_wave_duty_position(0);
-    apu.step(false, 0);
+    apu.step(as_params(false, 0));
     assert_eq!(apu.channel1().wave_duty_position(), 1);
 }
 
@@ -121,7 +128,7 @@ fn should_reset_wave_duty_position_to_zero_when_increased_above_seven() {
     apu.channel1().period().set_low(26);
     apu.channel1().period().set_high(197);
     apu.channel1().set_wave_duty_position(7);
-    apu.step(false, 0);
+    apu.step(as_params(false, 0));
     assert_eq!(apu.channel1().wave_duty_position(), 0);
 }
 
@@ -134,7 +141,7 @@ fn should_increment_divider_apu_every_time_bit_four_of_divider_timer_goes_from_o
     apu.channel1().period().set_low(26);
     apu.channel1().period().set_high(197);
     apu.last_divider_time = 0b10011111;
-    apu.step(false, 0b10100000);
+    apu.step(as_params(false, 0b10100000));
     assert_eq!(apu.divider_apu, 1);
 }
 
@@ -147,7 +154,7 @@ fn should_not_increment_divider_apu_if_bit_four_of_divider_timer_remains_unchang
     apu.channel1().period().set_low(26);
     apu.channel1().period().set_high(197);
     apu.last_divider_time = 0b10010000;
-    apu.step(false, 0b10010001);
+    apu.step(as_params(false, 0b10010001));
     assert_eq!(apu.divider_apu, 0); 
 }
 
@@ -501,7 +508,7 @@ fn should_decrement_period_divider_for_channel_3() {
     apu.channel3().period().set_divider(742);
     apu.channel3().period().set_low(26);
     apu.channel3().period().set_high(197);
-    apu.step(false, 0);
+    apu.step(as_params(false, 0));
     assert_eq!(apu.channel3().period().divider(), 740);
 }
 
@@ -514,7 +521,7 @@ fn should_reload_period_divider_once_it_reaches_zero_for_channel_3() {
     apu.channel3().period().set_divider(2);
     apu.channel3().period().set_low(26);
     apu.channel3().period().set_high(197);
-    apu.step(false, 0);
+    apu.step(as_params(false, 0));
     assert_eq!(apu.channel3().period().divider(), 742);
 }
 
@@ -528,7 +535,7 @@ fn should_increment_wave_position_when_period_divider_reaches_zero_for_channel_3
     apu.channel3().period().set_divider(2);
     apu.channel3().period().set_low(26);
     apu.channel3().period().set_high(197);
-    apu.step(false, 0);
+    apu.step(as_params(false, 0));
     assert_eq!(apu.channel3().wave_position(), 1);
 }
 
@@ -597,7 +604,7 @@ fn should_not_decrement_period_divider_for_channel_4_if_only_four_instruction_cy
 
     apu.channel4().set_period_divider(742);
 
-    apu.step(false, 0);
+    apu.step(as_params(false, 0));
 
     assert_eq!(apu.channel4().period_divider(), 742);    
 }

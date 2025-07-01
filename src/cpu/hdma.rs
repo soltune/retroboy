@@ -111,9 +111,9 @@ fn get_vram_dma_destination(emulator: &Emulator) -> u16 {
     0x8000 + offset
 }
 
-pub fn set_hblank_started(emulator: &mut Emulator, value: bool) {
-    if emulator.hdma.in_progress {
-        emulator.hdma.hblank_started = value; 
+pub fn set_hblank_started(hdma: &mut HDMAState, value: bool) {
+    if hdma.in_progress {
+        hdma.hblank_started = value; 
     }
 }
 
@@ -254,17 +254,17 @@ mod tests {
         set_hdma4(&mut emulator, 0xA2);
         set_hdma5(&mut emulator, 0x81); // transfer length of 0x20
 
-        emulator.gpu.mode = 0; // mode 0 = hblank mode
-        set_hblank_started(&mut emulator, true);
+        emulator.gpu.set_mode(0); // mode 0 = hblank mode
+        set_hblank_started(&mut emulator.hdma, true);
 
         step(&mut emulator);
 
         for i in 0..16 {
-            assert_eq!(emulator.gpu.video_ram[0x11A0 + i], 0xA1);
+            assert_eq!(emulator.gpu.get_video_ram_byte(0x11A0 + i), 0xA1);
         }
         
         for i in 16..32 {
-            assert_eq!(emulator.gpu.video_ram[0x11A0 + i], 0x0);
+            assert_eq!(emulator.gpu.get_video_ram_byte(0x11A0 + i), 0x0);
         }
 
         assert_eq!(emulator.hdma.hblank_started, false);
@@ -291,7 +291,7 @@ mod tests {
         step(&mut emulator);
 
         for i in 0..32 {
-            assert_eq!(emulator.gpu.video_ram[0x11A0 + i], 0xA1);
+            assert_eq!(emulator.gpu.get_video_ram_byte(0x11A0 + i), 0xA1);
         }
     }
 }

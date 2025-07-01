@@ -30,6 +30,11 @@ pub struct Apu {
     cgb_double_speed: bool
 }
 
+pub struct ApuParams {
+    pub in_color_bios: bool,
+    pub divider: u8
+}
+
 const CH3_DAC_ENABLED_INDEX: u8 = 7;
 const APU_ENABLED_INDEX: u8 = 7;
 const MAX_DIV_APU_STEPS: u8 = 7;
@@ -244,7 +249,7 @@ impl Apu {
         }
     }
 
-    pub fn step(&mut self, in_color_bios: bool, divider: u8) {
+    pub fn step(&mut self, params: ApuParams) {
         let t_cycle_increment = get_t_cycle_increment(self.cgb_double_speed);
         self.channel_clock += t_cycle_increment;
 
@@ -259,11 +264,11 @@ impl Apu {
                 self.channel4.step(clock_cycles);
             }
 
-            self.step_div_apu(divider);
+            self.step_div_apu(params.divider);
         }
-        self.enqueue_audio_samples(in_color_bios);
+        self.enqueue_audio_samples(params.in_color_bios);
 
-        self.last_divider_time = divider;
+        self.last_divider_time = params.divider;
     }
 
     pub fn set_sample_rate(&mut self, sample_rate: u32) {

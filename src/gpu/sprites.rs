@@ -1,6 +1,5 @@
-use crate::emulator::{is_cgb, Emulator, Mode};
-use crate::gpu::has_dmg_compatability;
-use crate::gpu::colors::{as_cgb_obj_color_rgb, as_dmg_obj_color_rgb, Color, calculate_color_id};
+use crate::gpu::Gpu;
+use crate::gpu::palettes::{Color, calculate_color_id};
 use crate::gpu::prioritization::SpritePixel;
 use crate::gpu::utils::{get_obj_enabled_mode, get_obj_size_mode, get_tile_line_bytes};
 use crate::utils::{get_bit, is_bit_set};
@@ -30,7 +29,7 @@ pub struct Sprite {
 }
 
 impl Sprite {
-    fn has_higher_priority_than(&self, compared_sprite: &Sprite, oam_location_prioritization: bool) -> bool {
+    pub fn has_higher_priority_than(&self, compared_sprite: &Sprite, oam_location_prioritization: bool) -> bool {
         let has_lower_x = self.x_pos < compared_sprite.x_pos;
         let has_same_x = self.x_pos == compared_sprite.x_pos;
         let located_earlier_in_oam = self.oam_index < compared_sprite.oam_index;
@@ -58,13 +57,13 @@ fn calculate_tile_data_index(tile_index: u16) -> u16 {
     tile_index * TILE_DATA_BYTE_SIZE
 }
 
-fn pull_sprite(emulator: &Emulator, sprite_number: u16) -> Sprite {
+fn pull_sprite(object_attribute_memory: &[u8], sprite_number: u16) -> Sprite {
     let oam_index = calculate_oam_index(sprite_number);
 
-    let y_pos = emulator.gpu.object_attribute_memory[oam_index as usize];
-    let x_pos = emulator.gpu.object_attribute_memory[(oam_index + 1) as usize];
-    let tile_index = emulator.gpu.object_attribute_memory[(oam_index + 2) as usize];
-    let attributes = emulator.gpu.object_attribute_memory[(oam_index + 3) as usize];
+    let y_pos = object_attribute_memory[oam_index as usize];
+    let x_pos = object_attribute_memory[(oam_index + 1) as usize];
+    let tile_index = object_attribute_memory[(oam_index + 2) as usize];
+    let attributes = object_attribute_memory[(oam_index + 3) as usize];
     
     Sprite {
         y_pos: (y_pos as i16 - 16),
@@ -80,15 +79,13 @@ fn pull_sprite(emulator: &Emulator, sprite_number: u16) -> Sprite {
     }
 }
 
-pub fn collect_scanline_sprites(emulator: &Emulator) -> Vec<Sprite> {
+pub fn collect_scanline_sprites(object_attribute_memory: &[u8], ly: u8, lcdc: u8) -> Vec<Sprite> {
     let mut sprites = Vec::new();
-    let ly = emulator.gpu.registers.ly;
-    let lcdc = emulator.gpu.registers.lcdc;
 
     let eight_by_sixteen_mode = get_obj_size_mode(lcdc);
 
     for sprite_number in 0..TOTAL_SPRITES {
-        let sprite = pull_sprite(emulator, sprite_number);
+        let sprite = pull_sprite(object_attribute_memory, sprite_number);
 
         let y_int = ly as i16;
 
@@ -101,7 +98,7 @@ pub fn collect_scanline_sprites(emulator: &Emulator) -> Vec<Sprite> {
         }
     }
 
-    sprites 
+    sprites
 }
 
 fn lookup_possible_sprites(sprite_buffer: &Vec<Sprite>, x: u8, y: u8, eight_by_sixteen_mode: bool) -> Vec<&Sprite> {
@@ -119,73 +116,6 @@ fn lookup_possible_sprites(sprite_buffer: &Vec<Sprite>, x: u8, y: u8, eight_by_s
     found_sprites
 }
 
-pub fn calculate_sprite_pixel_color(emulator: &Emulator, sprite: &Sprite, x: u8, y: u8) -> Option<Color> {
-    let y_int = y as i16;
-    let x_int  = x as i16;
-
-    let lcdc = emulator.gpu.registers.lcdc;
-    let eight_by_sixteen_mode = get_obj_size_mode(lcdc);
-
-    let calculated_index = calculate_tile_index(&sprite, y_int, eight_by_sixteen_mode);
-    let tile_data_index = calculate_tile_data_index(calculated_index as u16);
-    let row_offset = ((y_int - sprite.y_pos) % 8) as u8;
-    let column_offset = x_int - sprite.x_pos;
-
-    if column_offset >= 0 {
-        let from_bank_one = if is_cgb(emulator) { sprite.cgb_from_bank_one } else { false };
-        let (lsb_byte, msb_byte) = get_tile_line_bytes(&emulator.gpu, tile_data_index, row_offset, sprite.y_flip, from_bank_one);
-
-        if is_cgb(emulator) {            
-            let dmg_compatible = has_dmg_compatability(emulator);
-            let palette_number = if dmg_compatible { sprite.dmg_palette } else { sprite.cgb_palette };
-            let color_id = calculate_color_id(column_offset as u8, msb_byte, lsb_byte, sprite.x_flip);
-            
-            as_cgb_obj_color_rgb(&emulator.gpu.registers.palettes, palette_number, color_id, dmg_compatible)
-        }
-        else {            
-            let color_id = calculate_color_id(column_offset as u8, msb_byte, lsb_byte, sprite.x_flip);
-            
-            as_dmg_obj_color_rgb(&emulator.gpu.registers.palettes, sprite.dmg_palette, color_id) 
-        }
-    }
-    else {
-        None
-    } 
-}
-
-fn resolve_highest_priority_sprite<'a>(emulator: &Emulator, sprites: Vec<&'a Sprite>, x: u8, y: u8) -> Option<(&'a Sprite, Option<Color>)> {
-    let mut maybe_highest_priority: Option<(&'a Sprite, Option<Color>)> = None;
-    let cgb_mode = emulator.mode == Mode::CGB;
-    let oam_location_prioritization = cgb_mode && !is_bit_set(emulator.gpu.registers.cgb_opri, CGB_OPRI_PRIORITY_BIT);
-
-    for sprite in sprites {
-        match maybe_highest_priority {
-            Some(highest_priority) => {
-                let current_highest_priority_sprite = highest_priority.0;
-                let maybe_current_highest_priority_color = highest_priority.1;
-
-                let maybe_color = calculate_sprite_pixel_color(emulator, sprite, x, y);
- 
-                match (maybe_color, maybe_current_highest_priority_color) {
-                    (Some(color), Some(_)) if sprite.has_higher_priority_than(current_highest_priority_sprite, oam_location_prioritization) => {
-                        maybe_highest_priority = Some((sprite, Some(color)));
-                    }
-                    (Some(color), None) => {
-                        maybe_highest_priority = Some((sprite, Some(color)));
-                    }
-                    _ => {}
-                }
-            }
-            None => {
-                let maybe_color = calculate_sprite_pixel_color(emulator, sprite, x, y);
-                maybe_highest_priority = Some((sprite, maybe_color));
-            }
-        }
-    }
-
-    maybe_highest_priority
-}
-
 fn calculate_tile_index(sprite: &Sprite, y_int: i16, eight_by_sixteen_mode: bool) -> u8 {
     if eight_by_sixteen_mode && (y_int - sprite.y_pos) >= 8 {
         if sprite.y_flip { sprite.tile_index & 0xFE } else { sprite.tile_index | 0x01 }
@@ -198,66 +128,134 @@ fn calculate_tile_index(sprite: &Sprite, y_int: i16, eight_by_sixteen_mode: bool
     }
 }
 
-pub fn read_sprite_pixel_color(emulator: &Emulator, sprite_buffer: &Vec<Sprite>, viewport_x: u8) -> Option<SpritePixel> {
-    let lcdc = emulator.gpu.registers.lcdc;
-    let ly = emulator.gpu.registers.ly;
+impl Gpu {
+    fn calculate_sprite_pixel_color(&self, sprite: &Sprite, x: u8, y: u8) -> Option<Color> {
+        let y_int = y as i16;
+        let x_int  = x as i16;
 
-    let eight_by_sixteen_mode = get_obj_size_mode(lcdc);
-    let sprites_enabled = get_obj_enabled_mode(lcdc);
+        let lcdc = self.registers.lcdc;
+        let eight_by_sixteen_mode = get_obj_size_mode(lcdc);
 
-    let possible_sprites = lookup_possible_sprites(sprite_buffer, viewport_x, ly, eight_by_sixteen_mode);
-    
-    if sprites_enabled {
-        match resolve_highest_priority_sprite(emulator, possible_sprites, viewport_x, ly) {
-            Some((highest_priority_sprite, maybe_color)) => {
-                let prioritize_bg = highest_priority_sprite.priority;
-                maybe_color.map(|color| SpritePixel { color, prioritize_bg })
-            },
-            _ => None
+        let calculated_index = calculate_tile_index(&sprite, y_int, eight_by_sixteen_mode);
+        let tile_data_index = calculate_tile_data_index(calculated_index as u16);
+        let row_offset = ((y_int - sprite.y_pos) % 8) as u8;
+        let column_offset = x_int - sprite.x_pos;
+
+        if column_offset >= 0 {
+            let from_bank_one = if self.cgb_mode { sprite.cgb_from_bank_one } else { false };
+            let (lsb_byte, msb_byte) = get_tile_line_bytes(&self.video_ram, tile_data_index, row_offset, sprite.y_flip, from_bank_one);
+
+            if self.cgb_mode {            
+                let dmg_compatible = self.has_dmg_compatability();
+                let palette_number = if dmg_compatible { sprite.dmg_palette } else { sprite.cgb_palette };
+                let color_id = calculate_color_id(column_offset as u8, msb_byte, lsb_byte, sprite.x_flip);
+                
+                self.registers.palettes.as_cgb_obj_color_rgb(palette_number, color_id, dmg_compatible)
+            }
+            else {            
+                let color_id = calculate_color_id(column_offset as u8, msb_byte, lsb_byte, sprite.x_flip);
+                
+                self.registers.palettes.as_dmg_obj_color_rgb(sprite.dmg_palette, color_id) 
+            }
         }
+        else {
+            None
+        } 
     }
-    else {
-        None
+
+    fn resolve_highest_priority_sprite<'a>(&self, sprites: Vec<&'a Sprite>, x: u8, y: u8) -> Option<(&'a Sprite, Option<Color>)> {
+        let mut maybe_highest_priority: Option<(&'a Sprite, Option<Color>)> = None;
+        let cgb_mode = self.cgb_mode;
+        let oam_location_prioritization = cgb_mode && !is_bit_set(self.registers.cgb_opri, CGB_OPRI_PRIORITY_BIT);
+
+        for sprite in sprites {
+            match maybe_highest_priority {
+                Some(highest_priority) => {
+                    let current_highest_priority_sprite = highest_priority.0;
+                    let maybe_current_highest_priority_color = highest_priority.1;
+
+                    let maybe_color = self.calculate_sprite_pixel_color(sprite, x, y);
+ 
+                    match (maybe_color, maybe_current_highest_priority_color) {
+                        (Some(color), Some(_)) if sprite.has_higher_priority_than(current_highest_priority_sprite, oam_location_prioritization) => {
+                            maybe_highest_priority = Some((sprite, Some(color)));
+                        }
+                        (Some(color), None) => {
+                            maybe_highest_priority = Some((sprite, Some(color)));
+                        }
+                        _ => {}
+                    }
+                }
+                None => {
+                    let maybe_color = self.calculate_sprite_pixel_color(sprite, x, y);
+                    maybe_highest_priority = Some((sprite, maybe_color));
+                }
+            }
+        }
+
+        maybe_highest_priority
+    }
+
+    pub(super) fn read_sprite_pixel_color(&self, sprite_buffer: &Vec<Sprite>, viewport_x: u8) -> Option<SpritePixel> {
+        let lcdc = self.registers.lcdc;
+        let ly = self.registers.ly;
+
+        let eight_by_sixteen_mode = get_obj_size_mode(lcdc);
+        let sprites_enabled = get_obj_enabled_mode(lcdc);
+
+        let possible_sprites = lookup_possible_sprites(sprite_buffer, viewport_x, ly, eight_by_sixteen_mode);
+        
+        if sprites_enabled {
+            match self.resolve_highest_priority_sprite(possible_sprites, viewport_x, ly) {
+                Some((highest_priority_sprite, maybe_color)) => {
+                    let prioritize_bg = highest_priority_sprite.priority;
+                    maybe_color.map(|color| SpritePixel { color, prioritize_bg })
+                },
+                _ => None
+            }
+        }
+        else {
+            None
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::emulator::initialize_screenless_emulator;
     use super::*;
 
-    fn write_sprite(emulator: &mut Emulator, sprit_number: u8, y_pos: u8, x_pos: u8, attributes: u8) {
+    fn write_sprite(object_attribute_memory: &mut [u8], sprit_number: u8, y_pos: u8, x_pos: u8, attributes: u8) {
         let index = (sprit_number * 4) as usize;
-        emulator.gpu.object_attribute_memory[index] = y_pos;
-        emulator.gpu.object_attribute_memory[index + 1] = x_pos;
-        emulator.gpu.object_attribute_memory[index + 2] = 0x0;
-        emulator.gpu.object_attribute_memory[index + 3] = attributes;
+        object_attribute_memory[index] = y_pos;
+        object_attribute_memory[index + 1] = x_pos;
+        object_attribute_memory[index + 2] = 0x0;
+        object_attribute_memory[index + 3] = attributes;
     }
 
     #[test]
     fn should_get_ten_sprites_from_oam_memory() {
-        let mut emulator = initialize_screenless_emulator();
+        let mut gpu = Gpu::new();
         
-        emulator.gpu.registers.ly = 0;
+        gpu.registers.ly = 0;
 
-        write_sprite(&mut emulator, 0, 0, 0, 0);
-        write_sprite(&mut emulator, 1, 16, 0, 0);
-        write_sprite(&mut emulator, 2, 44, 0, 0);
-        write_sprite(&mut emulator, 3, 9, 0x1F, 0);
-        write_sprite(&mut emulator, 4, 14, 0x2A, 0);
-        write_sprite(&mut emulator, 5, 16, 0x60, 0);
-        write_sprite(&mut emulator, 6, 0, 0xFF, 0);
-        write_sprite(&mut emulator, 7, 10, 0x3F, 0);
-        write_sprite(&mut emulator, 8, 16, 0x4A, 0);
-        write_sprite(&mut emulator, 9, 14, 0x51, 0);
-        write_sprite(&mut emulator, 10, 8, 0x22, 0);
-        write_sprite(&mut emulator, 11, 11, 0x1B, 0);
-        write_sprite(&mut emulator, 12, 13, 0x14, 0);
-        write_sprite(&mut emulator, 13, 16, 0x55, 0);
-        write_sprite(&mut emulator, 14, 14, 0x22, 0);
-        write_sprite(&mut emulator, 15, 15, 0x23, 0);
+        write_sprite(&mut gpu.object_attribute_memory, 0, 0, 0, 0);
+        write_sprite(&mut gpu.object_attribute_memory, 1, 16, 0, 0);
+        write_sprite(&mut gpu.object_attribute_memory, 2, 44, 0, 0);
+        write_sprite(&mut gpu.object_attribute_memory, 3, 9, 0x1F, 0);
+        write_sprite(&mut gpu.object_attribute_memory, 4, 14, 0x2A, 0);
+        write_sprite(&mut gpu.object_attribute_memory, 5, 16, 0x60, 0);
+        write_sprite(&mut gpu.object_attribute_memory, 6, 0, 0xFF, 0);
+        write_sprite(&mut gpu.object_attribute_memory, 7, 10, 0x3F, 0);
+        write_sprite(&mut gpu.object_attribute_memory, 8, 16, 0x4A, 0);
+        write_sprite(&mut gpu.object_attribute_memory, 9, 14, 0x51, 0);
+        write_sprite(&mut gpu.object_attribute_memory, 10, 8, 0x22, 0);
+        write_sprite(&mut gpu.object_attribute_memory, 11, 11, 0x1B, 0);
+        write_sprite(&mut gpu.object_attribute_memory, 12, 13, 0x14, 0);
+        write_sprite(&mut gpu.object_attribute_memory, 13, 16, 0x55, 0);
+        write_sprite(&mut gpu.object_attribute_memory, 14, 14, 0x22, 0);
+        write_sprite(&mut gpu.object_attribute_memory, 15, 15, 0x23, 0);
 
-        let sprites = collect_scanline_sprites(&emulator);
+        let sprites = collect_scanline_sprites(&gpu.object_attribute_memory, gpu.registers.ly, gpu.registers.lcdc);
 
         assert_eq!(sprites.len(), 10);
         assert_eq!(sprites[0].y_pos, 0);
@@ -274,11 +272,11 @@ mod tests {
 
     #[test]
     fn should_parse_sprite_attributes_correctly() {
-        let mut emulator = initialize_screenless_emulator();
+        let mut gpu = Gpu::new();
         
-        write_sprite(&mut emulator, 0, 16, 0, 0b11000000);
+        write_sprite(&mut gpu.object_attribute_memory, 0, 16, 0, 0b11000000);
         
-        let sprites = collect_scanline_sprites(&emulator);
+        let sprites = collect_scanline_sprites(&gpu.object_attribute_memory, gpu.registers.ly, gpu.registers.lcdc);
 
         assert_eq!(sprites[0].priority, true);
         assert_eq!(sprites[0].y_flip, true);

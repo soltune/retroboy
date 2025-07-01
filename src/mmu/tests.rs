@@ -37,9 +37,9 @@ fn setup_emulator_with_test_memory() -> Emulator {
     ram[2] = 0x35;
     set_cartridge_ram(&mut emulator.memory, ram);
 
-    emulator.gpu.video_ram[0] = 0xB1;
-    emulator.gpu.video_ram[1] = 0xD2;
-    emulator.gpu.video_ram[2] = 0xAA;
+    emulator.gpu.set_video_ram_byte(0, 0xB1);
+    emulator.gpu.set_video_ram_byte(1, 0xD2);
+    emulator.gpu.set_video_ram_byte(2, 0xAA);
 
     emulator.memory.working_ram[0] = 0xF1;
     emulator.memory.working_ram[1] = 0x22;
@@ -52,9 +52,9 @@ fn setup_emulator_with_test_memory() -> Emulator {
 
     emulator.memory.working_ram[0x2001] = 0x22;
 
-    emulator.gpu.object_attribute_memory[0x7A] = 0x44;
-    emulator.gpu.object_attribute_memory[0x7B] = 0x45;
-    emulator.gpu.object_attribute_memory[0x7C] = 0x9B;
+    emulator.gpu.set_object_attribute_memory_byte(0x7A, 0x44);
+    emulator.gpu.set_object_attribute_memory_byte(0x7B, 0x45);
+    emulator.gpu.set_object_attribute_memory_byte(0x7C, 0x9B);
 
     emulator.memory.zero_page_ram[0x20] = 0xBB;
     emulator.memory.zero_page_ram[0x21] = 0x44;
@@ -68,17 +68,17 @@ fn setup_emulator_with_test_memory() -> Emulator {
     emulator.timers.modulo = 0x02;
     emulator.timers.control = 0x07;
 
-    emulator.gpu.registers.lcdc = 0x80;
-    emulator.gpu.registers.scy = 0x55;
-    emulator.gpu.registers.scx = 0xA1;
-    emulator.gpu.registers.wy = 0xBB;
-    emulator.gpu.registers.wx = 0xDD;
-    emulator.gpu.registers.palettes.bgp = 0xC1;
-    emulator.gpu.registers.ly = 0x2B;
-    emulator.gpu.registers.lyc = 0xAB;
-    emulator.gpu.registers.stat = 0xD2;
-    emulator.gpu.registers.palettes.obp0 = 0x1B;
-    emulator.gpu.registers.palettes.obp1 = 0xE4;
+    emulator.gpu.set_lcdc(0x80);
+    emulator.gpu.set_scy(0x55);
+    emulator.gpu.set_scx(0xA1);
+    emulator.gpu.set_wy(0xBB);
+    emulator.gpu.set_wx(0xDD);
+    emulator.gpu.palettes().set_bgp(0xC1);
+    emulator.gpu.set_ly(0x2B);
+    emulator.gpu.set_lyc(0xAB);
+    emulator.gpu.set_stat(0xD2);
+    emulator.gpu.palettes().set_obp0(0x1B);
+    emulator.gpu.palettes().set_obp1(0xE4);
 
     emulator.joypad.set_column(0x10);
     emulator.joypad.set_select_buttons(0x4);
@@ -346,7 +346,7 @@ fn loads_rom_buffer_into_emulator() {
 fn writes_to_video_ram() {
     let mut emulator = setup_emulator_with_test_memory();
     write_byte(&mut emulator, 0x8002, 0xC1);
-    assert_eq!(emulator.gpu.video_ram[2], 0xC1);
+    assert_eq!(emulator.gpu.get_video_ram_byte(2), 0xC1);
 }
 
 #[test]

@@ -1,5 +1,5 @@
 use crate::emulator::Emulator;
-use crate::{gpu, mmu};
+use crate::mmu;
 use bincode::{Encode, Decode};
 
 #[derive(Clone, Debug, Encode, Decode)]
@@ -38,7 +38,7 @@ pub fn get_source(emulator: &Emulator) -> u8 {
 fn transfer_byte(emulator: &mut Emulator) {
     let address = emulator.dma.source + (emulator.dma.offset as u16);
     let byte_to_transfer = mmu::read_byte(emulator, address);
-    gpu::set_object_attribute_memory_byte(emulator, emulator.dma.offset as u16, byte_to_transfer);
+    mmu::unsafe_write_byte(emulator, 0xFE00 + emulator.dma.offset as u16, byte_to_transfer);
 }
 
 pub fn step(emulator: &mut Emulator) {
@@ -100,7 +100,7 @@ mod tests {
         
         step(&mut emulator);
         
-        assert_eq!(emulator.gpu.object_attribute_memory[0], 0x12);
+        assert_eq!(emulator.gpu.get_object_attribute_memory_byte(0), 0x12);
         assert_eq!(emulator.dma.source, 0x1200);
         assert_eq!(emulator.dma.offset, 1);
         assert_eq!(emulator.dma.in_progress, true);
@@ -122,7 +122,7 @@ mod tests {
             step(&mut emulator);
         }
         
-        assert_eq!(emulator.gpu.object_attribute_memory[0x9F], 0x12);
+        assert_eq!(emulator.gpu.get_object_attribute_memory_byte(0x9F), 0x12);
         assert_eq!(emulator.dma.offset, DMA_TRANSFER_BYTES);
         assert_eq!(emulator.dma.in_progress, false);
     }

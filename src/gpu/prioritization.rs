@@ -1,4 +1,4 @@
-use crate::gpu::colors::{Color, WHITE};
+use crate::gpu::palettes::{Color, WHITE};
 
 pub struct BackgroundPixel {
     pub color: Color,
@@ -11,7 +11,7 @@ pub struct SpritePixel {
     pub prioritize_bg: bool
 }
 
-pub fn resolve_highest_priority_pixel(cgb_mode: bool, lcdc_bg_and_window_priority: bool, bg_pixel: BackgroundPixel, maybe_sprite_pixel: Option<SpritePixel>) -> Color {
+pub(super) fn resolve_highest_priority_pixel(cgb_mode: bool, lcdc_bg_and_window_priority: bool, bg_pixel: BackgroundPixel, maybe_sprite_pixel: Option<SpritePixel>) -> Color {
     match maybe_sprite_pixel {
         Some(sprite_pixel) if !cgb_mode => {
             if (bg_pixel.color_id == 0 && sprite_pixel.prioritize_bg) || !sprite_pixel.prioritize_bg {
@@ -37,7 +37,7 @@ pub fn resolve_highest_priority_pixel(cgb_mode: bool, lcdc_bg_and_window_priorit
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::gpu::colors::{WHITE, DARK_GRAY, LIGHT_GRAY};
+    use crate::gpu::palettes::{WHITE, DARK_GRAY, LIGHT_GRAY};
 
     #[test]
     fn should_return_background_pixel_if_no_sprite() {

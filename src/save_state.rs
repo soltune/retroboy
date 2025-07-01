@@ -5,7 +5,7 @@ use crate::cpu::timers::TimerRegisters;
 use crate::cpu::hdma::HDMAState;
 use crate::dma::DMAState;
 use crate::emulator::Emulator;
-use crate::gpu::{self, GpuState};
+use crate::gpu::Gpu;
 use crate::mmu::{self, MemorySnapshot};
 use crate::serial::SerialState;
 use crate::speed_switch::SpeedSwitch;
@@ -23,7 +23,7 @@ pub struct SaveStateSnapshot {
     pub interrupts: InterruptRegisters,
     pub timers: TimerRegisters,
     pub memory: MemorySnapshot,
-    pub gpu: GpuState,
+    pub gpu: Gpu,
     pub apu: Apu,
     pub dma: DMAState,
     pub hdma: HDMAState,
@@ -36,11 +36,10 @@ pub const HEADER_IDENTIFIER: &str = "HEADER";
 pub const STATE_IDENTIFIER: &str = "STATE";
 pub const FORMAT_ERROR: &str = "The provided save state file is in an invalid format.";
 
-fn without_frame_buffer(gpu: &GpuState) -> GpuState {
-    GpuState {
-        frame_buffer: Vec::new(),
-        ..gpu.clone()
-    }
+fn without_frame_buffer(gpu: &Gpu) -> Gpu {
+    let mut gpu = gpu.clone();
+    gpu.reset_frame_buffer();
+    gpu
 }
 
 fn without_audio_buffers(apu: &Apu) -> Apu {
@@ -76,7 +75,7 @@ fn load_state_snapshot(emulator: &mut Emulator, save_state: SaveStateSnapshot) {
     emulator.speed_switch = save_state.speed_switch;
     emulator.apu = save_state.apu;
 
-    gpu::reset_frame_buffer(emulator);
+    emulator.gpu.reset_frame_buffer();
     emulator.apu.clear_summed_samples();
 }
 

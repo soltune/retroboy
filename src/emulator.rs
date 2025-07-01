@@ -1,4 +1,4 @@
-use crate::apu::Apu;
+use crate::apu::{Apu, ApuParams};
 use crate::cheats::{initialize_cheats, CheatState};
 use crate::cpu::{self, initialize_cpu, timers, CpuState};
 use crate::cpu::interrupts::{initialize_innterrupt_registers, InterruptRegisters};
@@ -6,7 +6,7 @@ use crate::cpu::timers::{initialize_timer_registers, TimerRegisters};
 use crate::cpu::hdma::{HDMAState, initialize_hdma};
 use crate::dma;
 use crate::dma::{initialize_dma, DMAState};
-use crate::gpu::{self, initialize_gpu, GpuState};
+use crate::gpu::{Gpu, GpuParams};
 use crate::joypad::Joypad;
 use crate::mmu::{self, Memory, initialize_memory};
 use crate::serial::{self, initialize_serial, SerialState};
@@ -28,33 +28,33 @@ pub struct Emulator {
     pub interrupts: InterruptRegisters,
     pub timers: TimerRegisters,
     pub memory: Memory,
-    pub gpu: GpuState,
+    pub gpu: Gpu,
     pub joypad: Joypad,
     pub apu: Apu,
     pub dma: DMAState,
     pub hdma: HDMAState,
     pub serial: SerialState,
     pub cheats: CheatState,
-    pub render: fn(&[u8]),
+    pub renderer: fn(&[u8]),
     pub mode: Mode,
     pub speed_switch: SpeedSwitch,
     pub processor_test_mode: bool
 }
 
-pub fn initialize_emulator(render: fn(&[u8])) -> Emulator {
+pub fn initialize_emulator(renderer: fn(&[u8])) -> Emulator {
     Emulator {
         cpu: initialize_cpu(),
         interrupts: initialize_innterrupt_registers(),
         timers: initialize_timer_registers(),
         memory: initialize_memory(),
-        gpu: initialize_gpu(),
+        gpu: Gpu::new(),
         joypad: Joypad::new(),
         apu: Apu::new(),
         dma: initialize_dma(),
         hdma: initialize_hdma(),
         serial: initialize_serial(),
         cheats: initialize_cheats(),
-        render,
+        renderer,
         mode: Mode::DMG,
         speed_switch: initialize_speed_switch(),
         processor_test_mode: false
@@ -86,11 +86,21 @@ pub fn get_cartridge_ram(emulator: &Ref<Emulator>) -> Vec<u8> {
     mmu::get_cartridge_ram(&emulator.memory)
 }
 
-pub fn sync(emulator: &mut Emulator) {    
+pub fn sync(emulator: &mut Emulator) {
+    let in_color_bios = in_color_bios(emulator);
+
     timers::step(emulator);
     dma::step(emulator);
-    gpu::step(emulator);
-    emulator.apu.step(in_color_bios(emulator), emulator.timers.divider);
+    emulator.gpu.step(GpuParams {
+        interrupt_registers: &mut emulator.interrupts,
+        hdma: &mut emulator.hdma,
+        in_color_bios,
+        renderer: emulator.renderer
+    });
+    emulator.apu.step(ApuParams {
+        in_color_bios,
+        divider: emulator.timers.divider,
+    });
     serial::step(emulator);
 }
 
@@ -99,6 +109,7 @@ pub fn set_mode(emulator: &mut Emulator, mode: Mode) {
 
     let is_cgb = is_cgb(emulator);
     emulator.apu.set_cgb_mode(is_cgb);
+    emulator.gpu.set_cgb_mode(is_cgb);
     
     mmu::load_bios(emulator);
 }

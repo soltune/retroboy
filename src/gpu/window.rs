@@ -1,54 +1,55 @@
-use crate::emulator::{Emulator, is_cgb};
-use crate::gpu::has_dmg_compatability;
-use crate::gpu::colors::{as_dmg_bg_color_rgb, as_cgb_bg_color_rgb, calculate_color_id};
+use crate::gpu::Gpu;
+use crate::gpu::palettes::calculate_color_id;
 use crate::gpu::line_addressing::{calculate_window_tile_map_index, calculate_tile_data_index, get_cgb_tile_attributes};
 use crate::gpu::utils::{get_window_enabled_mode, get_tile_line_bytes};
 use crate::gpu::prioritization::BackgroundPixel;
 
-pub fn read_window_color(emulator: &Emulator, viewport_x: u8) -> Option<BackgroundPixel> {
-    let wx = emulator.gpu.registers.wx;
-    let wy = emulator.gpu.registers.wy;
-    let wly = emulator.gpu.registers.wly;
-    let ly = emulator.gpu.registers.ly;
-    let lcdc = emulator.gpu.registers.lcdc;
+impl Gpu {
+    pub(super) fn read_window_color(&self, viewport_x: u8) -> Option<BackgroundPixel> {
+        let wx = self.registers.wx;
+        let wy = self.registers.wy;
+        let wly = self.registers.wly;
+        let ly = self.registers.ly;
+        let lcdc = self.registers.lcdc;
 
-    let x_int = viewport_x as i16;
-    let wx_int = wx as i16;
+        let x_int = viewport_x as i16;
+        let wx_int = wx as i16;
 
-    let window_enabled = get_window_enabled_mode(lcdc);
+        let window_enabled = get_window_enabled_mode(lcdc);
 
-    if window_enabled && x_int >= wx_int - 7 && ly >= wy {
-        let column_tile_offset = wly / 8;
-        let row_tile_offset = ((x_int - (wx_int - 7)) / 8) as u8;
+        if window_enabled && x_int >= wx_int - 7 && ly >= wy {
+            let column_tile_offset = wly / 8;
+            let row_tile_offset = ((x_int - (wx_int - 7)) / 8) as u8;
 
-        let tile_map_index = calculate_window_tile_map_index(lcdc, column_tile_offset, row_tile_offset);
-        let tile_index = emulator.gpu.video_ram[tile_map_index as usize];
-        let tile_data_index = calculate_tile_data_index(lcdc, tile_index);
+            let tile_map_index = calculate_window_tile_map_index(lcdc, column_tile_offset, row_tile_offset);
+            let tile_index = self.video_ram[tile_map_index as usize];
+            let tile_data_index = calculate_tile_data_index(lcdc, tile_index);
 
-        let row_offset = wly % 8;
-        let bit_index = ((x_int - (wx_int - 7)) % 8) as u8;
+            let row_offset = wly % 8;
+            let bit_index = ((x_int - (wx_int - 7)) % 8) as u8;
 
-        if is_cgb(emulator) {
-            let attributes = get_cgb_tile_attributes(emulator, tile_map_index);
-            let (lsb_byte, msb_byte) = get_tile_line_bytes(&emulator.gpu, tile_data_index, row_offset, attributes.y_flip, attributes.from_bank_one);
-            
-            let dmg_compatible = has_dmg_compatability(emulator);
-            let palette_number = if dmg_compatible { 0 } else { attributes.palette_number };
-            let color_id = calculate_color_id(bit_index, msb_byte, lsb_byte, attributes.x_flip);
-            let color = as_cgb_bg_color_rgb(&emulator.gpu.registers.palettes, palette_number, color_id, dmg_compatible);
-            
-            Some(BackgroundPixel { color, color_id, prioritize_bg: attributes.priority })
-        }
+            if self.cgb_mode {
+                let attributes = get_cgb_tile_attributes(&self.video_ram, tile_map_index);
+                let (lsb_byte, msb_byte) = get_tile_line_bytes(&self.video_ram, tile_data_index, row_offset, attributes.y_flip, attributes.from_bank_one);
+
+                let dmg_compatible = self.has_dmg_compatability();
+                let palette_number = if dmg_compatible { 0 } else { attributes.palette_number };
+                let color_id = calculate_color_id(bit_index, msb_byte, lsb_byte, attributes.x_flip);
+                let color = self.registers.palettes.as_cgb_bg_color_rgb(palette_number, color_id, dmg_compatible);
+
+                Some(BackgroundPixel { color, color_id, prioritize_bg: attributes.priority })
+            }
+            else {
+                let (lsb_byte, msb_byte) = get_tile_line_bytes(&self.video_ram, tile_data_index, row_offset, false, false);
+
+                let color_id = calculate_color_id(bit_index, msb_byte, lsb_byte, false);
+                let color = self.registers.palettes.as_dmg_bg_color_rgb(color_id);
+
+                Some(BackgroundPixel { color, color_id, prioritize_bg: false })
+            }
+        }  
         else {
-            let (lsb_byte, msb_byte) = get_tile_line_bytes(&emulator.gpu, tile_data_index, row_offset, false, false);
-            
-            let color_id = calculate_color_id(bit_index, msb_byte, lsb_byte, false);
-            let color = as_dmg_bg_color_rgb(&emulator.gpu.registers.palettes, color_id);
-            
-            Some(BackgroundPixel { color, color_id, prioritize_bg: false })
+            None
         }
-    }  
-    else {
-        None
     }
 }
