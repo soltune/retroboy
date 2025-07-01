@@ -100,6 +100,10 @@ impl Gpu {
         self.frame_buffer = initialize_blank_frame();
     }
 
+    pub fn remove_frame_buffer(&mut self) {
+        self.frame_buffer.clear();
+    }
+
     fn fire_vblank_interrupt(&mut self, interrupts: &mut InterruptRegisters) {
         interrupts.flags |= 0x1;
     }

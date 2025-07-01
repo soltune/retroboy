@@ -38,7 +38,7 @@ pub const FORMAT_ERROR: &str = "The provided save state file is in an invalid fo
 
 fn without_frame_buffer(gpu: &Gpu) -> Gpu {
     let mut gpu = gpu.clone();
-    gpu.reset_frame_buffer();
+    gpu.remove_frame_buffer();
     gpu
 }
 
