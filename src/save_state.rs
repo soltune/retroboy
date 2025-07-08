@@ -7,7 +7,7 @@ use crate::dma::DMAState;
 use crate::emulator::Emulator;
 use crate::gpu::Gpu;
 use crate::mmu::{self, MemorySnapshot};
-use crate::serial::SerialState;
+use crate::serial::Serial;
 use crate::speed_switch::SpeedSwitch;
 use bincode::{config, Encode, Decode};
 use std::io::{Error, ErrorKind, Result};
@@ -27,7 +27,7 @@ pub struct SaveStateSnapshot {
     pub apu: Apu,
     pub dma: DMAState,
     pub hdma: HDMAState,
-    pub serial: SerialState,
+    pub serial: Serial,
     pub speed_switch: SpeedSwitch
 }
 

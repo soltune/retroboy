@@ -42,6 +42,7 @@ pub fn toggle(emulator: &mut Emulator) {
         emulator.speed_switch.cgb_double_speed = new_cgb_double_speed;
         emulator.apu.set_cgb_double_speed(new_cgb_double_speed);
         emulator.gpu.set_cgb_double_speed(new_cgb_double_speed);
+        emulator.serial.set_cgb_double_speed(new_cgb_double_speed);
     }
 }
 

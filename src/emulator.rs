@@ -9,7 +9,7 @@ use crate::dma::{initialize_dma, DMAState};
 use crate::gpu::{Gpu, GpuParams};
 use crate::joypad::Joypad;
 use crate::mmu::{self, Memory, initialize_memory};
-use crate::serial::{self, initialize_serial, SerialState};
+use crate::serial::{Serial, SerialParams};
 use crate::speed_switch::{initialize_speed_switch, SpeedSwitch};
 use std::cell::{Ref, RefMut};
 use std::io::Result;
@@ -33,7 +33,7 @@ pub struct Emulator {
     pub apu: Apu,
     pub dma: DMAState,
     pub hdma: HDMAState,
-    pub serial: SerialState,
+    pub serial: Serial,
     pub cheats: CheatState,
     pub renderer: fn(&[u8]),
     pub mode: Mode,
@@ -52,7 +52,7 @@ pub fn initialize_emulator(renderer: fn(&[u8])) -> Emulator {
         apu: Apu::new(),
         dma: initialize_dma(),
         hdma: initialize_hdma(),
-        serial: initialize_serial(),
+        serial: Serial::new(),
         cheats: initialize_cheats(),
         renderer,
         mode: Mode::DMG,
@@ -101,7 +101,9 @@ pub fn sync(emulator: &mut Emulator) {
         in_color_bios,
         divider: emulator.timers.divider,
     });
-    serial::step(emulator);
+    emulator.serial.step(SerialParams {
+        interrupt_registers: &mut emulator.interrupts,
+    });
 }
 
 pub fn set_mode(emulator: &mut Emulator, mode: Mode) {
@@ -110,6 +112,7 @@ pub fn set_mode(emulator: &mut Emulator, mode: Mode) {
     let is_cgb = is_cgb(emulator);
     emulator.apu.set_cgb_mode(is_cgb);
     emulator.gpu.set_cgb_mode(is_cgb);
+    emulator.serial.set_cgb_mode(is_cgb);
     
     mmu::load_bios(emulator);
 }

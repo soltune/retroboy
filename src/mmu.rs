@@ -1,5 +1,5 @@
 use crate::bios::{CGB_BOOT, DMG_BOOTIX};
-use crate::{cheats, dma, serial};
+use crate::{cheats, dma};
 use crate::cpu::hdma;
 use crate::emulator::{is_cgb, Emulator};
 use crate::mmu::cartridge::{initialize_cartridge_mapper, CartridgeMapper, CartridgeMapperSnapshot};
@@ -142,8 +142,8 @@ pub fn unsafe_read_byte(emulator: &mut Emulator, address: u16) -> u8 {
             0xF00 if address >= 0xFF80 => emulator.memory.zero_page_ram[(address & 0x7F) as usize],
             _ => match address & 0xFF {
                 0x00 => emulator.joypad.read_byte(),
-                0x01 => serial::get_data(emulator),
-                0x02 => serial::get_control(emulator),
+                0x01 => emulator.serial.data(),
+                0x02 => emulator.serial.control(),
                 0x10 => emulator.apu.channel1_readonly().sweep_readonly().initial_settings() | 0b10000000,
                 0x11 => emulator.apu.channel1_readonly().length_readonly().initial_settings() | 0b00111111,
                 0x12 => emulator.apu.channel1_readonly().envelope_readonly().initial_settings(),
@@ -232,8 +232,8 @@ pub fn unsafe_write_byte(emulator: &mut Emulator, address: u16, value: u8) {
             0xF00 if address >= 0xFF80 => emulator.memory.zero_page_ram[(address & 0x7F) as usize] = value,
             _ => match address & 0xFF {
                 0x00 => emulator.joypad.write_byte(value),
-                0x01 => serial::set_data(emulator, value),
-                0x02 => serial::set_control(emulator, value),
+                0x01 => emulator.serial.set_data(value),
+                0x02 => emulator.serial.set_control(value),
                 0x10 => emulator.apu.set_ch1_sweep_settings(value),
                 0x11 => emulator.apu.set_ch1_length_settings(value),
                 0x12 => emulator.apu.set_ch1_envelope_settings(value),
