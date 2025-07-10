@@ -17,7 +17,7 @@ pub struct InterruptRegisters {
     pub flags: u8
 }
 
-pub fn initialize_innterrupt_registers() -> InterruptRegisters {
+pub fn initialize_interrupt_registers() -> InterruptRegisters {
     InterruptRegisters {
         enabled: 0,
         flags: 0

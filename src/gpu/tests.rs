@@ -1,5 +1,5 @@
 use crate::cpu::hdma::initialize_hdma;
-use crate::cpu::interrupts::initialize_innterrupt_registers;
+use crate::cpu::interrupts::initialize_interrupt_registers;
 use crate::gpu::{Gpu, GpuParams};
 use super::*;
 
@@ -11,7 +11,7 @@ fn initialize_test_gpu() -> Gpu {
 
 fn step_gpu(gpu: &mut Gpu) {
     gpu.step(GpuParams {
-        interrupt_registers: &mut initialize_innterrupt_registers(),
+        interrupt_registers: &mut initialize_interrupt_registers(),
         hdma: &mut initialize_hdma(),
         in_color_bios: false,
         renderer: |_| {}
@@ -86,7 +86,7 @@ fn should_move_to_vblank_mode_from_hblank_if_at_last_line() {
 
 #[test]
 fn should_fire_vblank_interrupt_when_entering_vblank_mode() {
-    let mut interrupts = initialize_innterrupt_registers();
+    let mut interrupts = initialize_interrupt_registers();
     let mut gpu = initialize_test_gpu();
     gpu.mode = 0;
     gpu.registers.ly = 143;
@@ -120,7 +120,7 @@ fn should_update_stat_register_with_mode_2_status() {
 
 #[test]
 fn should_fire_stat_interrupt_on_switch_to_mode_2_when_enabled() {
-    let mut interrupts = initialize_innterrupt_registers();
+    let mut interrupts = initialize_interrupt_registers();
     let mut gpu = initialize_test_gpu();
     gpu.mode = 1;
     gpu.registers.ly = 153;
@@ -154,7 +154,7 @@ fn should_update_stat_register_with_mode_0_status() {
 
 #[test]
 fn should_fire_stat_interrupt_on_switch_to_mode_0_if_enabled() {
-    let mut interrupts = initialize_innterrupt_registers();
+    let mut interrupts = initialize_interrupt_registers();
     let mut gpu = initialize_test_gpu();
     gpu.mode = 3;
     gpu.registers.ly = 0;
@@ -177,7 +177,7 @@ fn should_update_stat_register_with_mode_1_status() {
 
 #[test]
 fn should_fire_stat_interrupt_on_switch_to_mode_1_if_enabled() {
-    let mut interrupts = initialize_innterrupt_registers();
+    let mut interrupts = initialize_interrupt_registers();
     let mut gpu = initialize_test_gpu();
     gpu.mode = 0;
     gpu.registers.ly = 143;
@@ -189,7 +189,7 @@ fn should_fire_stat_interrupt_on_switch_to_mode_1_if_enabled() {
 
 #[test]
 fn should_fire_stat_interrupt_when_lyc_equals_ly_if_enabled() {
-    let mut interrupts = initialize_innterrupt_registers();
+    let mut interrupts = initialize_interrupt_registers();
     let mut gpu = initialize_test_gpu();
     gpu.mode = 0;
     gpu.registers.ly = 13;
@@ -226,7 +226,7 @@ fn should_update_stat_register_when_lyc_is_not_equal_to_ly() {
 
 #[test]
 fn should_not_fire_stat_interrupt_when_lyc_equals_ly_if_disabled() {
-    let mut interrupts = initialize_innterrupt_registers();
+    let mut interrupts = initialize_interrupt_registers();
     let mut gpu = initialize_test_gpu();
     gpu.mode = 0;
     gpu.registers.ly = 13;

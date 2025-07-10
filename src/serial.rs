@@ -120,10 +120,10 @@ impl Serial {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cpu::interrupts::initialize_innterrupt_registers;
+    use crate::cpu::interrupts::initialize_interrupt_registers;
 
     fn step_serial(serial: &mut Serial) {
-        let mut interrupts = initialize_innterrupt_registers();
+        let mut interrupts = initialize_interrupt_registers();
         let params = SerialParams {
             interrupt_registers: &mut interrupts,
         };
@@ -222,7 +222,7 @@ mod tests {
     #[test]
     fn should_complete_transfer_and_fire_interrupt_when_8_bits_have_been_transferred() {
         let mut serial = Serial::new();
-        let mut interrupts = initialize_innterrupt_registers();
+        let mut interrupts = initialize_interrupt_registers();
         serial.transfer_enabled = true;
         serial.is_master = true;
         serial.bits_transferred = 7;
