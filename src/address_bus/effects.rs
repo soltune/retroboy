@@ -1,5 +1,5 @@
 use core::fmt::Debug;
-use crate::mmu::mbc3::RTCState; 
+use crate::address_bus::mbc3::RTCState; 
 
 pub trait CartridgeEffects {
     fn current_time_millis(&self) -> f64;

@@ -1,5 +1,5 @@
 use crate::cpu::interrupts::InterruptRegisters;
-use crate::cpu::hdma::{self, HDMAState};
+use crate::address_bus::hdma::HDMAState;
 use crate::gpu::palettes::Palettes;
 use crate::gpu::constants::{GB_SCREEN_HEIGHT, GB_SCREEN_WIDTH, BYTES_PER_COLOR};
 use crate::gpu::utils::{get_lcd_enabled_mode, get_window_enabled_mode};
@@ -162,7 +162,7 @@ impl Gpu {
                     if self.mode_clock >= VRAM_TIME {
                         self.mode_clock = 0;
                         self.update_mode(HBLANK_MODE, params.interrupt_registers);
-                        hdma::set_hblank_started(params.hdma, true);
+                        params.hdma.set_hblank_started(true);
                         if !params.in_color_bios {
                             self.write_scanline();
                         }

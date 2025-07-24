@@ -2,13 +2,13 @@ use crate::apu::Apu;
 use crate::cpu::CpuState;
 use crate::cpu::interrupts::InterruptRegisters;
 use crate::cpu::timers::TimerRegisters;
-use crate::cpu::hdma::HDMAState;
-use crate::dma::DMAState;
+use crate::address_bus::hdma::HDMAState;
+use crate::address_bus::dma::DMAState;
 use crate::emulator::Emulator;
 use crate::gpu::Gpu;
-use crate::mmu::{self, MemorySnapshot};
+use crate::address_bus::MemorySnapshot;
 use crate::serial::Serial;
-use crate::speed_switch::SpeedSwitch;
+use crate::address_bus::speed_switch::SpeedSwitch;
 use bincode::{config, Encode, Decode};
 use std::io::{Error, ErrorKind, Result};
 
@@ -31,7 +31,7 @@ pub struct SaveStateSnapshot {
     pub speed_switch: SpeedSwitch
 }
 
-pub const MAJOR_VERSION: u8 = 3;
+pub const MAJOR_VERSION: u8 = 4;
 pub const HEADER_IDENTIFIER: &str = "HEADER";
 pub const STATE_IDENTIFIER: &str = "STATE";
 pub const FORMAT_ERROR: &str = "The provided save state file is in an invalid format.";
@@ -51,32 +51,32 @@ fn without_audio_buffers(apu: &Apu) -> Apu {
 fn as_state_snapshot(emulator: &Emulator) -> SaveStateSnapshot {
     SaveStateSnapshot {
         cpu: emulator.cpu.clone(),
-        interrupts: emulator.interrupts.clone(),
-        timers: emulator.timers.clone(),
-        memory: mmu::as_snapshot(&emulator.memory),
-        gpu: without_frame_buffer(&emulator.gpu),
-        apu: without_audio_buffers(&emulator.apu),
-        dma: emulator.dma.clone(),
-        hdma: emulator.hdma.clone(),
-        serial: emulator.serial.clone(),
-        speed_switch: emulator.speed_switch.clone()
+        interrupts: emulator.address_bus.interrupts_readonly().clone(),
+        timers: emulator.address_bus.timers_readonly().clone(),
+        memory: emulator.address_bus.as_memory_snapshot(),
+        gpu: without_frame_buffer(emulator.address_bus.gpu_readonly()),
+        apu: without_audio_buffers(emulator.address_bus.apu_readonly()),
+        dma: emulator.address_bus.dma_readonly().clone(),
+        hdma: emulator.address_bus.hdma_readonly().clone(),
+        serial: emulator.address_bus.serial_readonly().clone(),
+        speed_switch: emulator.address_bus.speed_switch_readonly().clone()
     }
 }
 
 fn load_state_snapshot(emulator: &mut Emulator, save_state: SaveStateSnapshot) {
     emulator.cpu = save_state.cpu;
-    emulator.interrupts = save_state.interrupts;
-    emulator.timers = save_state.timers;
-    mmu::apply_snapshot(emulator, save_state.memory);
-    emulator.gpu = save_state.gpu; 
-    emulator.dma = save_state.dma;
-    emulator.hdma = save_state.hdma;
-    emulator.serial = save_state.serial;
-    emulator.speed_switch = save_state.speed_switch;
-    emulator.apu = save_state.apu;
+    emulator.address_bus.set_interrupts(save_state.interrupts);
+    emulator.address_bus.set_timers(save_state.timers);
+    emulator.address_bus.apply_memory_snapshot(save_state.memory);
+    emulator.address_bus.set_gpu(save_state.gpu); 
+    emulator.address_bus.set_dma(save_state.dma);
+    emulator.address_bus.set_hdma(save_state.hdma);
+    emulator.address_bus.set_serial(save_state.serial);
+    emulator.address_bus.set_speed_switch(save_state.speed_switch);
+    emulator.address_bus.set_apu(save_state.apu);
 
-    emulator.gpu.reset_frame_buffer();
-    emulator.apu.clear_summed_samples();
+    emulator.address_bus.gpu().reset_frame_buffer();
+    emulator.address_bus.apu().clear_summed_samples();
 }
 
 fn as_invalid_data_result(message: &str) -> Error {
@@ -95,7 +95,7 @@ pub fn encode_save_state(emulator: &Emulator) -> Result<Vec<u8>> {
     save_state_bytes.extend_from_slice(header_identifier_bytes);
 
     save_state_bytes.push(MAJOR_VERSION);
-    let title = emulator.memory.cartridge_mapper.title();
+    let title = emulator.address_bus.cartridge_mapper().title();
     save_state_bytes.push(title.len() as u8);
     save_state_bytes.extend_from_slice(title.as_bytes());
 
@@ -155,7 +155,7 @@ fn decode_save_state(current_game_title: String, data: &[u8]) -> Result<SaveStat
 }
 
 pub fn apply_save_state(emulator: &mut Emulator, data: &[u8]) -> Result<()> {
-    let title = emulator.memory.cartridge_mapper.title();
+    let title = emulator.address_bus.cartridge_mapper().title();
     let snapshot = decode_save_state(title, data)?;
     load_state_snapshot(emulator, snapshot);
     Ok(())

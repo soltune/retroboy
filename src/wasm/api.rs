@@ -1,4 +1,4 @@
-use crate::cheats;
+use crate::address_bus::cheats;
 use crate::emulator;
 use crate::emulator::Emulator;
 use crate::emulator::Mode;
@@ -136,8 +136,7 @@ pub fn press_key(key_code: &str) {
     as_maybe_key(key_code).map(|key| {
         EMULATOR.with(|emulator_cell| {
             let mut emulator = emulator_cell.borrow_mut();
-            let Emulator { joypad, interrupts, .. } = &mut *emulator;
-            joypad.handle_key_press(interrupts, &key);
+            emulator.address_bus.handle_key_press(&key);
         })
     });
 }
@@ -148,7 +147,7 @@ pub fn release_key(key_code: &str) {
     as_maybe_key(key_code).map(|key| {
         EMULATOR.with(|emulator_cell| {
             let mut emulator = emulator_cell.borrow_mut();
-            emulator.joypad.handle_key_release(&key);
+            emulator.address_bus.handle_key_release(&key);
         })
     });
 }
@@ -167,7 +166,7 @@ pub fn validate_gamegenie_code(cheat: &str) -> Option<String> {
 pub fn register_gameshark_cheat(cheat_id: &str, cheat: &str) -> Option<String> {
     EMULATOR.with(|emulator_cell| {
         let mut emulator = emulator_cell.borrow_mut();
-        cheats::register_gameshark_cheat(&mut emulator, cheat_id, cheat)
+        emulator.address_bus.cheats().register_gameshark_cheat(cheat_id, cheat)
     })
 }
 
@@ -175,7 +174,7 @@ pub fn register_gameshark_cheat(cheat_id: &str, cheat: &str) -> Option<String> {
 pub fn register_gamegenie_cheat(cheat_id: &str, cheat: &str) -> Option<String> {
     EMULATOR.with(|emulator_cell| {
         let mut emulator = emulator_cell.borrow_mut();
-        cheats::register_gamegenie_cheat(&mut emulator, cheat_id, cheat)
+        emulator.address_bus.cheats().register_gamegenie_cheat(cheat_id, cheat)
     })
 }
 
@@ -183,7 +182,7 @@ pub fn register_gamegenie_cheat(cheat_id: &str, cheat: &str) -> Option<String> {
 pub fn unregister_cheat(cheat_id: &str) {
     EMULATOR.with(|emulator_cell| {
         let mut emulator = emulator_cell.borrow_mut();
-        cheats::unregister_cheat(&mut emulator, cheat_id)
+        emulator.address_bus.cheats().unregister(cheat_id)
     })
 }
 

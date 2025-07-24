@@ -1,6 +1,6 @@
-use crate::mmu::bank_utils::{banked_read, banked_write};
-use crate::mmu::cartridge::{Cartridge, CartridgeMapper, CartridgeMapperSnapshot, MBCSnapshot};
-use crate::mmu::constants::*;
+use crate::address_bus::bank_utils::{banked_read, banked_write};
+use crate::address_bus::cartridge::{Cartridge, CartridgeMapper, CartridgeMapperSnapshot, MBCSnapshot};
+use crate::address_bus::constants::*;
 use bincode::{Decode, Encode};
 
 #[derive(Clone, Debug, Encode, Decode)]
@@ -293,11 +293,11 @@ impl CartridgeMapper for MBC3CartridgeMapper {
 
 #[cfg(test)]
 mod tests {
-    use crate::mmu::cartridge::*;
-    use crate::mmu::cartridge::test_utils::*;
-    use crate::mmu::constants::*;
-    use crate::mmu::effects::{CartridgeEffects, empty_cartridge_effects};
-    use crate::mmu::test_utils::*;
+    use crate::address_bus::cartridge::*;
+    use crate::address_bus::cartridge::test_utils::*;
+    use crate::address_bus::constants::*;
+    use crate::address_bus::effects::{CartridgeEffects, empty_cartridge_effects};
+    use crate::address_bus::test_utils::*;
     use super::*;
 
     struct FakeCartridgeEffects;

@@ -1,10 +1,9 @@
 use super::*;
 use crate::cpu::{BusActivityEntry, BusActivityType};
-use crate::emulator::{initialize_screenless_emulator, Mode};
-use crate::mmu;
-use crate::mmu::constants::*;
-use crate::mmu::effects::empty_cartridge_effects;
-use crate::mmu::test_utils::build_rom;
+use crate::emulator::{self, initialize_screenless_emulator, Mode};
+use crate::address_bus::constants::*;
+use crate::address_bus::effects::empty_cartridge_effects;
+use crate::address_bus::test_utils::build_rom;
 
 fn init_rom_with_test_instructions(test_instructions: Vec<u8>) -> Vec<u8> {
     let mut rom = build_rom(CART_TYPE_ROM_ONLY, ROM_SIZE_64KB, RAM_SIZE_2KB);
@@ -16,8 +15,8 @@ fn init_rom_with_test_instructions(test_instructions: Vec<u8>) -> Vec<u8> {
 
 fn init_emulator_from_rom(rom: Vec<u8>) -> Emulator {
     let mut emulator = initialize_screenless_emulator();
-    mmu::load_rom_buffer(&mut emulator.memory, rom, empty_cartridge_effects()).unwrap();
-    emulator.memory.in_bios = false;
+    emulator.address_bus.load_rom_buffer(rom, empty_cartridge_effects()).unwrap();
+    emulator.address_bus.set_in_bios(false);
 
     // The Game Boy actually uses a decode/execute/prefetch loop, where fetching
     // the next instruction is the last step. Initially, ihe first instruction is always a NOP.
@@ -72,7 +71,7 @@ fn loads_register_b_into_address_hl() {
     emulator.cpu.registers.h = 0x81;
     emulator.cpu.registers.l = 0x9B;
     step(&mut emulator);
-    assert_eq!(emulator.gpu.get_video_ram_byte(0x019B), 0x5A);
+    assert_eq!(emulator.address_bus.gpu_readonly().get_video_ram_byte(0x019B), 0x5A);
     assert_eq!(emulator.cpu.instruction_clock_cycles, 8);
 }
 
@@ -82,7 +81,7 @@ fn loads_immediate_byte_into_memory() {
     emulator.cpu.registers.h = 0x82;
     emulator.cpu.registers.l = 0x44;
     step(&mut emulator);
-    assert_eq!(emulator.gpu.get_video_ram_byte(0x0244), 0xE6);
+    assert_eq!(emulator.address_bus.gpu_readonly().get_video_ram_byte(0x0244), 0xE6);
     assert_eq!(emulator.cpu.instruction_clock_cycles, 12);
 }
 
@@ -99,7 +98,7 @@ fn loads_byte_at_address_nn_into_register_a() {
 #[test]
 fn loads_byte_at_ff00_plus_register_c_into_register_a() {
     let mut emulator = init_emulator_with_test_instructions(vec![0xF2]);
-    emulator.memory.zero_page_ram[0x1B] = 0x9A;
+    emulator.address_bus.zero_page_ram()[0x1B] = 0x9A;
     emulator.cpu.registers.c = 0x9B;
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.a, 0x9A);
@@ -112,7 +111,7 @@ fn loads_register_a_into_ff00_plus_register_c() {
     emulator.cpu.registers.a = 0x9A;
     emulator.cpu.registers.c = 0x9B;
     step(&mut emulator);
-    assert_eq!(emulator.memory.zero_page_ram[0x1B], 0x9A);
+    assert_eq!(emulator.address_bus.zero_page_ram()[0x1B], 0x9A);
     assert_eq!(emulator.cpu.instruction_clock_cycles, 8);
 }
 
@@ -139,7 +138,7 @@ fn loads_register_a_into_address_hl_then_decrements_hl() {
     emulator.cpu.registers.l = 0xB1;
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.program_counter, 2);
-    assert_eq!(emulator.gpu.get_video_ram_byte(0x0AB1), 0xBB);
+    assert_eq!(emulator.address_bus.gpu_readonly().get_video_ram_byte(0x0AB1), 0xBB);
     assert_eq!(emulator.cpu.registers.h, 0x8A);
     assert_eq!(emulator.cpu.registers.l, 0xB0);
     assert_eq!(emulator.cpu.instruction_clock_cycles, 8);
@@ -169,7 +168,7 @@ fn loads_register_a_into_address_hl_then_increments_hl() {
     emulator.cpu.registers.l = 0xB1;
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.program_counter, 2);
-    assert_eq!(emulator.gpu.get_video_ram_byte(0x0AB1), 0xBB);
+    assert_eq!(emulator.address_bus.gpu_readonly().get_video_ram_byte(0x0AB1), 0xBB);
     assert_eq!(emulator.cpu.registers.h, 0x8A);
     assert_eq!(emulator.cpu.registers.l, 0xB2);
     assert_eq!(emulator.cpu.instruction_clock_cycles, 8);
@@ -180,14 +179,14 @@ fn loads_register_a_into_ff00_plus_immediate_byte() {
     let mut emulator = init_emulator_with_test_instructions(vec![0xE0, 0xB1]);
     emulator.cpu.registers.a = 0x9A;
     step(&mut emulator);
-    assert_eq!(emulator.memory.zero_page_ram[0x31], 0x9A);
+    assert_eq!(emulator.address_bus.zero_page_ram()[0x31], 0x9A);
     assert_eq!(emulator.cpu.instruction_clock_cycles, 12);
 }
 
 #[test]
 fn loads_byte_at_address_ff00_plus_immediate_byte_into_register_a() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xF0, 0xB1]);
-    emulator.memory.zero_page_ram[0x31] = 0x9A;
+    emulator.address_bus.zero_page_ram()[0x31] = 0x9A;
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.a, 0x9A);
     assert_eq!(emulator.cpu.instruction_clock_cycles, 12);
@@ -249,8 +248,8 @@ fn loads_stack_pointer_into_address_nn() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x08, 0x13, 0x82]);
     emulator.cpu.registers.stack_pointer = 0x9BB2;
     step(&mut emulator);
-    assert_eq!(emulator.gpu.get_video_ram_byte(0x0213), 0xB2);
-    assert_eq!(emulator.gpu.get_video_ram_byte(0x0214), 0x9B);
+    assert_eq!(emulator.address_bus.gpu_readonly().get_video_ram_byte(0x0213), 0xB2);
+    assert_eq!(emulator.address_bus.gpu_readonly().get_video_ram_byte(0x0214), 0x9B);
     assert_eq!(emulator.cpu.instruction_clock_cycles, 20);
 }
 
@@ -261,8 +260,8 @@ fn pushes_register_pair_onto_stack() {
     emulator.cpu.registers.c = 0xDD;
     emulator.cpu.registers.stack_pointer = 0xFFFE;
     step(&mut emulator);
-    assert_eq!(emulator.memory.zero_page_ram[0x7D], 0xB1);
-    assert_eq!(emulator.memory.zero_page_ram[0x7C], 0xDD);
+    assert_eq!(emulator.address_bus.zero_page_ram()[0x7D], 0xB1);
+    assert_eq!(emulator.address_bus.zero_page_ram()[0x7C], 0xDD);
     assert_eq!(emulator.cpu.registers.stack_pointer, 0xFFFC);
     assert_eq!(emulator.cpu.instruction_clock_cycles, 16);
 }
@@ -478,11 +477,11 @@ fn decrements_register_without_carry() {
 #[test]
 fn increments_memory_byte_with_half_carry() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x34]);
-    emulator.gpu.set_video_ram_byte(0x0C11, 0x0F);
+    emulator.address_bus.gpu().set_video_ram_byte(0x0C11, 0x0F);
     emulator.cpu.registers.h = 0x8C;
     emulator.cpu.registers.l = 0x11;
     step(&mut emulator);
-    assert_eq!(emulator.gpu.get_video_ram_byte(0x0C11), 0x10);
+    assert_eq!(emulator.address_bus.gpu_readonly().get_video_ram_byte(0x0C11), 0x10);
     assert_eq!(emulator.cpu.registers.f, 0x20);
     assert_eq!(emulator.cpu.instruction_clock_cycles, 12);
 }
@@ -490,11 +489,11 @@ fn increments_memory_byte_with_half_carry() {
 #[test]
 fn decrements_memory_byte_with_half_carry() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x35]);
-    emulator.gpu.set_video_ram_byte(0x0C11, 0x10);
+    emulator.address_bus.gpu().set_video_ram_byte(0x0C11, 0x10);
     emulator.cpu.registers.h = 0x8C;
     emulator.cpu.registers.l = 0x11;
     step(&mut emulator);
-    assert_eq!(emulator.gpu.get_video_ram_byte(0x0C11), 0x0F);
+    assert_eq!(emulator.address_bus.gpu_readonly().get_video_ram_byte(0x0C11), 0x0F);
     assert_eq!(emulator.cpu.registers.f, 0x60);
     assert_eq!(emulator.cpu.instruction_clock_cycles, 12);
 }
@@ -603,11 +602,11 @@ fn swaps_nibbles_in_register() {
 #[test]
 fn swaps_nibbles_in_memory_byte() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x36]);
-    emulator.gpu.set_video_ram_byte(0x0AB1, 0xBC);
+    emulator.address_bus.gpu().set_video_ram_byte(0x0AB1, 0xBC);
     emulator.cpu.registers.h = 0x8A;
     emulator.cpu.registers.l = 0xB1;
     step(&mut emulator);
-    assert_eq!(emulator.gpu.get_video_ram_byte(0x0AB1), 0xCB);
+    assert_eq!(emulator.address_bus.gpu_readonly().get_video_ram_byte(0x0AB1), 0xCB);
     assert_eq!(emulator.cpu.instruction_clock_cycles, 16);
 }
 
@@ -703,9 +702,9 @@ fn rotates_memory_location_hl_left() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x06]);
     emulator.cpu.registers.h = 0x93;
     emulator.cpu.registers.l = 0xDA;
-    emulator.gpu.set_video_ram_byte(0x13DA, 0xA7);
+    emulator.address_bus.gpu().set_video_ram_byte(0x13DA, 0xA7);
     step(&mut emulator);
-    assert_eq!(emulator.gpu.get_video_ram_byte(0x13DA), 0x4F);
+    assert_eq!(emulator.address_bus.gpu_readonly().get_video_ram_byte(0x13DA), 0x4F);
     assert_eq!(emulator.cpu.registers.f, 0x10);
     assert_eq!(emulator.cpu.instruction_clock_cycles, 16);
 }
@@ -715,9 +714,9 @@ fn rotates_memory_location_hl_left_through_carry() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x16]);
     emulator.cpu.registers.h = 0x9A;
     emulator.cpu.registers.l = 0x51;
-    emulator.gpu.set_video_ram_byte(0x1A51, 0xA7);
+    emulator.address_bus.gpu().set_video_ram_byte(0x1A51, 0xA7);
     step(&mut emulator);
-    assert_eq!(emulator.gpu.get_video_ram_byte(0x1A51), 0x4E);
+    assert_eq!(emulator.address_bus.gpu_readonly().get_video_ram_byte(0x1A51), 0x4E);
     assert_eq!(emulator.cpu.registers.f, 0x10);
     assert_eq!(emulator.cpu.instruction_clock_cycles, 16);
 }
@@ -727,9 +726,9 @@ fn rotates_memory_location_hl_right() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x0E]);
     emulator.cpu.registers.h = 0x9A;
     emulator.cpu.registers.l = 0xAC;
-    emulator.gpu.set_video_ram_byte(0x1AAC, 0xA7);
+    emulator.address_bus.gpu().set_video_ram_byte(0x1AAC, 0xA7);
     step(&mut emulator);
-    assert_eq!(emulator.gpu.get_video_ram_byte(0x1AAC), 0xD3);
+    assert_eq!(emulator.address_bus.gpu_readonly().get_video_ram_byte(0x1AAC), 0xD3);
     assert_eq!(emulator.cpu.registers.f, 0x10);
     assert_eq!(emulator.cpu.instruction_clock_cycles, 16);
 }
@@ -739,9 +738,9 @@ fn rotates_memory_location_hl_right_through_carry() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x1E]);
     emulator.cpu.registers.h = 0x9A;
     emulator.cpu.registers.l = 0x51;
-    emulator.gpu.set_video_ram_byte(0x1A51, 0xA7);
+    emulator.address_bus.gpu().set_video_ram_byte(0x1A51, 0xA7);
     step(&mut emulator);
-    assert_eq!(emulator.gpu.get_video_ram_byte(0x1A51), 0x53);
+    assert_eq!(emulator.address_bus.gpu_readonly().get_video_ram_byte(0x1A51), 0x53);
     assert_eq!(emulator.cpu.registers.f, 0x10);
     assert_eq!(emulator.cpu.instruction_clock_cycles, 16);
 }
@@ -761,9 +760,9 @@ fn shifts_memory_location_hl_left() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x26]);
     emulator.cpu.registers.h = 0x9A;
     emulator.cpu.registers.l = 0x51;
-    emulator.gpu.set_video_ram_byte(0x1A51, 0xA7);
+    emulator.address_bus.gpu().set_video_ram_byte(0x1A51, 0xA7);
     step(&mut emulator);
-    assert_eq!(emulator.gpu.get_video_ram_byte(0x1A51), 0x4E);
+    assert_eq!(emulator.address_bus.gpu_readonly().get_video_ram_byte(0x1A51), 0x4E);
     assert_eq!(emulator.cpu.registers.f, 0x10);
     assert_eq!(emulator.cpu.instruction_clock_cycles, 16);
 }
@@ -783,9 +782,9 @@ fn shifts_memory_location_hl_right_maintaining_msb() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x2E]);
     emulator.cpu.registers.h = 0x9A;
     emulator.cpu.registers.l = 0x51;
-    emulator.gpu.set_video_ram_byte(0x1A51, 0xA7);
+    emulator.address_bus.gpu().set_video_ram_byte(0x1A51, 0xA7);
     step(&mut emulator);
-    assert_eq!(emulator.gpu.get_video_ram_byte(0x1A51), 0xD3);
+    assert_eq!(emulator.address_bus.gpu_readonly().get_video_ram_byte(0x1A51), 0xD3);
     assert_eq!(emulator.cpu.registers.f, 0x10);
     assert_eq!(emulator.cpu.instruction_clock_cycles, 16);
 }
@@ -805,9 +804,9 @@ fn shifts_memory_location_hl_right() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCB, 0x3E]);
     emulator.cpu.registers.h = 0x9A;
     emulator.cpu.registers.l = 0x51;
-    emulator.gpu.set_video_ram_byte(0x1A51, 0xA7);
+    emulator.address_bus.gpu().set_video_ram_byte(0x1A51, 0xA7);
     step(&mut emulator);
-    assert_eq!(emulator.gpu.get_video_ram_byte(0x1A51), 0x53);
+    assert_eq!(emulator.address_bus.gpu_readonly().get_video_ram_byte(0x1A51), 0x53);
     assert_eq!(emulator.cpu.registers.f, 0x10);
     assert_eq!(emulator.cpu.instruction_clock_cycles, 16);
 }
@@ -1147,8 +1146,8 @@ fn calls_address_nn() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0xCD, 0x4A, 0x51]);
     emulator.cpu.registers.stack_pointer = 0xFFFE;
     step(&mut emulator);
-    assert_eq!(emulator.memory.zero_page_ram[0x7D], 0x00);
-    assert_eq!(emulator.memory.zero_page_ram[0x7C], 0x03);
+    assert_eq!(emulator.address_bus.zero_page_ram()[0x7D], 0x00);
+    assert_eq!(emulator.address_bus.zero_page_ram()[0x7C], 0x03);
     assert_eq!(emulator.cpu.registers.stack_pointer, 0xFFFC);
     assert_eq!(emulator.cpu.registers.program_counter, 0x514B);
     assert_eq!(emulator.cpu.instruction_clock_cycles, 24);
@@ -1160,8 +1159,8 @@ fn calls_address_nn_if_z_flag_is_reset() {
     emulator.cpu.registers.stack_pointer = 0xFFFE;
     emulator.cpu.registers.f = 0x80;
     step(&mut emulator);
-    assert_eq!(emulator.memory.zero_page_ram[0x7D], 0x00);
-    assert_eq!(emulator.memory.zero_page_ram[0x7C], 0x00);
+    assert_eq!(emulator.address_bus.zero_page_ram()[0x7D], 0x00);
+    assert_eq!(emulator.address_bus.zero_page_ram()[0x7C], 0x00);
     assert_eq!(emulator.cpu.registers.stack_pointer, 0xFFFE);
     assert_eq!(emulator.cpu.registers.program_counter, 0x04);
     assert_eq!(emulator.cpu.instruction_clock_cycles, 12);
@@ -1173,8 +1172,8 @@ fn calls_address_nn_if_z_flag_is_set() {
     emulator.cpu.registers.stack_pointer = 0xFFFE;
     emulator.cpu.registers.f = 0x80;
     step(&mut emulator);
-    assert_eq!(emulator.memory.zero_page_ram[0x7D], 0x00);
-    assert_eq!(emulator.memory.zero_page_ram[0x7C], 0x03);
+    assert_eq!(emulator.address_bus.zero_page_ram()[0x7D], 0x00);
+    assert_eq!(emulator.address_bus.zero_page_ram()[0x7C], 0x03);
     assert_eq!(emulator.cpu.registers.stack_pointer, 0xFFFC);
     assert_eq!(emulator.cpu.registers.program_counter, 0x514B);
     assert_eq!(emulator.cpu.instruction_clock_cycles, 24);
@@ -1186,8 +1185,8 @@ fn calls_address_nn_if_c_flag_is_reset() {
     emulator.cpu.registers.stack_pointer = 0xFFFE;
     emulator.cpu.registers.f = 0x80;
     step(&mut emulator);
-    assert_eq!(emulator.memory.zero_page_ram[0x7D], 0x00);
-    assert_eq!(emulator.memory.zero_page_ram[0x7C], 0x03);
+    assert_eq!(emulator.address_bus.zero_page_ram()[0x7D], 0x00);
+    assert_eq!(emulator.address_bus.zero_page_ram()[0x7C], 0x03);
     assert_eq!(emulator.cpu.registers.stack_pointer, 0xFFFC);
     assert_eq!(emulator.cpu.registers.program_counter, 0x514B);
     assert_eq!(emulator.cpu.instruction_clock_cycles, 24);
@@ -1211,8 +1210,8 @@ fn restarts_address_0() {
     step(&mut emulator);
     step(&mut emulator);
     step(&mut emulator);
-    assert_eq!(emulator.memory.zero_page_ram[0x7D], 0x00);
-    assert_eq!(emulator.memory.zero_page_ram[0x7C], 0x03);
+    assert_eq!(emulator.address_bus.zero_page_ram()[0x7D], 0x00);
+    assert_eq!(emulator.address_bus.zero_page_ram()[0x7C], 0x03);
     assert_eq!(emulator.cpu.registers.stack_pointer, 0xFFFC);
     assert_eq!(emulator.cpu.registers.program_counter, 0x01);
 }
@@ -1302,8 +1301,8 @@ fn halts_the_cpu_until_interrupt() {
 
     emulator.cpu.interrupts.enabled = true;
     emulator.cpu.registers.stack_pointer = 0x2112;
-    emulator.interrupts.enabled = 0x1F;
-    emulator.interrupts.flags = 0x01;
+    emulator.address_bus.interrupts().enabled = 0x1F;
+    emulator.address_bus.interrupts().flags = 0x01;
 
     step(&mut emulator);
     assert_eq!(emulator.cpu.halted, false);
@@ -1358,14 +1357,14 @@ fn runs_vertical_blank_isr() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x00]);
     emulator.cpu.registers.stack_pointer = 0x2112;
     emulator.cpu.interrupts.enabled = true;
-    emulator.interrupts.enabled = 0x1F;
-    emulator.interrupts.flags = 0x01;
+    emulator.address_bus.interrupts().enabled = 0x1F;
+    emulator.address_bus.interrupts().flags = 0x01;
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.stack_pointer, 0x2110);
     assert_eq!(emulator.cpu.interrupts.enabled, false);
     assert_eq!(emulator.cpu.registers.program_counter, 0x41);
-    assert_eq!(emulator.interrupts.enabled, 0x1F);
-    assert_eq!(emulator.interrupts.flags, 0x00);
+    assert_eq!(emulator.address_bus.interrupts_readonly().enabled, 0x1F);
+    assert_eq!(emulator.address_bus.interrupts_readonly().flags, 0x00);
 }
 
 #[test]
@@ -1373,14 +1372,14 @@ fn runs_lcd_status_isr() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x00]);
     emulator.cpu.registers.stack_pointer = 0x2112;
     emulator.cpu.interrupts.enabled = true;
-    emulator.interrupts.enabled = 0x1F;
-    emulator.interrupts.flags = 0x02;
+    emulator.address_bus.interrupts().enabled = 0x1F;
+    emulator.address_bus.interrupts().flags = 0x02;
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.stack_pointer, 0x2110);
     assert_eq!(emulator.cpu.interrupts.enabled, false);
     assert_eq!(emulator.cpu.registers.program_counter, 0x49);
-    assert_eq!(emulator.interrupts.enabled, 0x1F);
-    assert_eq!(emulator.interrupts.flags, 0x00);
+    assert_eq!(emulator.address_bus.interrupts_readonly().enabled, 0x1F);
+    assert_eq!(emulator.address_bus.interrupts_readonly().flags, 0x00);
 }
 
 #[test]
@@ -1388,14 +1387,14 @@ fn runs_timer_overflow_isr() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x00]);
     emulator.cpu.registers.stack_pointer = 0x2112;
     emulator.cpu.interrupts.enabled = true;
-    emulator.interrupts.enabled = 0x1F;
-    emulator.interrupts.flags = 0x04;
+    emulator.address_bus.interrupts().enabled = 0x1F;
+    emulator.address_bus.interrupts().flags = 0x04;
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.stack_pointer, 0x2110);
     assert_eq!(emulator.cpu.interrupts.enabled, false);
     assert_eq!(emulator.cpu.registers.program_counter, 0x51);
-    assert_eq!(emulator.interrupts.enabled, 0x1F);
-    assert_eq!(emulator.interrupts.flags, 0x00);
+    assert_eq!(emulator.address_bus.interrupts_readonly().enabled, 0x1F);
+    assert_eq!(emulator.address_bus.interrupts_readonly().flags, 0x00);
 }
 
 #[test]
@@ -1403,14 +1402,14 @@ fn runs_serial_link_isr() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x00]);
     emulator.cpu.registers.stack_pointer = 0x2112;
     emulator.cpu.interrupts.enabled = true;
-    emulator.interrupts.enabled = 0x1F;
-    emulator.interrupts.flags = 0x08;
+    emulator.address_bus.interrupts().enabled = 0x1F;
+    emulator.address_bus.interrupts().flags = 0x08;
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.stack_pointer, 0x2110);
     assert_eq!(emulator.cpu.interrupts.enabled, false);
     assert_eq!(emulator.cpu.registers.program_counter, 0x59);
-    assert_eq!(emulator.interrupts.enabled, 0x1F);
-    assert_eq!(emulator.interrupts.flags, 0x00);
+    assert_eq!(emulator.address_bus.interrupts_readonly().enabled, 0x1F);
+    assert_eq!(emulator.address_bus.interrupts_readonly().flags, 0x00);
 }
 
 #[test]
@@ -1418,33 +1417,33 @@ fn runs_joypad_press_isr() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x00]);
     emulator.cpu.registers.stack_pointer = 0x2112;
     emulator.cpu.interrupts.enabled = true;
-    emulator.interrupts.enabled = 0x1F;
-    emulator.interrupts.flags = 0x10;
+    emulator.address_bus.interrupts().enabled = 0x1F;
+    emulator.address_bus.interrupts().flags = 0x10;
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.stack_pointer, 0x2110);
     assert_eq!(emulator.cpu.interrupts.enabled, false);
     assert_eq!(emulator.cpu.registers.program_counter, 0x61);
-    assert_eq!(emulator.interrupts.enabled, 0x1F);
-    assert_eq!(emulator.interrupts.flags, 0x00);
+    assert_eq!(emulator.address_bus.interrupts_readonly().enabled, 0x1F);
+    assert_eq!(emulator.address_bus.interrupts_readonly().flags, 0x00);
 }
 
 #[test]
 fn toggles_cgb_double_speed_mode() {
     let mut emulator: Emulator = init_emulator_with_test_instructions(vec![0x10]);
-    emulator.mode = Mode::CGB;
-    emulator.speed_switch.armed = true;
+    emulator::set_mode(&mut emulator, Mode::CGB);
+    emulator.address_bus.speed_switch().set_armed(true);
     step(&mut emulator);
-    assert_eq!(emulator.speed_switch.armed, false);
-    assert_eq!(emulator.speed_switch.cgb_double_speed, true);
+    assert_eq!(emulator.address_bus.speed_switch_readonly().armed(), false);
+    assert_eq!(emulator.address_bus.speed_switch_readonly().cgb_double_speed(), true);
 }
 
 #[test]
 fn records_bus_activity_for_loading_immediate_byte_into_register_b() {
     let mut emulator = initialize_screenless_emulator();
 
-    emulator.processor_test_mode = true;
-    emulator.memory.processor_test_ram[0x00] = 0x06;
-    emulator.memory.processor_test_ram[0x01] = 0xA1;
+    emulator.address_bus.set_processor_test_mode(true);
+    emulator.address_bus.processor_test_ram()[0x00] = 0x06;
+    emulator.address_bus.processor_test_ram()[0x01] = 0xA1;
 
     // Step once to make sure the first opcode is loaded
     step(&mut emulator);
@@ -1466,10 +1465,10 @@ fn records_bus_activity_for_loading_immediate_byte_into_register_b() {
 fn records_bus_activity_for_jump_to_address_nn() {
     let mut emulator: Emulator = initialize_screenless_emulator();
 
-    emulator.processor_test_mode = true;
-    emulator.memory.processor_test_ram[0x00] = 0xC3;
-    emulator.memory.processor_test_ram[0x01] = 0xAA;
-    emulator.memory.processor_test_ram[0x02] = 0x54;
+    emulator.address_bus.set_processor_test_mode(true);
+    emulator.address_bus.processor_test_ram()[0x00] = 0xC3;
+    emulator.address_bus.processor_test_ram()[0x01] = 0xAA;
+    emulator.address_bus.processor_test_ram()[0x02] = 0x54;
 
     // Step once to make sure the first opcode is loaded
     step(&mut emulator);

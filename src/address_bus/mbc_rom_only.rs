@@ -1,4 +1,4 @@
-use crate::mmu::cartridge::{Cartridge, CartridgeMapper, CartridgeMapperSnapshot, MBCSnapshot};
+use crate::address_bus::cartridge::{Cartridge, CartridgeMapper, CartridgeMapperSnapshot, MBCSnapshot};
 
 #[derive(Debug)]
 pub struct MBCRomOnlyCartridgeMapper {

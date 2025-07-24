@@ -121,5 +121,4 @@ mod loads;
 mod jumps;
 pub mod interrupts;
 pub mod timers;
-pub mod hdma;
 pub mod opcodes;

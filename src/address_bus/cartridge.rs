@@ -1,13 +1,13 @@
 use core::panic;
 use std::io;
 
-use crate::mmu::constants::*;
-use crate::mmu::effects::CartridgeEffects;
-use crate::mmu::huc1::{HUC1State, initialize_huc1_mapper};
-use crate::mmu::mbc1::{MBC1State, initialize_mbc1_mapper};
-use crate::mmu::mbc3::{MBC3State, initialize_mbc3_mapper};
-use crate::mmu::mbc5::{MBC5State, initialize_mbc5_mapper};
-use crate::mmu::mbc_rom_only::initialize_mbc_rom_only_mapper;
+use crate::address_bus::constants::*;
+use crate::address_bus::effects::CartridgeEffects;
+use crate::address_bus::huc1::{HUC1State, initialize_huc1_mapper};
+use crate::address_bus::mbc1::{MBC1State, initialize_mbc1_mapper};
+use crate::address_bus::mbc3::{MBC3State, initialize_mbc3_mapper};
+use crate::address_bus::mbc5::{MBC5State, initialize_mbc5_mapper};
+use crate::address_bus::mbc_rom_only::initialize_mbc_rom_only_mapper;
 use bincode::{Decode, Encode};
 
 #[derive(Debug, Clone)]
@@ -283,8 +283,8 @@ pub fn load_rom_buffer(buffer: Vec<u8>, effects: Box<dyn CartridgeEffects>) -> i
 #[cfg(test)]
 pub mod test_utils {
     use super::*;
-    use crate::mmu::effects::empty_cartridge_effects;
-    use crate::mmu::test_utils::*;
+    use crate::address_bus::effects::empty_cartridge_effects;
+    use crate::address_bus::test_utils::*;
 
     pub fn build_cartridge_mapper(cartridge_type: u8, rom_size_index: u8, ram_size_index: u8) -> Box<dyn CartridgeMapper> {
         let rom_buffer = build_rom(cartridge_type, rom_size_index, ram_size_index);

@@ -123,7 +123,7 @@ fn bus_activity_matches(
 fn run_cpu_test(test: &JsonCpuTest) {
     let mut emulator = initialize_screenless_emulator();
 
-    emulator.processor_test_mode = true;
+    emulator.address_bus.set_processor_test_mode(true);
     
     emulator.cpu.registers.a = test.initial.a;
     emulator.cpu.registers.b = test.initial.b;
@@ -137,10 +137,11 @@ fn run_cpu_test(test: &JsonCpuTest) {
     emulator.cpu.registers.stack_pointer = test.initial.sp;
 
     for entry in &test.initial.ram {
-        emulator.memory.processor_test_ram[entry.0 as usize] = entry.1;
+        let test_ram = emulator.address_bus.processor_test_ram();
+        test_ram[entry.0 as usize] = entry.1;
     }
 
-    emulator.cpu.registers.opcode = emulator.memory.processor_test_ram[(test.initial.pc - 1) as usize];
+    emulator.cpu.registers.opcode = emulator.address_bus.processor_test_ram_readonly()[(test.initial.pc - 1) as usize];
 
     emulator::step(&mut emulator);
 

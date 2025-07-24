@@ -1,14 +1,11 @@
 pub mod cpu;
-pub mod mmu;
+pub mod address_bus;
 pub mod gpu;
-pub mod dma;
 pub mod apu;
 pub mod utils;
 pub mod joypad;
 pub mod emulator;
 pub mod wasm;
-pub mod speed_switch;
 pub mod serial;
-pub mod cheats;
 pub mod save_state;
 mod bios;

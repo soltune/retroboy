@@ -25,7 +25,8 @@ pub fn initialize_interrupt_registers() -> InterruptRegisters {
 }
 
 fn get_fired_interrupt_bits(emulator: &Emulator) -> u8 {
-    emulator.interrupts.enabled & emulator.interrupts.flags & 0x1F
+    let interrupts = emulator.address_bus.interrupts_readonly();
+    interrupts.enabled & interrupts.flags & 0x1F
 }
 
 fn get_fired_interrupt(emulator: &Emulator) -> Option<InterruptType> {
@@ -61,7 +62,7 @@ fn get_interrupt_isr(interrupt_type: &InterruptType) -> u8 {
 }
 
 fn turn_off_interrupt_flag(emulator: &mut Emulator, interrupt_type: &InterruptType) {
-    let interrupt_registers = &mut emulator.interrupts;
+    let interrupt_registers = emulator.address_bus.interrupts();
     match interrupt_type {
         InterruptType::VBlank =>
             interrupt_registers.flags = interrupt_registers.flags & !0x01,

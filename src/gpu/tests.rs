@@ -1,4 +1,4 @@
-use crate::cpu::hdma::initialize_hdma;
+use crate::address_bus::hdma::HDMAState;
 use crate::cpu::interrupts::initialize_interrupt_registers;
 use crate::gpu::{Gpu, GpuParams};
 use super::*;
@@ -12,7 +12,7 @@ fn initialize_test_gpu() -> Gpu {
 fn step_gpu(gpu: &mut Gpu) {
     gpu.step(GpuParams {
         interrupt_registers: &mut initialize_interrupt_registers(),
-        hdma: &mut initialize_hdma(),
+        hdma: &mut HDMAState::new(),
         in_color_bios: false,
         renderer: |_| {}
     });
@@ -21,7 +21,7 @@ fn step_gpu(gpu: &mut Gpu) {
 fn step_gpu_with_interrupts(gpu: &mut Gpu, interrupts: &mut InterruptRegisters) {
     gpu.step(GpuParams {
         interrupt_registers: interrupts,
-        hdma: &mut initialize_hdma(),
+        hdma: &mut HDMAState::new(),
         in_color_bios: false,
         renderer: |_| {}
     });
