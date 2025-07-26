@@ -38,7 +38,7 @@ pub struct BusActivityEntry {
     pub activity_type: BusActivityType
 }
 
-pub struct CpuState {
+pub struct Cpu {
     pub registers: Registers,
     pub halted: bool,
     pub halt_bug: bool,
@@ -69,8 +69,8 @@ pub const REGISTER_HL: RegisterPair = RegisterPair { first: Register::H, second:
 pub const REGISTER_BC: RegisterPair = RegisterPair { first: Register::B, second: Register::C };
 pub const REGISTER_DE: RegisterPair = RegisterPair { first: Register::D, second: Register::E }; 
 
-pub fn initialize_cpu(address_bus: AddressBus) -> CpuState {
-    CpuState {
+pub fn initialize_cpu(address_bus: AddressBus) -> Cpu {
+    Cpu {
         registers: Registers {
             a: 0,
             b: 0,
@@ -97,13 +97,13 @@ pub fn initialize_cpu(address_bus: AddressBus) -> CpuState {
     }
 }
 
-pub fn read_next_instruction_byte(cpu_state: &mut CpuState) -> u8 {
+pub fn read_next_instruction_byte(cpu_state: &mut Cpu) -> u8 {
     let byte = microops::read_byte_from_memory(cpu_state, cpu_state.registers.program_counter);
     cpu_state.registers.program_counter += 1;
     byte
 }
 
-pub fn read_next_instruction_word(cpu_state: &mut CpuState) -> u16 {
+pub fn read_next_instruction_word(cpu_state: &mut Cpu) -> u16 {
     let word = microops::read_word_from_memory(cpu_state, cpu_state.registers.program_counter);
     cpu_state.registers.program_counter += 2;
     word
@@ -113,11 +113,11 @@ pub fn handle_illegal_opcode(opcode: u8) {
     panic!("Encountered illegal opcode {:#04X}", opcode);
 }
 
-pub fn at_end_of_boot_rom(cpu_state: &mut CpuState) -> bool {
+pub fn at_end_of_boot_rom(cpu_state: &mut Cpu) -> bool {
     cpu_state.registers.program_counter == 0x100
 }
 
-impl Serializable for CpuState {
+impl Serializable for Cpu {
     fn serialize(&self, writer: &mut dyn Write)-> std::io::Result<()> {
         self.registers.serialize(writer)?;
         self.halted.serialize(writer)?;

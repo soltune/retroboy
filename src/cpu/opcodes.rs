@@ -1,4 +1,4 @@
-use crate::cpu::{CpuState, Register, REGISTER_AF, REGISTER_BC, REGISTER_DE, REGISTER_HL, read_next_instruction_byte, read_next_instruction_word, handle_illegal_opcode};
+use crate::cpu::{Cpu, Register, REGISTER_AF, REGISTER_BC, REGISTER_DE, REGISTER_HL, read_next_instruction_byte, read_next_instruction_word, handle_illegal_opcode};
 use crate::cpu::microops;
 use crate::cpu::alu;
 use crate::cpu::bitops;
@@ -6,7 +6,7 @@ use crate::cpu::interrupts;
 use crate::cpu::jumps;
 use crate::cpu::loads;
 
-fn emulate_halt_bug(cpu: &mut CpuState) {
+fn emulate_halt_bug(cpu: &mut Cpu) {
     // Mimics halt bug behavior, which runs the instruction after HALT twice.
     if !cpu.halted && cpu.halt_bug {
         cpu.registers.program_counter -= 1;
@@ -14,7 +14,7 @@ fn emulate_halt_bug(cpu: &mut CpuState) {
     }
 }
 
-fn update_interrupt_flag_after_delay(cpu: &mut CpuState) {
+fn update_interrupt_flag_after_delay(cpu: &mut Cpu) {
     if cpu.interrupts.enable_delay > 0 {
         if cpu.interrupts.enable_delay == 1 {
             cpu.interrupts.enabled = true;
@@ -29,22 +29,22 @@ fn update_interrupt_flag_after_delay(cpu: &mut CpuState) {
     }
 }
 
-fn reset_instruction_clock_cycles(cpu: &mut CpuState) {
+fn reset_instruction_clock_cycles(cpu: &mut Cpu) {
     cpu.instruction_clock_cycles = 0;
 }
 
-fn reset_last_opcode_bus_activity(cpu_state: &mut CpuState) {
+fn reset_last_opcode_bus_activity(cpu_state: &mut Cpu) {
     if cpu_state.address_bus.processor_test_mode() {
         cpu_state.opcode_bus_activity.clear();
     }
 }
 
-fn prefetch_next_opcode(cpu_state: &mut CpuState) {
+fn prefetch_next_opcode(cpu_state: &mut Cpu) {
     let next_opcode= read_next_instruction_byte(cpu_state);
     cpu_state.registers.opcode = next_opcode;
 }
 
-pub fn step(cpu_state: &mut CpuState) {
+pub fn step(cpu_state: &mut Cpu) {
     if cpu_state.address_bus.hdma().in_progress() {
         cpu_state.address_bus.hdma_step();
     }
@@ -56,7 +56,7 @@ pub fn step(cpu_state: &mut CpuState) {
     prefetch_next_opcode(cpu_state);
 }
 
-fn execute_opcode(cpu_state: &mut CpuState) {
+fn execute_opcode(cpu_state: &mut Cpu) {
     reset_instruction_clock_cycles(cpu_state);
     reset_last_opcode_bus_activity(cpu_state);
 
@@ -890,7 +890,7 @@ fn execute_opcode(cpu_state: &mut CpuState) {
     }
 }
 
-fn execute_cb_opcode(cpu_state: &mut CpuState) {
+fn execute_cb_opcode(cpu_state: &mut Cpu) {
     let opcode = read_next_instruction_byte(cpu_state);
     match opcode {
         0x00 =>

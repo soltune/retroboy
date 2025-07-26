@@ -1,4 +1,4 @@
-use crate::cpu::{self, initialize_cpu, CpuState};
+use crate::cpu::{self, initialize_cpu, Cpu};
 use crate::address_bus::AddressBus;
 use crate::serializable::Serializable;
 use serializable_derive::Serializable;
@@ -16,7 +16,7 @@ pub enum Mode {
 
 #[derive(Serializable)]
 pub struct Emulator {
-    pub cpu: CpuState,
+    pub cpu: Cpu,
     pub mode: Mode
 }
 

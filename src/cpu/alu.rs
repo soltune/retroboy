@@ -1,9 +1,9 @@
-use crate::cpu::{Register, CpuState};
+use crate::cpu::{Register, Cpu};
 use crate::cpu::microops;
 
 use super::{REGISTER_HL, RegisterPair};
 
-pub fn add_value_to_register(cpu_state: &mut CpuState, register: Register, value: u8) {
+pub fn add_value_to_register(cpu_state: &mut Cpu, register: Register, value: u8) {
     let byte = microops::read_from_register(cpu_state, &register);
     let sum = byte.wrapping_add(value);
 
@@ -15,7 +15,7 @@ pub fn add_value_to_register(cpu_state: &mut CpuState, register: Register, value
     microops::set_flag_c(cpu_state, (value as u16 + byte as u16) > 0xFF);
 }
 
-pub fn add_value_to_register_pair(cpu_state: &mut CpuState, register_pair: RegisterPair, value: u16) {
+pub fn add_value_to_register_pair(cpu_state: &mut Cpu, register_pair: RegisterPair, value: u16) {
     let word = microops::read_from_register_pair(cpu_state, &register_pair);
     let sum = word.wrapping_add(value);
 
@@ -28,7 +28,7 @@ pub fn add_value_to_register_pair(cpu_state: &mut CpuState, register_pair: Regis
     microops::step_one_machine_cycle(cpu_state);
 }
 
-pub fn add_value_and_carry_to_register(cpu_state: &mut CpuState, register: Register, value: u8) {
+pub fn add_value_and_carry_to_register(cpu_state: &mut Cpu, register: Register, value: u8) {
     let carry_value = if microops::is_c_flag_set(cpu_state) { 1 as u8 } else { 0 as u8 };
     let byte = microops::read_from_register(cpu_state, &register);
     let sum = byte.wrapping_add(value).wrapping_add(carry_value);
@@ -41,7 +41,7 @@ pub fn add_value_and_carry_to_register(cpu_state: &mut CpuState, register: Regis
     microops::set_flag_c(cpu_state, (value as u16 + byte as u16 + carry_value as u16) > 0xFF);
 }
 
-pub fn subtract_value_from_register(cpu_state: &mut CpuState, register: Register, value: u8) {
+pub fn subtract_value_from_register(cpu_state: &mut Cpu, register: Register, value: u8) {
     let byte = microops::read_from_register(cpu_state, &register);
     let difference = byte.wrapping_sub(value);
 
@@ -53,7 +53,7 @@ pub fn subtract_value_from_register(cpu_state: &mut CpuState, register: Register
     microops::set_flag_c(cpu_state, byte < value);
 }
 
-pub fn subtract_value_and_carry_from_register(cpu_state: &mut CpuState, register: Register, value: u8) {
+pub fn subtract_value_and_carry_from_register(cpu_state: &mut Cpu, register: Register, value: u8) {
     let carry_value = if microops::is_c_flag_set(cpu_state) { 1 as u8 } else { 0 as u8 };
     let byte = microops::read_from_register(cpu_state, &register);
     let difference = byte.wrapping_sub(value).wrapping_sub(carry_value);
@@ -66,7 +66,7 @@ pub fn subtract_value_and_carry_from_register(cpu_state: &mut CpuState, register
     microops::set_flag_c(cpu_state, ((value as u16) + (carry_value as u16)) > (byte as u16));
 }
 
-pub fn logical_and_with_register(cpu_state: &mut CpuState, register: Register, value: u8) {
+pub fn logical_and_with_register(cpu_state: &mut Cpu, register: Register, value: u8) {
     let byte = microops::read_from_register(cpu_state, &register);
     let result = byte & value;
 
@@ -78,7 +78,7 @@ pub fn logical_and_with_register(cpu_state: &mut CpuState, register: Register, v
     microops::set_flag_c(cpu_state, false);
 }
 
-pub fn logical_or_with_register(cpu_state: &mut CpuState, register: Register, value: u8) {
+pub fn logical_or_with_register(cpu_state: &mut Cpu, register: Register, value: u8) {
     let byte = microops::read_from_register(cpu_state, &register);
     let result = byte | value;
 
@@ -90,7 +90,7 @@ pub fn logical_or_with_register(cpu_state: &mut CpuState, register: Register, va
     microops::set_flag_c(cpu_state, false);
 }
 
-pub fn logical_xor_with_register(cpu_state: &mut CpuState, register: Register, value: u8) {
+pub fn logical_xor_with_register(cpu_state: &mut Cpu, register: Register, value: u8) {
     let byte = microops::read_from_register(cpu_state, &register);
     let result = byte ^ value;
 
@@ -102,7 +102,7 @@ pub fn logical_xor_with_register(cpu_state: &mut CpuState, register: Register, v
     microops::set_flag_c(cpu_state, false);
 }
 
-pub fn compare_value_with_register(cpu_state: &mut CpuState, register: Register, value: u8) {
+pub fn compare_value_with_register(cpu_state: &mut Cpu, register: Register, value: u8) {
     let byte = microops::read_from_register(cpu_state, &register);
     let difference = byte.wrapping_sub(value);
 
@@ -112,7 +112,7 @@ pub fn compare_value_with_register(cpu_state: &mut CpuState, register: Register,
     microops::set_flag_c(cpu_state, byte < value);
 }
 
-pub fn increment_register(cpu_state: &mut CpuState, register: Register) {
+pub fn increment_register(cpu_state: &mut Cpu, register: Register) {
     let byte = microops::read_from_register(cpu_state, &register);
     let sum = byte.wrapping_add(1);
 
@@ -123,7 +123,7 @@ pub fn increment_register(cpu_state: &mut CpuState, register: Register) {
     microops::set_flag_h(cpu_state, (1 + (byte & 0xF)) > 0xF);
 }
 
-pub fn decrement_register(cpu_state: &mut CpuState, register: Register) {
+pub fn decrement_register(cpu_state: &mut Cpu, register: Register) {
     let byte = microops::read_from_register(cpu_state, &register);
     let difference = byte.wrapping_sub(1);
 
@@ -134,7 +134,7 @@ pub fn decrement_register(cpu_state: &mut CpuState, register: Register) {
     microops::set_flag_h(cpu_state, (byte & 0xF) < 1);
 }
 
-pub fn increment_memory_byte(cpu_state: &mut CpuState) {
+pub fn increment_memory_byte(cpu_state: &mut Cpu) {
     let address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
     let byte = microops::read_byte_from_memory(cpu_state, address);
     let sum = byte.wrapping_add(1);
@@ -146,7 +146,7 @@ pub fn increment_memory_byte(cpu_state: &mut CpuState) {
     microops::set_flag_h(cpu_state, (1 + (byte & 0xF)) > 0xF);
 }
 
-pub fn decrement_memory_byte(cpu_state: &mut CpuState) {
+pub fn decrement_memory_byte(cpu_state: &mut Cpu) {
     let address = microops::read_from_register_pair(cpu_state, &REGISTER_HL);
     let byte = microops::read_byte_from_memory(cpu_state, address);
     let difference = byte.wrapping_sub(1);
@@ -158,21 +158,21 @@ pub fn decrement_memory_byte(cpu_state: &mut CpuState) {
     microops::set_flag_h(cpu_state, (byte & 0xF) < 1);
 }
 
-pub fn increment_register_pair(cpu_state: &mut CpuState, register_pair: RegisterPair) {
+pub fn increment_register_pair(cpu_state: &mut Cpu, register_pair: RegisterPair) {
     let word = microops::read_from_register_pair(cpu_state, &register_pair);
     let sum = word.wrapping_add(1);
     microops::store_in_register_pair(cpu_state, register_pair, sum);
     microops::step_one_machine_cycle(cpu_state);
 }
 
-pub fn decrement_register_pair(cpu_state: &mut CpuState, register_pair: RegisterPair) {
+pub fn decrement_register_pair(cpu_state: &mut Cpu, register_pair: RegisterPair) {
     let word = microops::read_from_register_pair(cpu_state, &register_pair);
     let sum = word.wrapping_sub(1);
     microops::store_in_register_pair(cpu_state, register_pair, sum);
     microops::step_one_machine_cycle(cpu_state);
 }
 
-pub fn bcd_adjust(cpu_state: &mut CpuState) {
+pub fn bcd_adjust(cpu_state: &mut Cpu) {
     let c_flag = microops::is_c_flag_set(cpu_state);
     let n_flag = microops::is_n_flag_set(cpu_state);
     let h_flag = microops::is_h_flag_set(cpu_state);
