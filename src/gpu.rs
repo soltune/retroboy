@@ -1,4 +1,3 @@
-use crate::cpu::interrupts::InterruptRegisters;
 use crate::address_bus::hdma::HDMAState;
 use crate::gpu::palettes::Palettes;
 use crate::gpu::constants::{GB_SCREEN_HEIGHT, GB_SCREEN_WIDTH, BYTES_PER_COLOR};
@@ -43,11 +42,14 @@ pub struct Gpu {
     cgb_mode: bool,
     #[getset(set = "pub")]
     cgb_double_speed: bool,
-    renderer: fn(&[u8])
+    renderer: fn(&[u8]),
+    #[getset(get_copy = "pub", set = "pub")]
+    stat_interrupt: bool,
+    #[getset(get_copy = "pub", set = "pub")]
+    vblank_interrupt: bool
 }
 
 pub struct GpuParams<'a> {
-    pub interrupt_registers: &'a mut InterruptRegisters,
     pub hdma: &'a mut HDMAState,
     pub in_color_bios: bool,
 }
@@ -100,7 +102,9 @@ impl Gpu {
             object_attribute_memory: [0; 0xa0],
             cgb_mode: false,
             cgb_double_speed: false,
-            renderer
+            renderer,
+            stat_interrupt: false,
+            vblank_interrupt: false
         }
     }
 
@@ -112,19 +116,11 @@ impl Gpu {
         self.frame_buffer.clear();
     }
 
-    fn fire_vblank_interrupt(&mut self, interrupts: &mut InterruptRegisters) {
-        interrupts.flags |= 0x1;
-    }
-
     fn lyc_check_enabled(&self) -> bool {
         is_bit_set(self.stat, STAT_INTERRUPT_LYC_CHECK_BIT)
     }
 
-    fn fire_stat_interrupt(&mut self, interrupts: &mut InterruptRegisters) {
-        interrupts.flags |= 0x2;
-    }
-
-    fn update_mode(&mut self, new_mode: u8, interrupts: &mut InterruptRegisters) {
+    fn update_mode(&mut self, new_mode: u8) {
         self.mode = new_mode;
 
         let stat = (self.stat & 0b11111100) | new_mode;
@@ -135,16 +131,16 @@ impl Gpu {
             || (new_mode == HBLANK_MODE && is_bit_set(stat, HBLANK_MODE_STAT_SOURCE_BIT));
 
         if fire_interrupt_on_mode_switch {
-            self.fire_stat_interrupt(interrupts);
+            self.stat_interrupt = true;
         }
     }
 
-    fn compare_ly_and_lyc(&mut self, interrupts: &mut InterruptRegisters) {
+    fn compare_ly_and_lyc(&mut self) {
         if self.ly == self.lyc {
             self.stat |= 0b00000100;
             
             if self.lyc_check_enabled() {
-                self.fire_stat_interrupt(interrupts);
+                self.stat_interrupt = true;
             }
         }
         else {
@@ -163,13 +159,13 @@ impl Gpu {
                 OAM_MODE => {
                     if self.mode_clock >= OAM_TIME {
                         self.mode_clock = 0;
-                        self.update_mode(VRAM_MODE, params.interrupt_registers);
+                        self.update_mode(VRAM_MODE);
                     }
                 }
                 VRAM_MODE => {
                     if self.mode_clock >= VRAM_TIME {
                         self.mode_clock = 0;
-                        self.update_mode(HBLANK_MODE, params.interrupt_registers);
+                        self.update_mode(HBLANK_MODE);
                         params.hdma.set_hblank_started(true);
                         if !params.in_color_bios {
                             self.write_scanline();
@@ -188,18 +184,18 @@ impl Gpu {
                         }
 
                         if self.ly == FRAME_SCANLINE_COUNT - VBLANK_SCANLINE_COUNT - 1 {
-                            self.update_mode(VBLANK_MODE, params.interrupt_registers);
+                            self.update_mode(VBLANK_MODE);
                             (self.renderer)(&self.frame_buffer);
-                            self.fire_vblank_interrupt(params.interrupt_registers);
+                            self.vblank_interrupt = true;
                         }
                         else {
-                            self.update_mode(OAM_MODE, params.interrupt_registers);
+                            self.update_mode(OAM_MODE);
                         }
 
                         self.ly += 1;
                         self.mode_clock = 0;
 
-                        self.compare_ly_and_lyc(params.interrupt_registers);
+                        self.compare_ly_and_lyc();
                     }
                 }
                 VBLANK_MODE => {
@@ -210,10 +206,10 @@ impl Gpu {
                         if self.ly > FRAME_SCANLINE_COUNT - 1 {
                             self.ly = 0;
                             self.wly = 0;
-                            self.update_mode(OAM_MODE, params.interrupt_registers);
+                            self.update_mode(OAM_MODE);
                         }
 
-                        self.compare_ly_and_lyc(params.interrupt_registers);
+                        self.compare_ly_and_lyc();
                     }
                 }
                 _ => ()

@@ -1302,7 +1302,7 @@ fn halts_the_cpu_until_interrupt() {
     emulator.cpu.interrupts.enabled = true;
     emulator.cpu.registers.stack_pointer = 0x2112;
     emulator.address_bus.interrupts_mut().enabled = 0x1F;
-    emulator.address_bus.interrupts_mut().flags = 0x01;
+    emulator.address_bus.gpu_mut().set_vblank_interrupt(true);
 
     step(&mut emulator);
     assert_eq!(emulator.cpu.halted, false);
@@ -1358,13 +1358,13 @@ fn runs_vertical_blank_isr() {
     emulator.cpu.registers.stack_pointer = 0x2112;
     emulator.cpu.interrupts.enabled = true;
     emulator.address_bus.interrupts_mut().enabled = 0x1F;
-    emulator.address_bus.interrupts_mut().flags = 0x01;
+    emulator.address_bus.gpu_mut().set_vblank_interrupt(true);
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.stack_pointer, 0x2110);
     assert_eq!(emulator.cpu.interrupts.enabled, false);
     assert_eq!(emulator.cpu.registers.program_counter, 0x41);
     assert_eq!(emulator.address_bus.interrupts().enabled, 0x1F);
-    assert_eq!(emulator.address_bus.interrupts().flags, 0x00);
+    assert_eq!(emulator.address_bus.gpu().vblank_interrupt(), false);
 }
 
 #[test]
@@ -1373,13 +1373,13 @@ fn runs_lcd_status_isr() {
     emulator.cpu.registers.stack_pointer = 0x2112;
     emulator.cpu.interrupts.enabled = true;
     emulator.address_bus.interrupts_mut().enabled = 0x1F;
-    emulator.address_bus.interrupts_mut().flags = 0x02;
+    emulator.address_bus.gpu_mut().set_stat_interrupt(true);
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.stack_pointer, 0x2110);
     assert_eq!(emulator.cpu.interrupts.enabled, false);
     assert_eq!(emulator.cpu.registers.program_counter, 0x49);
     assert_eq!(emulator.address_bus.interrupts().enabled, 0x1F);
-    assert_eq!(emulator.address_bus.interrupts().flags, 0x00);
+    assert_eq!(emulator.address_bus.gpu().stat_interrupt(), false);
 }
 
 #[test]
@@ -1388,13 +1388,13 @@ fn runs_timer_overflow_isr() {
     emulator.cpu.registers.stack_pointer = 0x2112;
     emulator.cpu.interrupts.enabled = true;
     emulator.address_bus.interrupts_mut().enabled = 0x1F;
-    emulator.address_bus.interrupts_mut().flags = 0x04;
+    emulator.address_bus.timers_mut().set_interrupt(true);
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.stack_pointer, 0x2110);
     assert_eq!(emulator.cpu.interrupts.enabled, false);
     assert_eq!(emulator.cpu.registers.program_counter, 0x51);
     assert_eq!(emulator.address_bus.interrupts().enabled, 0x1F);
-    assert_eq!(emulator.address_bus.interrupts().flags, 0x00);
+    assert_eq!(emulator.address_bus.timers().interrupt(), false);
 }
 
 #[test]
@@ -1403,13 +1403,13 @@ fn runs_serial_link_isr() {
     emulator.cpu.registers.stack_pointer = 0x2112;
     emulator.cpu.interrupts.enabled = true;
     emulator.address_bus.interrupts_mut().enabled = 0x1F;
-    emulator.address_bus.interrupts_mut().flags = 0x08;
+    emulator.address_bus.serial_mut().set_interrupt(true);
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.stack_pointer, 0x2110);
     assert_eq!(emulator.cpu.interrupts.enabled, false);
     assert_eq!(emulator.cpu.registers.program_counter, 0x59);
     assert_eq!(emulator.address_bus.interrupts().enabled, 0x1F);
-    assert_eq!(emulator.address_bus.interrupts().flags, 0x00);
+    assert_eq!(emulator.address_bus.serial().interrupt(), false);
 }
 
 #[test]
@@ -1418,13 +1418,13 @@ fn runs_joypad_press_isr() {
     emulator.cpu.registers.stack_pointer = 0x2112;
     emulator.cpu.interrupts.enabled = true;
     emulator.address_bus.interrupts_mut().enabled = 0x1F;
-    emulator.address_bus.interrupts_mut().flags = 0x10;
+    emulator.address_bus.joypad_mut().set_interrupt(true);
     step(&mut emulator);
     assert_eq!(emulator.cpu.registers.stack_pointer, 0x2110);
     assert_eq!(emulator.cpu.interrupts.enabled, false);
     assert_eq!(emulator.cpu.registers.program_counter, 0x61);
     assert_eq!(emulator.address_bus.interrupts().enabled, 0x1F);
-    assert_eq!(emulator.address_bus.interrupts().flags, 0x00);
+    assert_eq!(emulator.address_bus.joypad().interrupt(), false);
 }
 
 #[test]

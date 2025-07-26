@@ -1,7 +1,7 @@
 use crate::apu::{Apu, ApuParams};
 use crate::bios::{CGB_BOOT, DMG_BOOTIX};
-use crate::cpu::interrupts::{initialize_interrupt_registers, InterruptRegisters};
-use crate::cpu::timers::{TimerRegisters, TimerParams};
+use crate::cpu::interrupts::{self, initialize_interrupt_registers, InterruptRegisters};
+use crate::cpu::timers::TimerRegisters;
 use crate::gpu::{Gpu, GpuParams};
 use crate::joypad::{Key, Joypad};
 use crate::address_bus::cartridge::{initialize_cartridge_mapper, CartridgeMapper};
@@ -10,7 +10,7 @@ use crate::address_bus::dma::DMAState;
 use crate::address_bus::effects::empty_cartridge_effects;
 use crate::address_bus::hdma::HDMAState;
 use crate::serializable::Serializable;
-use crate::serial::{Serial, SerialParams};
+use crate::serial::Serial;
 use crate::address_bus::speed_switch::SpeedSwitch;
 use getset::{CopyGetters, Getters, MutGetters, Setters};
 use std::io::{self, Read, Write};
@@ -35,6 +35,7 @@ pub struct AddressBus {
     processor_test_mode: bool,
     #[getset(get = "pub", get_mut = "pub")]
     interrupts: InterruptRegisters,
+    #[getset(get = "pub", get_mut = "pub")]
     timers: TimerRegisters,
     #[getset(get = "pub", get_mut = "pub")]
     gpu: Gpu,
@@ -203,7 +204,7 @@ impl AddressBus {
                     0x6B => self.gpu.palettes().cgb_ocpd(),
                     0x6C => self.gpu.cgb_opri(),
                     0x70 => if self.cgb_mode { self.svbk } else { 0xFF },
-                    0x0F => self.interrupts.flags,
+                    0x0F => interrupts::interrupt_flags(self),
                     0x04 => self.timers.divider(),
                     0x05 => self.timers.counter(),
                     0x06 => self.timers.modulo(),
@@ -303,11 +304,11 @@ impl AddressBus {
                             self.svbk = value;
                         }
                     },
-                    0x0F => self.interrupts.flags = value,
+                    0x0F => interrupts::set_interrupt_flags(self, value),
                     0x04 => self.timers.set_divider(value),
-                    0x05 => self.timers.set_counter(value),
-                    0x06 => self.timers.set_modulo(value),
-                    0x07 => self.timers.set_control(value),
+                    0x05 => { self.timers.set_counter(value); },
+                    0x06 => { self.timers.set_modulo(value); },
+                    0x07 => { self.timers.set_control(value); },
                     _ => ()
                 }
             },
@@ -340,12 +341,9 @@ impl AddressBus {
     pub fn sync(&mut self) {
         let in_color_bios = self.in_bios && self.cgb_mode;
 
-        self.timers.step(TimerParams {
-            interrupt_registers: &mut self.interrupts
-        });
+        self.timers.step();
         self.dma_step();
         self.gpu.step(GpuParams {
-            interrupt_registers: &mut self.interrupts,
             hdma: &mut self.hdma,
             in_color_bios,
         });
@@ -353,9 +351,7 @@ impl AddressBus {
             in_color_bios,
             divider: self.timers.divider(),
         });
-        self.serial.step(SerialParams {
-            interrupt_registers: &mut self.interrupts,
-        });
+        self.serial.step();
     }
 
     pub fn set_cgb_mode(&mut self, value: bool) {
@@ -372,7 +368,7 @@ impl AddressBus {
     }
 
     pub fn handle_key_press(&mut self, key: &Key) {
-        self.joypad.handle_key_press(&mut self.interrupts, key);
+        self.joypad.handle_key_press(key);
     }
 
     pub fn handle_key_release(&mut self, key: &Key) {

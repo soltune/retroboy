@@ -59,7 +59,6 @@ fn setup_test_address_bus() -> AddressBus {
     address_bus.zero_page_ram[0x5B] = 0x5F;
 
     address_bus.interrupts.enabled = 0x1F;
-    address_bus.interrupts.flags = 0xA;
 
     address_bus.timers.set_divider(0x3A);
     address_bus.timers.set_counter(0x04);
@@ -77,6 +76,7 @@ fn setup_test_address_bus() -> AddressBus {
     address_bus.gpu.set_stat(0xD2);
     address_bus.gpu.palettes_mut().set_obp0(0x1B);
     address_bus.gpu.palettes_mut().set_obp1(0xE4);
+    address_bus.gpu.set_stat_interrupt(true);
 
     address_bus.joypad.set_column(0x10);
     address_bus.joypad.set_select_buttons(0x4);
@@ -111,6 +111,8 @@ fn setup_test_address_bus() -> AddressBus {
     address_bus.apu.channel4_mut().envelope_mut().set_initial_settings(0xD2);
     address_bus.apu.channel4_mut().set_polynomial(0xCE);
     address_bus.apu.channel4_mut().set_control(0xC0);
+
+    address_bus.serial.set_interrupt(true);
 
     address_bus.in_bios = false;
 

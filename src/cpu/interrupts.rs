@@ -1,7 +1,9 @@
+use crate::address_bus::AddressBus;
 use crate::cpu::jumps;
 use crate::cpu::microops;
 use crate::emulator::Emulator;
 use crate::serializable::Serializable;
+use crate::utils::is_bit_set;
 use serializable_derive::Serializable;
 
 pub enum InterruptType {
@@ -15,19 +17,45 @@ pub enum InterruptType {
 #[derive(Serializable, Debug)]
 pub struct InterruptRegisters {
     pub enabled: u8,
-    pub flags: u8
 }
 
 pub fn initialize_interrupt_registers() -> InterruptRegisters {
     InterruptRegisters {
         enabled: 0,
-        flags: 0
     }
+}
+
+pub fn interrupt_flags(address_bus: &AddressBus) -> u8 {
+    let mut flags = 0;
+    if address_bus.gpu().vblank_interrupt() {
+        flags |= 0x1;
+    }
+    if address_bus.gpu().stat_interrupt() {
+        flags |= 0x2;
+    }
+    if address_bus.timers().interrupt() {
+        flags |= 0x4;
+    }
+    if address_bus.serial().interrupt() {
+        flags |= 0x8;
+    }
+    if address_bus.joypad().interrupt() {
+        flags |= 0x10;
+    }
+    flags
+}
+
+pub fn set_interrupt_flags(address_bus: &mut AddressBus, flags: u8) {
+    address_bus.gpu_mut().set_vblank_interrupt(is_bit_set(flags, 0));
+    address_bus.gpu_mut().set_stat_interrupt(is_bit_set(flags, 1));
+    address_bus.timers_mut().set_interrupt(is_bit_set(flags, 2));
+    address_bus.serial_mut().set_interrupt(is_bit_set(flags, 3));
+    address_bus.joypad_mut().set_interrupt(is_bit_set(flags, 4));
 }
 
 fn get_fired_interrupt_bits(emulator: &Emulator) -> u8 {
     let interrupts = emulator.address_bus.interrupts();
-    interrupts.enabled & interrupts.flags & 0x1F
+    interrupts.enabled & interrupt_flags(&emulator.address_bus) & 0x1F
 }
 
 fn get_fired_interrupt(emulator: &Emulator) -> Option<InterruptType> {
@@ -63,18 +91,17 @@ fn get_interrupt_isr(interrupt_type: &InterruptType) -> u8 {
 }
 
 fn turn_off_interrupt_flag(emulator: &mut Emulator, interrupt_type: &InterruptType) {
-    let interrupt_registers = emulator.address_bus.interrupts_mut();
     match interrupt_type {
         InterruptType::VBlank =>
-            interrupt_registers.flags = interrupt_registers.flags & !0x01,
+            { emulator.address_bus.gpu_mut().set_vblank_interrupt(false); },
         InterruptType::LCDStatus =>
-            interrupt_registers.flags = interrupt_registers.flags & !0x02,
+            { emulator.address_bus.gpu_mut().set_stat_interrupt(false); },
         InterruptType::TimerOverflow =>
-            interrupt_registers.flags = interrupt_registers.flags & !0x04,
+            { emulator.address_bus.timers_mut().set_interrupt(false); },
         InterruptType::SerialLink =>
-            interrupt_registers.flags = interrupt_registers.flags & !0x08,
+            { emulator.address_bus.serial_mut().set_interrupt(false); },
         InterruptType::JoypadPress =>
-            interrupt_registers.flags = interrupt_registers.flags & !0x10
+            { emulator.address_bus.joypad_mut().set_interrupt(false); }
     }
 }
 

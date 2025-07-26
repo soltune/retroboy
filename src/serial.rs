@@ -1,4 +1,3 @@
-use crate::cpu::interrupts::InterruptRegisters;
 use crate::utils::is_bit_set;
 use crate::serializable::Serializable;
 use getset::{CopyGetters, Setters};
@@ -15,10 +14,8 @@ pub struct Serial {
     bits_transferred: u8,
     cgb_mode: bool,
     cgb_double_speed: bool,
-}
-
-pub struct SerialParams<'a> {
-    pub interrupt_registers: &'a mut InterruptRegisters,
+    #[getset(get_copy = "pub", set = "pub")]
+    interrupt: bool
 }
 
 fn serial_disconnected_exchange(_: bool) -> bool {
@@ -38,6 +35,7 @@ impl Serial {
             bits_transferred: 0,
             cgb_mode: false,
             cgb_double_speed: false,
+            interrupt: false
         }
     }
 
@@ -57,10 +55,6 @@ impl Serial {
         }
     }
 
-    fn fire_serial_interrupt(&self, interrupts: &mut InterruptRegisters) {
-        interrupts.flags |= 0x8;
-    }
-
     fn exchange_bits(&mut self) {
         let outgoing_bit = is_bit_set(self.data, 7);
         self.data <<= 1;
@@ -74,7 +68,7 @@ impl Serial {
         This is a very bare bones serial implementation that always assumes there is no
         serial device connected and doesn't know how to operate in slave mode.
     */
-    pub fn step(&mut self, params: SerialParams) {
+    pub fn step(&mut self) {
         if self.transfer_enabled && self.is_master {
             self.clock += 1;
 
@@ -88,7 +82,7 @@ impl Serial {
                 if self.bits_transferred >= 8 {
                     self.transfer_enabled = false;
                     self.bits_transferred = 0;
-                    self.fire_serial_interrupt(params.interrupt_registers);
+                    self.interrupt = true;
                 }
             }
         }
@@ -115,15 +109,6 @@ impl Serial {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cpu::interrupts::initialize_interrupt_registers;
-
-    fn step_serial(serial: &mut Serial) {
-        let mut interrupts = initialize_interrupt_registers();
-        let params = SerialParams {
-            interrupt_registers: &mut interrupts,
-        };
-        serial.step(params);
-    }
 
     #[test]
     fn should_get_control_byte() {
@@ -169,7 +154,7 @@ mod tests {
         serial.transfer_enabled = true;
         serial.is_master = true;
         serial.clock = 0;
-        step_serial(&mut serial);
+        serial.step();
         assert_eq!(serial.clock, 1);
     }
 
@@ -180,7 +165,7 @@ mod tests {
         serial.is_master = true;
         serial.data = 0b10011010;
         serial.clock = 511;
-        step_serial(&mut serial);
+        serial.step();
         assert_eq!(serial.clock, 0);
         assert_eq!(serial.data, 0b00110101);
     }
@@ -194,7 +179,7 @@ mod tests {
         serial.is_master = true;
         serial.data = 0b10011010;
         serial.clock = 15;
-        step_serial(&mut serial);
+        serial.step();
         assert_eq!(serial.clock, 0);
         assert_eq!(serial.data, 0b00110101);
     }
@@ -209,7 +194,7 @@ mod tests {
         serial.is_master = true;
         serial.data = 0b10011010;
         serial.clock = 7;
-        step_serial(&mut serial);
+        serial.step();
         assert_eq!(serial.clock, 0);
         assert_eq!(serial.data, 0b00110101);
     }
@@ -217,16 +202,12 @@ mod tests {
     #[test]
     fn should_complete_transfer_and_fire_interrupt_when_8_bits_have_been_transferred() {
         let mut serial = Serial::new();
-        let mut interrupts = initialize_interrupt_registers();
         serial.transfer_enabled = true;
         serial.is_master = true;
         serial.bits_transferred = 7;
         serial.clock = 511;
-        let params = SerialParams {
-            interrupt_registers: &mut interrupts,
-        };
-        serial.step(params);
+        serial.step();
         assert_eq!(serial.transfer_enabled, false);
-        assert_eq!(interrupts.flags, 0x08);
+        assert_eq!(serial.interrupt, true);
     }
 }

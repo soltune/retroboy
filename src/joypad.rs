@@ -1,4 +1,3 @@
-use crate::cpu::interrupts::InterruptRegisters;
 use crate::utils::{reset_bit, set_bit};
 use getset::{CopyGetters, Setters};
 
@@ -18,7 +17,8 @@ pub enum Key {
 pub struct Joypad {
     column: u8,
     select_buttons: u8,
-    directional_buttons: u8
+    directional_buttons: u8,
+    interrupt: bool
 }
 
 const DOWN_BIT: u8 = 3;
@@ -36,7 +36,8 @@ impl Joypad {
         Joypad {
             column: 0x0,
             select_buttons: 0xF,
-            directional_buttons: 0xF
+            directional_buttons: 0xF,
+            interrupt: false
         }
     }
 
@@ -56,11 +57,7 @@ impl Joypad {
         }  
     }
 
-    fn fire_joyp_interrupt(&mut self, interrupts: &mut InterruptRegisters) {
-        interrupts.flags |= 0x10;
-    }
-
-    pub fn handle_key_press(&mut self, interrupts: &mut InterruptRegisters, key: &Key) {
+    pub fn handle_key_press(&mut self, key: &Key) {
         match key {
             Key::Down => self.directional_buttons = reset_bit(self.directional_buttons, DOWN_BIT),
             Key::Up => self.directional_buttons = reset_bit(self.directional_buttons, UP_BIT),
@@ -71,7 +68,7 @@ impl Joypad {
             Key::B => self.select_buttons = reset_bit(self.select_buttons, B_BIT),
             Key::A => self.select_buttons = reset_bit(self.select_buttons, A_BIT),
         }
-        self.fire_joyp_interrupt(interrupts);
+        self.interrupt = true;
     }
 
     pub fn handle_key_release(&mut self, key: &Key) {
@@ -126,8 +123,7 @@ mod tests {
         let mut joypad = Joypad::new();
         joypad.set_directional_buttons(0xF);
         joypad.set_select_buttons(0xF);
-        let mut interrupts = InterruptRegisters { flags: 0x0, enabled: 0x0 };
-        joypad.handle_key_press(&mut interrupts, &Key::Down);
+        joypad.handle_key_press(&Key::Down);
         assert_eq!(joypad.directional_buttons(), 0x7);
     }
 
@@ -145,8 +141,7 @@ mod tests {
         let mut joypad = Joypad::new();
         joypad.set_directional_buttons(0xF);
         joypad.set_select_buttons(0xF);
-        let mut interrupts = InterruptRegisters { flags: 0x0, enabled: 0x0 };
-        joypad.handle_key_press(&mut interrupts, &Key::Up);
+        joypad.handle_key_press(&Key::Up);
         assert_eq!(joypad.directional_buttons(), 0xB);
     }
 
@@ -164,8 +159,7 @@ mod tests {
         let mut joypad = Joypad::new();
         joypad.set_directional_buttons(0xF);
         joypad.set_select_buttons(0xF);
-        let mut interrupts = InterruptRegisters { flags: 0x0, enabled: 0x0 };
-        joypad.handle_key_press(&mut interrupts, &Key::Left);
+        joypad.handle_key_press(&Key::Left);
         assert_eq!(joypad.directional_buttons(), 0xD);
     }
 
@@ -183,8 +177,7 @@ mod tests {
         let mut joypad = Joypad::new();
         joypad.set_directional_buttons(0xF);
         joypad.set_select_buttons(0xF);
-        let mut interrupts = InterruptRegisters { flags: 0x0, enabled: 0x0 };
-        joypad.handle_key_press(&mut interrupts, &Key::Right);
+        joypad.handle_key_press(&Key::Right);
         assert_eq!(joypad.directional_buttons(), 0xE);
     }
 
@@ -202,8 +195,7 @@ mod tests {
         let mut joypad = Joypad::new();
         joypad.set_directional_buttons(0xF);
         joypad.set_select_buttons(0xF);
-        let mut interrupts = InterruptRegisters { flags: 0x0, enabled: 0x0 };
-        joypad.handle_key_press(&mut interrupts, &Key::Start);
+        joypad.handle_key_press(&Key::Start);
         assert_eq!(joypad.select_buttons(), 0x7);
     }
 
@@ -221,8 +213,7 @@ mod tests {
         let mut joypad = Joypad::new();
         joypad.set_directional_buttons(0xF);
         joypad.set_select_buttons(0xF);
-        let mut interrupts = InterruptRegisters { flags: 0x0, enabled: 0x0 };
-        joypad.handle_key_press(&mut interrupts, &Key::Select);
+        joypad.handle_key_press(&Key::Select);
         assert_eq!(joypad.select_buttons(), 0xB);
     }
 
@@ -240,8 +231,7 @@ mod tests {
         let mut joypad = Joypad::new();
         joypad.set_directional_buttons(0xF);
         joypad.set_select_buttons(0xF);
-        let mut interrupts = InterruptRegisters { flags: 0x0, enabled: 0x0 };
-        joypad.handle_key_press(&mut interrupts, &Key::B);
+        joypad.handle_key_press(&Key::B);
         assert_eq!(joypad.select_buttons(), 0xD);
     }
 
@@ -259,8 +249,7 @@ mod tests {
         let mut joypad = Joypad::new();
         joypad.set_directional_buttons(0xF);
         joypad.set_select_buttons(0xF);
-        let mut interrupts = InterruptRegisters { flags: 0x0, enabled: 0x0 };
-        joypad.handle_key_press(&mut interrupts, &Key::A);
+        joypad.handle_key_press(&Key::A);
         assert_eq!(joypad.select_buttons(), 0xE);
     }
 

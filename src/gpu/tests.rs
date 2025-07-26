@@ -1,7 +1,5 @@
 use crate::address_bus::hdma::HDMAState;
-use crate::cpu::interrupts::initialize_interrupt_registers;
 use crate::gpu::{Gpu, GpuParams};
-use super::*;
 
 fn initialize_test_gpu() -> Gpu {
     let mut gpu = Gpu::new(|_| {});
@@ -11,15 +9,6 @@ fn initialize_test_gpu() -> Gpu {
 
 fn step_gpu(gpu: &mut Gpu) {
     gpu.step(GpuParams {
-        interrupt_registers: &mut initialize_interrupt_registers(),
-        hdma: &mut HDMAState::new(),
-        in_color_bios: false
-    });
-}
-
-fn step_gpu_with_interrupts(gpu: &mut Gpu, interrupts: &mut InterruptRegisters) {
-    gpu.step(GpuParams {
-        interrupt_registers: interrupts,
         hdma: &mut HDMAState::new(),
         in_color_bios: false
     });
@@ -84,13 +73,12 @@ fn should_move_to_vblank_mode_from_hblank_if_at_last_line() {
 
 #[test]
 fn should_fire_vblank_interrupt_when_entering_vblank_mode() {
-    let mut interrupts = initialize_interrupt_registers();
     let mut gpu = initialize_test_gpu();
     gpu.mode = 0;
     gpu.ly = 143;
     gpu.mode_clock = 200;
-    step_gpu_with_interrupts(&mut gpu, &mut interrupts);
-    assert_eq!(interrupts.flags, 0x1);
+    step_gpu(&mut gpu);
+    assert_eq!(gpu.vblank_interrupt, true);
 }
 
 #[test]
@@ -118,14 +106,13 @@ fn should_update_stat_register_with_mode_2_status() {
 
 #[test]
 fn should_fire_stat_interrupt_on_switch_to_mode_2_when_enabled() {
-    let mut interrupts = initialize_interrupt_registers();
     let mut gpu = initialize_test_gpu();
     gpu.mode = 1;
     gpu.ly = 153;
     gpu.mode_clock = 452;
     gpu.stat = 0b00100001;
-    step_gpu_with_interrupts(&mut gpu, &mut interrupts);
-    assert_eq!(interrupts.flags, 0x02);
+    step_gpu(&mut gpu);
+    assert_eq!(gpu.stat_interrupt, true);
 }
 
 #[test]
@@ -152,14 +139,13 @@ fn should_update_stat_register_with_mode_0_status() {
 
 #[test]
 fn should_fire_stat_interrupt_on_switch_to_mode_0_if_enabled() {
-    let mut interrupts = initialize_interrupt_registers();
     let mut gpu = initialize_test_gpu();
     gpu.mode = 3;
     gpu.ly = 0;
     gpu.mode_clock = 168;
     gpu.stat = 0b00001011;
-    step_gpu_with_interrupts(&mut gpu, &mut interrupts);
-    assert_eq!(interrupts.flags, 0x02);
+    step_gpu(&mut gpu);
+    assert_eq!(gpu.stat_interrupt, true);
 }
 
 #[test]
@@ -175,27 +161,25 @@ fn should_update_stat_register_with_mode_1_status() {
 
 #[test]
 fn should_fire_stat_interrupt_on_switch_to_mode_1_if_enabled() {
-    let mut interrupts = initialize_interrupt_registers();
     let mut gpu = initialize_test_gpu();
     gpu.mode = 0;
     gpu.ly = 143;
     gpu.mode_clock = 200;
     gpu.stat = 0b00010000;
-    step_gpu_with_interrupts(&mut gpu, &mut interrupts);
-    assert_eq!(interrupts.flags, 0x03);
+    step_gpu(&mut gpu);
+    assert_eq!(gpu.stat_interrupt, true);
 }
 
 #[test]
 fn should_fire_stat_interrupt_when_lyc_equals_ly_if_enabled() {
-    let mut interrupts = initialize_interrupt_registers();
     let mut gpu = initialize_test_gpu();
     gpu.mode = 0;
     gpu.ly = 13;
     gpu.lyc = 14;
     gpu.mode_clock = 200;
     gpu.stat = 0b01000000;
-    step_gpu_with_interrupts(&mut gpu, &mut interrupts);
-    assert_eq!(interrupts.flags, 0x02);
+    step_gpu(&mut gpu);
+    assert_eq!(gpu.stat_interrupt, true);
 }
 
 #[test]
@@ -224,15 +208,14 @@ fn should_update_stat_register_when_lyc_is_not_equal_to_ly() {
 
 #[test]
 fn should_not_fire_stat_interrupt_when_lyc_equals_ly_if_disabled() {
-    let mut interrupts = initialize_interrupt_registers();
     let mut gpu = initialize_test_gpu();
     gpu.mode = 0;
     gpu.ly = 13;
     gpu.lyc = 14;
     gpu.mode_clock = 200;
     gpu.stat = 0b00000000;
-    step_gpu_with_interrupts(&mut gpu, &mut interrupts);
-    assert_eq!(interrupts.flags, 0x0);
+    step_gpu(&mut gpu);
+    assert_eq!(gpu.stat_interrupt, false);
 }
 
 #[test]
