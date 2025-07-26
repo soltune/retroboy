@@ -3,11 +3,11 @@ use std::io;
 
 use crate::address_bus::constants::*;
 use crate::address_bus::effects::CartridgeEffects;
-use crate::address_bus::huc1::initialize_huc1_mapper;
-use crate::address_bus::mbc1::initialize_mbc1_mapper;
-use crate::address_bus::mbc3::initialize_mbc3_mapper;
-use crate::address_bus::mbc5::initialize_mbc5_mapper;
-use crate::address_bus::mbc_rom_only::initialize_mbc_rom_only_mapper;
+use crate::address_bus::huc1::HUC1CartridgeMapper;
+use crate::address_bus::mbc1::MBC1CartridgeMapper;
+use crate::address_bus::mbc3::MBC3CartridgeMapper;
+use crate::address_bus::mbc5::MBC5CartridgeMapper;
+use crate::address_bus::mbc_rom_only::MBCRomOnlyCartridgeMapper;
 use crate::serializable::Serializable;
 use std::fmt::Debug;
 
@@ -79,7 +79,7 @@ pub fn initialize_cartridge(effects: Box<dyn CartridgeEffects>) -> Cartridge {
 }
 
 pub fn initialize_cartridge_mapper(effects: Box<dyn CartridgeEffects>) -> Box<dyn CartridgeMapper> {
-    Box::new(initialize_mbc_rom_only_mapper(initialize_cartridge(effects)))
+    Box::new(MBCRomOnlyCartridgeMapper::new(initialize_cartridge(effects)))
 }
 
 fn cartridge_type_supported(type_code: u8) -> bool {
@@ -192,15 +192,15 @@ pub fn convert_cartridge_type_to_text(type_code: u8) -> String {
 
 fn as_mapper(cartridge: Cartridge, type_code: u8) -> Box<dyn CartridgeMapper> {
     if is_mbc_rom_only(type_code) {
-        Box::new(initialize_mbc_rom_only_mapper(cartridge))
+        Box::new(MBCRomOnlyCartridgeMapper::new(cartridge))
     } else if is_huc1(type_code) {
-        Box::new(initialize_huc1_mapper(cartridge))
+        Box::new(HUC1CartridgeMapper::new(cartridge))
     } else if is_mbc1(type_code) {
-        Box::new(initialize_mbc1_mapper(cartridge))
+        Box::new(MBC1CartridgeMapper::new(cartridge))
     } else if is_mbc3(type_code) {
-        Box::new(initialize_mbc3_mapper(cartridge))
+        Box::new(MBC3CartridgeMapper::new(cartridge))
     } else if is_mbc5(type_code) {
-        Box::new(initialize_mbc5_mapper(cartridge))
+        Box::new(MBC5CartridgeMapper::new(cartridge))
     } else {
         panic!("Unsupported cartridge type: {}", type_code);
     }

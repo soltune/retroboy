@@ -11,33 +11,24 @@ pub enum HUC1Mode {
     IR
 }
 
-#[derive(Debug, Serializable)]
-pub struct HUC1State {
+#[derive(Debug)]
+pub struct HUC1CartridgeMapper {
+    cartridge: Cartridge,
     mode: HUC1Mode,
     ir_transmitter: bool,
     rom_bank_number: u8,
     ram_bank_number: u8, 
 }
 
-#[derive(Debug)]
-pub struct HUC1CartridgeMapper {
-    cartridge: Cartridge,
-    state: HUC1State
-}
-
-pub fn initialize_huc1() -> HUC1State {
-    HUC1State {
-        mode: HUC1Mode::RAM,
-        ir_transmitter: false,
-        rom_bank_number: 1,
-        ram_bank_number: 0,
-    }
-}
-
-pub fn initialize_huc1_mapper(cartridge: Cartridge) -> HUC1CartridgeMapper {
-    HUC1CartridgeMapper {
-        cartridge,
-        state: initialize_huc1(),
+impl HUC1CartridgeMapper {
+    pub fn new(cartridge: Cartridge) -> Self {
+        HUC1CartridgeMapper {
+            cartridge,
+            mode: HUC1Mode::RAM,
+            ir_transmitter: false,
+            rom_bank_number: 1,
+            ram_bank_number: 0,
+        }
     }
 }
 
@@ -47,7 +38,7 @@ impl CartridgeMapper for HUC1CartridgeMapper {
             0x0000..=0x3FFF =>
                 self.cartridge.rom[address as usize],
             0x4000..=0x7FFF => {
-                banked_read(&self.cartridge.rom, 0x4000, address, self.state.rom_bank_number as u16)
+                banked_read(&self.cartridge.rom, 0x4000, address, self.rom_bank_number as u16)
             },
             _ => panic!("Invalid ROM address: {:#X}", address),
         }
@@ -56,18 +47,18 @@ impl CartridgeMapper for HUC1CartridgeMapper {
     fn write_rom(&mut self, address: u16, value: u8) {
         match address {
             0x0000..=0x1FFF => {
-                self.state.mode = if value == 0xE { HUC1Mode::IR } else { HUC1Mode::RAM };
+                self.mode = if value == 0xE { HUC1Mode::IR } else { HUC1Mode::RAM };
             },
             0x2000..=0x3FFF => {
                 let next_rom_bank_number = (value & 0x3F) as u16;
                 if next_rom_bank_number < self.cartridge.header.max_banks {
-                    self.state.rom_bank_number = next_rom_bank_number as u8;
+                    self.rom_bank_number = next_rom_bank_number as u8;
                 }
             },
             0x4000..=0x5FFF => {
                 let next_ram_bank_number = value & 0x03;
                 if next_ram_bank_number < self.cartridge.header.max_ram_banks {
-                    self.state.ram_bank_number = next_ram_bank_number;
+                    self.ram_bank_number = next_ram_bank_number;
                 }
             },
             0x6000..=0x7FFF => (), // No behavior observed in this address range for HuC1 cartridges
@@ -76,9 +67,9 @@ impl CartridgeMapper for HUC1CartridgeMapper {
     }
     
     fn read_ram(&self, address: u16) -> u8 {
-        if self.state.mode == HUC1Mode::RAM && self.cartridge.header.max_ram_banks > 0 {
-            banked_read(&self.cartridge.ram, 0x2000, address, self.state.ram_bank_number as u16)
-        } else if self.state.mode == HUC1Mode::IR {
+        if self.mode == HUC1Mode::RAM && self.cartridge.header.max_ram_banks > 0 {
+            banked_read(&self.cartridge.ram, 0x2000, address, self.ram_bank_number as u16)
+        } else if self.mode == HUC1Mode::IR {
             0xC0
         } else {
             0xFF
@@ -86,12 +77,12 @@ impl CartridgeMapper for HUC1CartridgeMapper {
     }
 
     fn write_ram(&mut self, address: u16, value: u8) {
-        if self.state.mode == HUC1Mode::RAM && self.cartridge.header.max_ram_banks > 0 {
-            banked_write(&mut self.cartridge.ram, 0x2000, address, self.state.ram_bank_number as u16, value);
+        if self.mode == HUC1Mode::RAM && self.cartridge.header.max_ram_banks > 0 {
+            banked_write(&mut self.cartridge.ram, 0x2000, address, self.ram_bank_number as u16, value);
             self.cartridge.effects.save_ram(&self.cartridge.header.title, &self.cartridge.ram);
         }
-        else if self.state.mode == HUC1Mode::IR {
-            self.state.ir_transmitter = value == 0x1;
+        else if self.mode == HUC1Mode::IR {
+            self.ir_transmitter = value == 0x1;
         } else {
             panic!("Invalid RAM write: {:#X}", address);
         }
@@ -106,20 +97,26 @@ impl CartridgeMapper for HUC1CartridgeMapper {
     }
     
     fn get_ram_bank(&self) -> u8 {
-        self.state.ram_bank_number
+        self.ram_bank_number
     }
 }
 
 impl Serializable for HUC1CartridgeMapper {
     fn serialize(&self, writer: &mut dyn Write)-> std::io::Result<()> {
         self.cartridge.ram.serialize(writer)?;
-        self.state.serialize(writer)?;
+        self.mode.serialize(writer)?;
+        self.ir_transmitter.serialize(writer)?;
+        self.rom_bank_number.serialize(writer)?;
+        self.ram_bank_number.serialize(writer)?;
         Ok(())
     }
 
     fn deserialize(&mut self, reader: &mut dyn Read)-> std::io::Result<()> {
         self.cartridge.ram.deserialize(reader)?;
-        self.state.deserialize(reader)?;
+        self.mode.deserialize(reader)?;
+        self.ir_transmitter.deserialize(reader)?;
+        self.rom_bank_number.deserialize(reader)?;
+        self.ram_bank_number.deserialize(reader)?;
         Ok(())
     }
 }

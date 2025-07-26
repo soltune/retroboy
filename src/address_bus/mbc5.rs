@@ -2,37 +2,15 @@ use crate::address_bus::bank_utils::{banked_read, banked_write};
 use crate::address_bus::cartridge::{Cartridge, CartridgeMapper};
 use crate::address_bus::constants::*;
 use crate::serializable::Serializable;
-use serializable_derive::Serializable;
 use std::io::{Read, Write};
-
-#[derive(Debug, Serializable)]
-pub struct MBC5State {
-    ram_enabled: bool,
-    rumble: bool,
-    rom_bank_number: u16,
-    ram_bank_number: u8,
-}
 
 #[derive(Debug)]
 pub struct MBC5CartridgeMapper {
     cartridge: Cartridge,
-    state: MBC5State,
-}
-
-pub fn initialize_mbc5() -> MBC5State {
-    MBC5State {
-        ram_enabled: false,
-        rumble: false,
-        rom_bank_number: 1,
-        ram_bank_number: 0,
-    }
-}
-
-pub fn initialize_mbc5_mapper(cartridge: Cartridge) -> MBC5CartridgeMapper {
-    MBC5CartridgeMapper {
-        cartridge,
-        state: initialize_mbc5(),
-    }
+    ram_enabled: bool,
+    rumble: bool,
+    rom_bank_number: u16,
+    ram_bank_number: u8,
 }
 
 fn ram_supported(cartridge: &Cartridge) -> bool {
@@ -54,15 +32,25 @@ fn battery_supported(cartridge: &Cartridge) -> bool {
 }
 
 impl MBC5CartridgeMapper {
+    pub fn new(cartridge: Cartridge) -> Self {
+        MBC5CartridgeMapper {
+            cartridge,
+            ram_enabled: false,
+            rumble: false,
+            rom_bank_number: 1,
+            ram_bank_number: 0,
+        }    
+    }
+
     fn set_rom_bank_number(&mut self, next_rom_bank_number: u16) {
         if next_rom_bank_number < self.cartridge.header.max_banks {
-            self.state.rom_bank_number = next_rom_bank_number;
+            self.rom_bank_number = next_rom_bank_number;
         }
     }
 
     fn set_ram_bank_number(&mut self, next_ram_bank_number: u8) {
         if next_ram_bank_number < self.cartridge.header.max_ram_banks {
-            self.state.ram_bank_number = next_ram_bank_number;
+            self.ram_bank_number = next_ram_bank_number;
         }
     }
 }
@@ -73,7 +61,7 @@ impl CartridgeMapper for MBC5CartridgeMapper {
             0x0000..=0x3FFF =>
                 self.cartridge.rom[address as usize],
             0x4000..=0x7FFF => {
-                banked_read(&self.cartridge.rom, 0x4000, address, self.state.rom_bank_number)
+                banked_read(&self.cartridge.rom, 0x4000, address, self.rom_bank_number)
             },
             _ => panic!("Invalid ROM address: {:#X}", address),
         }
@@ -83,20 +71,20 @@ impl CartridgeMapper for MBC5CartridgeMapper {
         match address {
             0x0000..=0x1FFF => {
                 if ram_supported(&self.cartridge) {
-                    self.state.ram_enabled = (value & 0xF) == 0x0A;
+                    self.ram_enabled = (value & 0xF) == 0x0A;
                 }
             },
             0x2000..=0x2FFF => {
-                let next_rom_bank_number = (self.state.rom_bank_number & 0x100) | (value as u16 & 0xFF);
+                let next_rom_bank_number = (self.rom_bank_number & 0x100) | (value as u16 & 0xFF);
                 self.set_rom_bank_number(next_rom_bank_number);
             },
             0x3000..=0x3FFF => {
-                let next_rom_bank_number = (self.state.rom_bank_number & 0xFF) | ((value as u16 & 0x1) << 8);
+                let next_rom_bank_number = (self.rom_bank_number & 0xFF) | ((value as u16 & 0x1) << 8);
                 self.set_rom_bank_number(next_rom_bank_number);
             },
             0x4000..=0x5FFF => {
                 let next_ram_bank_number = if rumble_supported(&self.cartridge) {
-                    self.state.rumble = (value & 0x8) == 0x1;
+                    self.rumble = (value & 0x8) == 0x1;
                     value & 0x7
                 }
                 else {
@@ -110,16 +98,16 @@ impl CartridgeMapper for MBC5CartridgeMapper {
     }
     
     fn read_ram(&self, address: u16) -> u8 {
-        if self.state.ram_enabled {
-            banked_read(&self.cartridge.ram, 0x2000, address, self.state.ram_bank_number as u16)
+        if self.ram_enabled {
+            banked_read(&self.cartridge.ram, 0x2000, address, self.ram_bank_number as u16)
         } else {
             0xFF
         }
     }
 
     fn write_ram(&mut self, address: u16, value: u8) {
-        if self.state.ram_enabled {
-            banked_write(&mut self.cartridge.ram, 0x2000, address, self.state.ram_bank_number as u16, value);
+        if self.ram_enabled {
+            banked_write(&mut self.cartridge.ram, 0x2000, address, self.ram_bank_number as u16, value);
             if battery_supported(&self.cartridge) {
                 self.cartridge.effects.save_ram(&self.cartridge.header.title, &self.cartridge.ram);
             }   
@@ -135,20 +123,26 @@ impl CartridgeMapper for MBC5CartridgeMapper {
     }
 
     fn get_ram_bank(&self) -> u8 {
-        self.state.ram_bank_number
+        self.ram_bank_number
     }
 }
 
 impl Serializable for MBC5CartridgeMapper {
     fn serialize(&self, writer: &mut dyn Write)-> std::io::Result<()> {
         self.cartridge.ram.serialize(writer)?;
-        self.state.serialize(writer)?;
+        self.ram_enabled.serialize(writer)?;
+        self.rumble.serialize(writer)?;
+        self.rom_bank_number.serialize(writer)?;
+        self.ram_bank_number.serialize(writer)?;
         Ok(())
     }
 
     fn deserialize(&mut self, reader: &mut dyn Read)-> std::io::Result<()> {
         self.cartridge.ram.deserialize(reader)?;
-        self.state.deserialize(reader)?;
+        self.ram_enabled.deserialize(reader)?;
+        self.rumble.deserialize(reader)?;
+        self.rom_bank_number.deserialize(reader)?;
+        self.ram_bank_number.deserialize(reader)?;
         Ok(())
     }
 }

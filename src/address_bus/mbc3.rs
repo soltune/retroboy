@@ -17,46 +17,14 @@ pub struct RTCState {
     pub day_carry: bool,
 }
 
-#[derive(Debug, Serializable)]
-pub struct MBC3State {
+#[derive(Debug)]
+pub struct MBC3CartridgeMapper {
+    cartridge: Cartridge,
     rom_bank_number: u8,
     ram_rtc_enabled: bool,
     ram_rtc_selection: u8,
     rtc: RTCState,
     rtc_latch: u8,
-}
-
-#[derive(Debug)]
-pub struct MBC3CartridgeMapper {
-    cartridge: Cartridge,
-    state: MBC3State
-}
-
-pub fn initialize_mbc3(maybe_rtc_state: Option<RTCState>) -> MBC3State {
-    MBC3State {
-        rom_bank_number: 1,
-        ram_rtc_enabled: false,
-        ram_rtc_selection: 0,
-        rtc: maybe_rtc_state.unwrap_or_else(|| RTCState {
-            milliseconds: 0,
-            seconds: 0,
-            minutes: 0,
-            hours: 0,
-            days: 0,
-            base_timestamp: 0.0,
-            halted: false,
-            day_carry: false,
-        }),
-        rtc_latch: 0xFF,
-    }
-}
-
-pub fn initialize_mbc3_mapper(cartridge: Cartridge) -> MBC3CartridgeMapper {
-    let rtc_state_key = format!("{}-rtc", cartridge.header.title);
-    MBC3CartridgeMapper {
-        state: initialize_mbc3(cartridge.effects.load_rtc_state(&rtc_state_key)),
-        cartridge,
-    }
 }
 
 const INVALID_MAX_SECONDS: u8 = 63;
@@ -76,19 +44,41 @@ fn battery_supported(cartridge: &Cartridge) -> bool {
 }
 
 impl MBC3CartridgeMapper {
+    pub fn new(cartridge: Cartridge) -> Self {
+        let rtc_state_key = format!("{}-rtc", cartridge.header.title);
+        let maybe_rtc_state = cartridge.effects.load_rtc_state(&rtc_state_key);
+        MBC3CartridgeMapper {
+            cartridge,
+            rom_bank_number: 1,
+            ram_rtc_enabled: false,
+            ram_rtc_selection: 0,
+            rtc: maybe_rtc_state.unwrap_or_else(|| RTCState {
+                milliseconds: 0,
+                seconds: 0,
+                minutes: 0,
+                hours: 0,
+                days: 0,
+                base_timestamp: 0.0,
+                halted: false,
+                day_carry: false,
+            }),
+            rtc_latch: 0xFF,
+        }
+    }
+
     fn update_rtc_time_registers(&mut self, elapsed_ms: f64) {
-        let mut new_milliseconds = self.state.rtc.milliseconds as u64 + elapsed_ms as u64;
-        let mut new_seconds = self.state.rtc.seconds as u64;
-        let mut new_minutes = self.state.rtc.minutes as u64;
-        let mut new_hours = self.state.rtc.hours as u64;
-        let mut new_days = self.state.rtc.days as u64;
+        let mut new_milliseconds = self.rtc.milliseconds as u64 + elapsed_ms as u64;
+        let mut new_seconds = self.rtc.seconds as u64;
+        let mut new_minutes = self.rtc.minutes as u64;
+        let mut new_hours = self.rtc.hours as u64;
+        let mut new_days = self.rtc.days as u64;
 
         let mut invalid_rollover = false;
 
         new_seconds += new_milliseconds / 1000;
         new_milliseconds %= 1000;
 
-        if self.state.rtc.seconds < 60 {
+        if self.rtc.seconds < 60 {
             new_minutes += new_seconds / 60;
             new_seconds %= 60;
         }
@@ -97,7 +87,7 @@ impl MBC3CartridgeMapper {
             new_seconds = 0;
         }
  
-        if self.state.rtc.minutes < 60 && !invalid_rollover {
+        if self.rtc.minutes < 60 && !invalid_rollover {
             new_hours += new_minutes / 60;
             new_minutes %= 60;
         } else if new_minutes > INVALID_MAX_MINUTES as u64 {
@@ -105,7 +95,7 @@ impl MBC3CartridgeMapper {
             new_minutes = 0;
         }
 
-        if self.state.rtc.hours < 24 && !invalid_rollover {
+        if self.rtc.hours < 24 && !invalid_rollover {
             new_days += new_hours / 24;
             new_hours %= 24;
         } else if new_hours > INVALID_MAX_HOURS as u64 {
@@ -115,19 +105,19 @@ impl MBC3CartridgeMapper {
 
         if new_days >= 512 && !invalid_rollover {
             new_days %= 512;
-            self.state.rtc.day_carry = true; 
+            self.rtc.day_carry = true; 
         }
 
-        self.state.rtc.milliseconds = new_milliseconds as u16;
-        self.state.rtc.seconds = new_seconds as u8;
-        self.state.rtc.minutes = new_minutes as u8;
-        self.state.rtc.hours = new_hours as u8;
-        self.state.rtc.days = new_days as u16; 
+        self.rtc.milliseconds = new_milliseconds as u16;
+        self.rtc.seconds = new_seconds as u8;
+        self.rtc.minutes = new_minutes as u8;
+        self.rtc.hours = new_hours as u8;
+        self.rtc.days = new_days as u16; 
     }
 
     fn save_rtc_state(&self) {
         let key = format!("{}-rtc", self.cartridge.header.title);
-        self.cartridge.effects.save_rtc_state(&key, &self.state.rtc);
+        self.cartridge.effects.save_rtc_state(&key, &self.rtc);
     }
 
     fn save_ram(&self) {
@@ -141,7 +131,7 @@ impl CartridgeMapper for MBC3CartridgeMapper {
             0x0000..=0x3FFF =>
                 self.cartridge.rom[address as usize],
             0x4000..=0x7FFF => {
-                banked_read(&self.cartridge.rom, 0x4000, address, self.state.rom_bank_number as u16)
+                banked_read(&self.cartridge.rom, 0x4000, address, self.rom_bank_number as u16)
             },
             _ => panic!("Invalid ROM address: {:#X}", address),
         }
@@ -151,34 +141,34 @@ impl CartridgeMapper for MBC3CartridgeMapper {
         match address {
             0x0000..=0x1FFF => {
                 if ram_supported(&self.cartridge) || timer_supported(&self.cartridge) {
-                    self.state.ram_rtc_enabled = (value & 0xF) == 0x0A;
+                    self.ram_rtc_enabled = (value & 0xF) == 0x0A;
                 }
             },
             0x2000..=0x3FFF => {
                 let value = if value == 0 { 1 } else { value };
-                self.state.rom_bank_number = value & 0x7F;
+                self.rom_bank_number = value & 0x7F;
             },
             0x4000..=0x5FFF => {
                 if value <= 0x03 || (value >= 0x08 && value <= 0x0C) {
-                    self.state.ram_rtc_selection = value;
+                    self.ram_rtc_selection = value;
                 }
             },
             0x6000..=0x7FFF => {
                 if timer_supported(&self.cartridge) {
-                    if self.state.rtc_latch == 0x00 && value == 0x01 {
+                    if self.rtc_latch == 0x00 && value == 0x01 {
                         let current_time = self.cartridge.effects.current_time_millis();
 
-                        if !self.state.rtc.halted {
-                            let elapsed_ms = current_time - self.state.rtc.base_timestamp;
+                        if !self.rtc.halted {
+                            let elapsed_ms = current_time - self.rtc.base_timestamp;
                     
                             if elapsed_ms > 0.0 {
                                 self.update_rtc_time_registers(elapsed_ms);
-                                self.state.rtc.base_timestamp = current_time;
+                                self.rtc.base_timestamp = current_time;
                                 self.save_rtc_state();
                             } 
                         }
                     }
-                    self.state.rtc_latch = value;
+                    self.rtc_latch = value;
                 }
             },
             _ => panic!("Invalid ROM address: {:#X}", address),
@@ -186,25 +176,25 @@ impl CartridgeMapper for MBC3CartridgeMapper {
     }
     
     fn read_ram(&self, address: u16) -> u8 {
-        if self.state.ram_rtc_enabled {
-            let ram_rtc_selection = self.state.ram_rtc_selection;
+        if self.ram_rtc_enabled {
+            let ram_rtc_selection = self.ram_rtc_selection;
     
             match ram_rtc_selection {
                 0x00..=0x03 if ram_supported(&self.cartridge) => {
-                    banked_read(&self.cartridge.ram, 0x2000, address, self.state.ram_rtc_selection as u16)
+                    banked_read(&self.cartridge.ram, 0x2000, address, self.ram_rtc_selection as u16)
                 },
                 0x08..=0x0C if timer_supported(&self.cartridge) => {
-                    match self.state.ram_rtc_selection {
-                        0x08 => self.state.rtc.seconds,
-                        0x09 => self.state.rtc.minutes,
-                        0x0A => self.state.rtc.hours,
-                        0x0B => (self.state.rtc.days & 0xFF) as u8, 
+                    match self.ram_rtc_selection {
+                        0x08 => self.rtc.seconds,
+                        0x09 => self.rtc.minutes,
+                        0x0A => self.rtc.hours,
+                        0x0B => (self.rtc.days & 0xFF) as u8, 
                         0x0C => {
-                            let mut value = (self.state.rtc.days >> 8) as u8;
-                            if self.state.rtc.halted {
+                            let mut value = (self.rtc.days >> 8) as u8;
+                            if self.rtc.halted {
                                 value |= 0x40;
                             }
-                            if self.state.rtc.day_carry {
+                            if self.rtc.day_carry {
                                 value |= 0x80;
                             }
                             value
@@ -220,41 +210,41 @@ impl CartridgeMapper for MBC3CartridgeMapper {
     }
 
     fn write_ram(&mut self, address: u16, value: u8) {
-        if self.state.ram_rtc_enabled {
-            let ram_rtc_selection = self.state.ram_rtc_selection;
+        if self.ram_rtc_enabled {
+            let ram_rtc_selection = self.ram_rtc_selection;
     
             match ram_rtc_selection {
                 0x00..=0x03 if ram_supported(&self.cartridge) => {
-                    banked_write(&mut self.cartridge.ram, 0x2000, address, self.state.ram_rtc_selection as u16, value);
+                    banked_write(&mut self.cartridge.ram, 0x2000, address, self.ram_rtc_selection as u16, value);
                     if battery_supported(&self.cartridge) {
                         self.save_ram();
                     }
                 },
                 0x08..=0x0C if timer_supported(&self.cartridge) => {
-                    match self.state.ram_rtc_selection {
-                        0x08 => self.state.rtc.seconds = value & INVALID_MAX_SECONDS,
-                        0x09 => self.state.rtc.minutes = value & INVALID_MAX_MINUTES,
-                        0x0A => self.state.rtc.hours = value & INVALID_MAX_HOURS,
-                        0x0B => self.state.rtc.days = (self.state.rtc.days & 0x100) | (value & 0xFF) as u16,
+                    match self.ram_rtc_selection {
+                        0x08 => self.rtc.seconds = value & INVALID_MAX_SECONDS,
+                        0x09 => self.rtc.minutes = value & INVALID_MAX_MINUTES,
+                        0x0A => self.rtc.hours = value & INVALID_MAX_HOURS,
+                        0x0B => self.rtc.days = (self.rtc.days & 0x100) | (value & 0xFF) as u16,
                         0x0C => {
-                            self.state.rtc.days = (self.state.rtc.days & 0xFF) | ((value as u16 & 0x01) << 8);
-                            self.state.rtc.halted = value & 0x40 != 0;
-                            self.state.rtc.day_carry = value & 0x80 != 0;
+                            self.rtc.days = (self.rtc.days & 0xFF) | ((value as u16 & 0x01) << 8);
+                            self.rtc.halted = value & 0x40 != 0;
+                            self.rtc.day_carry = value & 0x80 != 0;
                         }
                         _ => {}
                     }
             
-                    if self.state.ram_rtc_selection >= 0x08 && self.state.ram_rtc_selection <= 0x0C {
+                    if self.ram_rtc_selection >= 0x08 && self.ram_rtc_selection <= 0x0C {
                         let current_time = self.cartridge.effects.current_time_millis();
                         
-                        if !self.state.rtc.halted {
-                            let elapsed_ms = current_time - self.state.rtc.base_timestamp;
+                        if !self.rtc.halted {
+                            let elapsed_ms = current_time - self.rtc.base_timestamp;
                             if elapsed_ms > 0.0 {
                                 self.update_rtc_time_registers(elapsed_ms);
                             }
                         }
                     
-                        self.state.rtc.base_timestamp = current_time;
+                        self.rtc.base_timestamp = current_time;
                         self.save_rtc_state();
                     }
                 }
@@ -272,20 +262,28 @@ impl CartridgeMapper for MBC3CartridgeMapper {
     }
 
     fn get_ram_bank(&self) -> u8 {
-        self.state.ram_rtc_selection
+        self.ram_rtc_selection
     }
 }
 
 impl Serializable for MBC3CartridgeMapper {
     fn serialize(&self, writer: &mut dyn Write)-> std::io::Result<()> {
         self.cartridge.ram.serialize(writer)?;
-        self.state.serialize(writer)?;
+        self.rom_bank_number.serialize(writer)?;
+        self.ram_rtc_enabled.serialize(writer)?;
+        self.ram_rtc_selection.serialize(writer)?;
+        self.rtc.serialize(writer)?;
+        self.rtc_latch.serialize(writer)?;
         Ok(())
     }
 
     fn deserialize(&mut self, reader: &mut dyn Read)-> std::io::Result<()> {
         self.cartridge.ram.deserialize(reader)?;
-        self.state.deserialize(reader)?;
+        self.rom_bank_number.deserialize(reader)?;
+        self.ram_rtc_enabled.deserialize(reader)?;
+        self.ram_rtc_selection.deserialize(reader)?;
+        self.rtc.deserialize(reader)?;
+        self.rtc_latch.deserialize(reader)?;
         Ok(())
     }
 }

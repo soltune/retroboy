@@ -7,9 +7,11 @@ pub struct MBCRomOnlyCartridgeMapper {
     cartridge: Cartridge
 }
 
-pub fn initialize_mbc_rom_only_mapper(cartridge: Cartridge) -> MBCRomOnlyCartridgeMapper {
-    MBCRomOnlyCartridgeMapper {
-        cartridge
+impl MBCRomOnlyCartridgeMapper {
+    pub fn new(cartridge: Cartridge) -> Self {
+        MBCRomOnlyCartridgeMapper {
+            cartridge
+        }
     }
 }
 
