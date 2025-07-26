@@ -4,7 +4,7 @@ use crate::gpu::{Gpu, GpuParams};
 use super::*;
 
 fn initialize_test_gpu() -> Gpu {
-    let mut gpu = Gpu::new();
+    let mut gpu = Gpu::new(|_| {});
     gpu.registers.lcdc = 0b10000000;
     gpu
 }
@@ -13,8 +13,7 @@ fn step_gpu(gpu: &mut Gpu) {
     gpu.step(GpuParams {
         interrupt_registers: &mut initialize_interrupt_registers(),
         hdma: &mut HDMAState::new(),
-        in_color_bios: false,
-        renderer: |_| {}
+        in_color_bios: false
     });
 }
 
@@ -22,8 +21,7 @@ fn step_gpu_with_interrupts(gpu: &mut Gpu, interrupts: &mut InterruptRegisters) 
     gpu.step(GpuParams {
         interrupt_registers: interrupts,
         hdma: &mut HDMAState::new(),
-        in_color_bios: false,
-        renderer: |_| {}
+        in_color_bios: false
     });
 }
 

@@ -36,13 +36,13 @@ pub struct Gpu {
     object_attribute_memory: [u8; 0xa0],
     cgb_mode: bool,
     cgb_double_speed: bool,
+    renderer: fn(&[u8])
 }
 
 pub struct GpuParams<'a> {
     pub interrupt_registers: &'a mut InterruptRegisters,
     pub hdma: &'a mut HDMAState,
     pub in_color_bios: bool,
-    pub renderer: fn(&[u8]),
 }
 
 const OAM_MODE: u8 = 2;
@@ -71,7 +71,7 @@ fn initialize_blank_frame() -> Vec<u8> {
 }
 
 impl Gpu {
-    pub fn new() -> Self {
+    pub fn new(renderer: fn(&[u8])) -> Self {
         Gpu {
             mode: 2,
             mode_clock: 0,
@@ -95,6 +95,7 @@ impl Gpu {
             object_attribute_memory: [0; 0xa0],
             cgb_mode: false,
             cgb_double_speed: false,
+            renderer
         }
     }
 
@@ -183,7 +184,7 @@ impl Gpu {
 
                         if self.registers.ly == FRAME_SCANLINE_COUNT - VBLANK_SCANLINE_COUNT - 1 {
                             self.update_mode(VBLANK_MODE, params.interrupt_registers);
-                            (params.renderer)(&self.frame_buffer);
+                            (self.renderer)(&self.frame_buffer);
                             self.fire_vblank_interrupt(params.interrupt_registers);
                         }
                         else {

@@ -38,7 +38,6 @@ pub struct AddressBus {
     cheats: CheatState,
     speed_switch: SpeedSwitch,
     cgb_mode: bool,
-    renderer: fn(&[u8])
 }
 
 impl AddressBus {
@@ -54,7 +53,7 @@ impl AddressBus {
             processor_test_mode: false,
             interrupts: initialize_interrupt_registers(),
             timers: TimerRegisters::new(),
-            gpu: Gpu::new(),
+            gpu: Gpu::new(renderer),
             joypad: Joypad::new(),
             apu: Apu::new(),
             dma: DMAState::new(),
@@ -63,7 +62,6 @@ impl AddressBus {
             cheats: CheatState::new(),
             speed_switch: SpeedSwitch::new(),
             cgb_mode: false,
-            renderer
         }
     }
 
@@ -334,7 +332,6 @@ impl AddressBus {
             interrupt_registers: &mut self.interrupts,
             hdma: &mut self.hdma,
             in_color_bios,
-            renderer: self.renderer
         });
         self.apu.step(ApuParams {
             in_color_bios,
