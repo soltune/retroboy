@@ -1,6 +1,6 @@
 use crate::apu::{Apu, ApuParams};
 use crate::bios::{CGB_BOOT, DMG_BOOTIX};
-use crate::cpu::interrupts::{self, initialize_interrupt_registers, InterruptRegisters};
+use crate::cpu::interrupts::{initialize_interrupt_registers, InterruptRegisters};
 use crate::cpu::timers::TimerRegisters;
 use crate::gpu::{Gpu, GpuParams};
 use crate::joypad::{Key, Joypad};
@@ -11,6 +11,7 @@ use crate::address_bus::effects::empty_cartridge_effects;
 use crate::address_bus::hdma::HDMAState;
 use crate::serializable::Serializable;
 use crate::serial::Serial;
+use crate::utils::is_bit_set;
 use crate::address_bus::speed_switch::SpeedSwitch;
 use getset::{CopyGetters, Getters, MutGetters, Setters};
 use std::io::{self, Read, Write};
@@ -204,7 +205,7 @@ impl AddressBus {
                     0x6B => self.gpu.palettes().cgb_ocpd(),
                     0x6C => self.gpu.cgb_opri(),
                     0x70 => if self.cgb_mode { self.svbk } else { 0xFF },
-                    0x0F => interrupts::interrupt_flags(self),
+                    0x0F => self.interrupt_flags(),
                     0x04 => self.timers.divider(),
                     0x05 => self.timers.counter(),
                     0x06 => self.timers.modulo(),
@@ -304,7 +305,7 @@ impl AddressBus {
                             self.svbk = value;
                         }
                     },
-                    0x0F => interrupts::set_interrupt_flags(self, value),
+                    0x0F => self.set_interrupt_flags(value),
                     0x04 => self.timers.set_divider(value),
                     0x05 => { self.timers.set_counter(value); },
                     0x06 => { self.timers.set_modulo(value); },
@@ -373,6 +374,34 @@ impl AddressBus {
 
     pub fn handle_key_release(&mut self, key: &Key) {
         self.joypad.handle_key_release(key);
+    }
+
+    pub fn interrupt_flags(&self) -> u8 {
+        let mut flags = 0;
+        if self.gpu.vblank_interrupt() {
+            flags |= 0x1;
+        }
+        if self.gpu.stat_interrupt() {
+            flags |= 0x2;
+        }
+        if self.timers.interrupt() {
+            flags |= 0x4;
+        }
+        if self.serial.interrupt() {
+            flags |= 0x8;
+        }
+        if self.joypad.interrupt() {
+            flags |= 0x10;
+        }
+        flags
+    }
+
+    pub fn set_interrupt_flags(&mut self, flags: u8) {
+        self.gpu.set_vblank_interrupt(is_bit_set(flags, 0));
+        self.gpu.set_stat_interrupt(is_bit_set(flags, 1));
+        self.timers.set_interrupt(is_bit_set(flags, 2));
+        self.serial.set_interrupt(is_bit_set(flags, 3));
+        self.joypad.set_interrupt(is_bit_set(flags, 4));
     }
 }
 

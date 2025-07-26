@@ -396,7 +396,7 @@ fn execute_opcode(mut emulator: &mut Emulator) {
             loads::load_source_register_in_memory(emulator, Register::L, address);
         },
         0x76 => {
-            if interrupts::interrupts_fired(emulator) {
+            if interrupts::interrupts_fired(&emulator.cpu) {
                 emulator.cpu.halted = false;
 
                 if !emulator.cpu.interrupts.enabled {
