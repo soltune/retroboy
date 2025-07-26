@@ -1,4 +1,5 @@
 use crate::emulator::Emulator;
+use crate::address_bus::AddressBus;
 use crate::serializable::Serializable;
 use serializable_derive::Serializable;
 use std::io::{Read, Write};
@@ -38,14 +39,14 @@ pub struct BusActivityEntry {
     pub activity_type: BusActivityType
 }
 
-#[derive(Debug)]
 pub struct CpuState {
     pub registers: Registers,
     pub halted: bool,
     pub halt_bug: bool,
     pub interrupts: Interrupts,
     pub instruction_clock_cycles: u8,
-    pub opcode_bus_activity: Vec<Option<BusActivityEntry>>
+    pub opcode_bus_activity: Vec<Option<BusActivityEntry>>,
+    pub address_bus: AddressBus
 }
 
 pub enum Register {
@@ -69,7 +70,7 @@ pub const REGISTER_HL: RegisterPair = RegisterPair { first: Register::H, second:
 pub const REGISTER_BC: RegisterPair = RegisterPair { first: Register::B, second: Register::C };
 pub const REGISTER_DE: RegisterPair = RegisterPair { first: Register::D, second: Register::E }; 
 
-pub fn initialize_cpu() -> CpuState {
+pub fn initialize_cpu(address_bus: AddressBus) -> CpuState {
     CpuState {
         registers: Registers {
             a: 0,
@@ -92,7 +93,8 @@ pub fn initialize_cpu() -> CpuState {
             enabled: false
         },
         instruction_clock_cycles: 0,
-        opcode_bus_activity: Vec::new()
+        opcode_bus_activity: Vec::new(),
+        address_bus
     }
 }
 
@@ -123,6 +125,7 @@ impl Serializable for CpuState {
         self.halt_bug.serialize(writer)?;
         self.interrupts.serialize(writer)?;
         self.instruction_clock_cycles.serialize(writer)?;
+        self.address_bus.serialize(writer)?;
         Ok(())
     }
 
@@ -132,6 +135,7 @@ impl Serializable for CpuState {
         self.halt_bug.deserialize(reader)?;
         self.interrupts.deserialize(reader)?;
         self.instruction_clock_cycles.deserialize(reader)?;
+        self.address_bus.deserialize(reader)?;
         Ok(())
     }
 }

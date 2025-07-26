@@ -54,8 +54,8 @@ pub fn set_interrupt_flags(address_bus: &mut AddressBus, flags: u8) {
 }
 
 fn get_fired_interrupt_bits(emulator: &Emulator) -> u8 {
-    let interrupts = emulator.address_bus.interrupts();
-    interrupts.enabled & interrupt_flags(&emulator.address_bus) & 0x1F
+    let interrupts = emulator.cpu.address_bus.interrupts();
+    interrupts.enabled & interrupt_flags(&emulator.cpu.address_bus) & 0x1F
 }
 
 fn get_fired_interrupt(emulator: &Emulator) -> Option<InterruptType> {
@@ -93,15 +93,15 @@ fn get_interrupt_isr(interrupt_type: &InterruptType) -> u8 {
 fn turn_off_interrupt_flag(emulator: &mut Emulator, interrupt_type: &InterruptType) {
     match interrupt_type {
         InterruptType::VBlank =>
-            { emulator.address_bus.gpu_mut().set_vblank_interrupt(false); },
+            { emulator.cpu.address_bus.gpu_mut().set_vblank_interrupt(false); },
         InterruptType::LCDStatus =>
-            { emulator.address_bus.gpu_mut().set_stat_interrupt(false); },
+            { emulator.cpu.address_bus.gpu_mut().set_stat_interrupt(false); },
         InterruptType::TimerOverflow =>
-            { emulator.address_bus.timers_mut().set_interrupt(false); },
+            { emulator.cpu.address_bus.timers_mut().set_interrupt(false); },
         InterruptType::SerialLink =>
-            { emulator.address_bus.serial_mut().set_interrupt(false); },
+            { emulator.cpu.address_bus.serial_mut().set_interrupt(false); },
         InterruptType::JoypadPress =>
-            { emulator.address_bus.joypad_mut().set_interrupt(false); }
+            { emulator.cpu.address_bus.joypad_mut().set_interrupt(false); }
     }
 }
 

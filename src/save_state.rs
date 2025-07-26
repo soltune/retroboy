@@ -28,7 +28,7 @@ pub fn encode_save_state(emulator: &Emulator) -> Result<Vec<u8>> {
     save_state_bytes.extend_from_slice(header_identifier_bytes);
 
     save_state_bytes.push(MAJOR_VERSION);
-    let title = emulator.address_bus.cartridge_mapper().title();
+    let title = emulator.cpu.address_bus.cartridge_mapper().title();
     save_state_bytes.push(title.len() as u8);
     save_state_bytes.extend_from_slice(title.as_bytes());
 
@@ -66,7 +66,7 @@ pub fn apply_save_state(emulator: &mut Emulator, data: &[u8]) -> Result<()> {
         let state_start = state_identifier_start + state_identifier_size;
         let state_identifier_bytes= &data[state_identifier_start..state_start];
     
-        let current_game_title = emulator.address_bus.cartridge_mapper().title();
+        let current_game_title = emulator.cpu.address_bus.cartridge_mapper().title();
 
         if state_start > data.len() || state_identifier_bytes != STATE_IDENTIFIER.as_bytes() {
             Err(as_format_error_result("Invalid save state identifier."))

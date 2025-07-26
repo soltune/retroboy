@@ -35,7 +35,7 @@ fn reset_instruction_clock_cycles(cpu: &mut CpuState) {
 }
 
 fn reset_last_opcode_bus_activity(emulator: &mut Emulator) {
-    if emulator.address_bus.processor_test_mode() {
+    if emulator.cpu.address_bus.processor_test_mode() {
         emulator.cpu.opcode_bus_activity.clear();
     }
 }
@@ -46,8 +46,8 @@ fn prefetch_next_opcode(emulator: &mut Emulator) {
 }
 
 pub fn step(emulator: &mut Emulator) {
-    if emulator.address_bus.hdma().in_progress() {
-        emulator.address_bus.hdma_step();
+    if emulator.cpu.address_bus.hdma().in_progress() {
+        emulator.cpu.address_bus.hdma_step();
     }
 
     execute_opcode(emulator);
@@ -114,7 +114,7 @@ fn execute_opcode(mut emulator: &mut Emulator) {
             microops::set_flag_z(&mut emulator.cpu, false);
         },
         0x10 =>
-            emulator.address_bus.toggle_speed_switch(),
+            emulator.cpu.address_bus.toggle_speed_switch(),
         0x11 => {
             let word = read_next_instruction_word(emulator);
             microops::store_in_register_pair(&mut emulator.cpu, REGISTER_DE, word);

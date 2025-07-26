@@ -4,10 +4,10 @@ use crate::emulator::Emulator;
 use crate::utils::get_t_cycle_increment;
 
 pub fn step_one_machine_cycle(emulator: &mut Emulator) {
-    let double_speed_mode = emulator.address_bus.speed_switch().cgb_double_speed();
+    let double_speed_mode = emulator.cpu.address_bus.speed_switch().cgb_double_speed();
     let t_cycle_increment = get_t_cycle_increment(double_speed_mode);
     emulator.cpu.instruction_clock_cycles = emulator.cpu.instruction_clock_cycles.wrapping_add(t_cycle_increment);
-    emulator.address_bus.sync();
+    emulator.cpu.address_bus.sync();
 }
 
 pub fn step_machine_cycles(emulator: &mut Emulator, cycles: u8) {
@@ -17,7 +17,7 @@ pub fn step_machine_cycles(emulator: &mut Emulator, cycles: u8) {
 }
 
 fn record_bus_activity(emulator: &mut Emulator, bus_activity_entry: BusActivityEntry) {
-    let double_speed_mode = emulator.address_bus.speed_switch().cgb_double_speed();
+    let double_speed_mode = emulator.cpu.address_bus.speed_switch().cgb_double_speed();
     let t_cycle_increment = get_t_cycle_increment(double_speed_mode);
     let current_machine_cycle = (emulator.cpu.instruction_clock_cycles / t_cycle_increment) as usize;
     let recorded_cycles = emulator.cpu.opcode_bus_activity.len();
@@ -50,9 +50,9 @@ fn record_bus_write(emulator: &mut Emulator, address: u16, value: u8) {
 
 pub fn read_byte_from_memory(emulator: &mut Emulator, address: u16) -> u8 {
     step_one_machine_cycle(emulator);
-    let byte = emulator.address_bus.read_byte(address);
+    let byte = emulator.cpu.address_bus.read_byte(address);
 
-    if emulator.address_bus.processor_test_mode() {
+    if emulator.cpu.address_bus.processor_test_mode() {
         record_bus_read(emulator, address, byte);
     }
     
@@ -67,9 +67,9 @@ pub fn read_word_from_memory(emulator: &mut Emulator, address: u16) -> u16 {
 
 pub fn store_byte_in_memory(emulator: &mut Emulator, address: u16, byte: u8) {
     step_one_machine_cycle(emulator);
-    emulator.address_bus.write_byte(address, byte);
+    emulator.cpu.address_bus.write_byte(address, byte);
     
-    if emulator.address_bus.processor_test_mode() {
+    if emulator.cpu.address_bus.processor_test_mode() {
         record_bus_write(emulator, address, byte);
     }
 }
