@@ -65,7 +65,7 @@ pub fn set_sample_rate(emulator: &mut Emulator, sample_rate: u32) {
 }
 
 pub fn step(emulator: &mut Emulator) {
-    cpu::opcodes::step(emulator);
+    cpu::opcodes::step(&mut emulator.cpu);
 }
 
 pub fn step_until_next_audio_buffer(emulator: &mut Emulator) -> (&[f32], &[f32]) {

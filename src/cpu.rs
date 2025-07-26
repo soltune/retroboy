@@ -1,4 +1,3 @@
-use crate::emulator::Emulator;
 use crate::address_bus::AddressBus;
 use crate::serializable::Serializable;
 use serializable_derive::Serializable;
@@ -98,15 +97,15 @@ pub fn initialize_cpu(address_bus: AddressBus) -> CpuState {
     }
 }
 
-pub fn read_next_instruction_byte(emulator: &mut Emulator) -> u8 {
-    let byte = microops::read_byte_from_memory(emulator, emulator.cpu.registers.program_counter);
-    emulator.cpu.registers.program_counter += 1;
+pub fn read_next_instruction_byte(cpu_state: &mut CpuState) -> u8 {
+    let byte = microops::read_byte_from_memory(cpu_state, cpu_state.registers.program_counter);
+    cpu_state.registers.program_counter += 1;
     byte
 }
 
-pub fn read_next_instruction_word(emulator: &mut Emulator) -> u16 {
-    let word = microops::read_word_from_memory(emulator, emulator.cpu.registers.program_counter);
-    emulator.cpu.registers.program_counter += 2;
+pub fn read_next_instruction_word(cpu_state: &mut CpuState) -> u16 {
+    let word = microops::read_word_from_memory(cpu_state, cpu_state.registers.program_counter);
+    cpu_state.registers.program_counter += 2;
     word
 }
 

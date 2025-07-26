@@ -1,6 +1,5 @@
 use crate::cpu::{CpuState, jumps};
 use crate::cpu::microops;
-use crate::emulator::Emulator;
 use crate::serializable::Serializable;
 use serializable_derive::Serializable;
 
@@ -80,16 +79,16 @@ pub fn interrupts_fired(cpu_state: &CpuState) -> bool {
     fired_interrupt_bits != 0
 }
 
-pub fn step(emulator: &mut Emulator) -> bool {
-    if emulator.cpu.interrupts.enabled && interrupts_fired(&emulator.cpu) {
-        let maybe_fired_interrupt = get_fired_interrupt(&emulator.cpu);
+pub fn step(cpu_state: &mut CpuState) -> bool {
+    if cpu_state.interrupts.enabled && interrupts_fired(cpu_state) {
+        let maybe_fired_interrupt = get_fired_interrupt(cpu_state);
         match maybe_fired_interrupt {
             Some(interrupt_type) => {
-                emulator.cpu.interrupts.enabled = false;
-                turn_off_interrupt_flag(&mut emulator.cpu, &interrupt_type);
+                cpu_state.interrupts.enabled = false;
+                turn_off_interrupt_flag(cpu_state, &interrupt_type);
                 let isr_address = get_interrupt_isr(&interrupt_type);
-                microops::step_machine_cycles(emulator, 2);
-                jumps::restart(emulator, isr_address as u16);
+                microops::step_machine_cycles(cpu_state, 2);
+                jumps::restart(cpu_state, isr_address as u16);
                 true
             },
             None => false
