@@ -5,15 +5,12 @@ use crate::emulator::Mode;
 use crate::emulator::CartridgeHeader;
 use crate::joypad::Key;
 use crate::save_state;
-use crate::serializable::Serializable;
 use crate::wasm::emulator_settings::EmulatorSettings;
 use crate::wasm::rom_metadata::{RomMetadata, RomMetadataResult};
 use crate::wasm::save_state_result::SaveStateResult;
 use crate::wasm::wasm_cartridge_effects::WasmCartridgeEffects;
 use crate::wasm::wasm_rtc_state::WasmRTCState;
 use std::cell::RefCell;
-use std::io::Cursor;
-use serializable_derive::Serializable;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -209,60 +206,4 @@ pub fn apply_save_state(data: &[u8]) -> Option<String> {
             Err(e) => Some(e.to_string())
         }
     })
-}
-
-#[derive(Debug, PartialEq, Serializable)]
-struct TestStruct {
-    byte_value: u8,
-    word_value: u16,
-    bool_value: bool,
-    float_value: f32,
-    array_value: [u8; 4],
-}
-
-// impl_serializable_struct!(TestStruct {
-//     byte_value,
-//     word_value,
-//     bool_value,
-//     float_value,
-//     array_value
-// });
-
-#[wasm_bindgen(js_name = encodeTestState)]
-pub fn encode_test_state() -> SaveStateResult {
-    let test_struct = TestStruct {
-        byte_value: 42,
-        word_value: 1337,
-        bool_value: true,
-        float_value: 3.14159,
-        array_value: [0xDE, 0xAD, 0xBE, 0xEF],
-    };
-
-    let mut buffer = Vec::new();
-    test_struct.serialize(&mut buffer).unwrap();
-
-    SaveStateResult::new(None, Some(buffer))
-}
-
-#[wasm_bindgen(js_name = decodeTestState)]
-pub fn decode_test_state() {
-    let mut test_struct = TestStruct {
-        byte_value: 0,
-        word_value: 0,
-        bool_value: false,
-        float_value: 0.0,
-        array_value: [0, 0, 0, 0]
-    };
-
-    let mut input = Vec::new();
-    input.push(100u8);                             // byte_value
-    input.extend_from_slice(&500u16.to_le_bytes()); // word_value
-    input.push(0u8);                               // bool_value (false as 0)
-    input.extend_from_slice(&2.718f32.to_le_bytes()); // float_value
-    input.extend_from_slice(&[0x01, 0x02, 0x03, 0x04]); // array_value
-
-    let mut cursor = Cursor::new(input);
-    test_struct.deserialize(&mut cursor).unwrap();
-
-    log(format!("My struct: {:?}", test_struct).as_str());
 }
