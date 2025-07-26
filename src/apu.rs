@@ -587,16 +587,6 @@ impl Apu {
     }
 }
 
-// impl MemoryMapped for Apu {
-//     fn read_byte(&self, address: u16) -> u8 {
-
-//     }
-
-//     fn write_byte(&mut self, address: u16, value: u8) {
-        
-//     }
-// }
-
 impl Serializable for Apu {
     fn serialize(&self, writer: &mut dyn Write)-> std::io::Result<()> {
         self.enabled.serialize(writer)?;
