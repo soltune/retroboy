@@ -3,10 +3,11 @@ use crate::apu::length::{DEFAULT_MAX_LENGTH, Length};
 use crate::apu::period::Period;
 use crate::apu::sweep::Sweep;
 use crate::apu::utils::{bounded_wrapping_add, length_enabled};
+use crate::serializable::Serializable;
 use crate::utils::{get_bit, is_bit_set};
-use bincode::{Encode, Decode};
+use serializable_derive::Serializable;
 
-#[derive(Clone, Debug, Encode, Decode)]
+#[derive(Debug, Serializable)]
 pub struct PulseChannel {
     enabled: bool,
     dac_enabled: bool,

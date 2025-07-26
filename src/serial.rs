@@ -1,8 +1,9 @@
 use crate::cpu::interrupts::InterruptRegisters;
 use crate::utils::is_bit_set;
-use bincode::{Encode, Decode};
+use crate::serializable::Serializable;
+use serializable_derive::Serializable;
 
-#[derive(Clone, Encode, Decode)]
+#[derive(Serializable)]
 pub struct Serial {
     data: u8,
     clock: u16,

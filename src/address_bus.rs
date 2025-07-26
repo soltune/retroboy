@@ -4,15 +4,15 @@ use crate::cpu::interrupts::{initialize_interrupt_registers, InterruptRegisters}
 use crate::cpu::timers::{TimerRegisters, TimerParams};
 use crate::gpu::{Gpu, GpuParams};
 use crate::joypad::{Key, Joypad};
-use crate::address_bus::cartridge::{initialize_cartridge_mapper, CartridgeMapper, CartridgeMapperSnapshot};
+use crate::address_bus::cartridge::{initialize_cartridge_mapper, CartridgeMapper};
 use crate::address_bus::cheats::CheatState;
 use crate::address_bus::dma::DMAState;
 use crate::address_bus::effects::empty_cartridge_effects;
 use crate::address_bus::hdma::HDMAState;
+use crate::serializable::Serializable;
 use crate::serial::{Serial, SerialParams};
 use crate::address_bus::speed_switch::SpeedSwitch;
-use bincode::{Decode, Encode};
-use std::io;
+use std::io::{self, Read, Write};
 
 pub use crate::address_bus::cartridge::CartridgeHeader;
 pub use crate::address_bus::effects::CartridgeEffects;
@@ -41,15 +41,6 @@ pub struct AddressBus {
     renderer: fn(&[u8])
 }
 
-#[derive(Clone, Encode, Decode)]
-pub struct MemorySnapshot {
-    pub in_bios: bool,
-    pub working_ram: [u8; 0x10000],
-    pub zero_page_ram: [u8; 0x80],
-    pub svbk: u8,
-    pub cartridge: CartridgeMapperSnapshot
-}
-
 impl AddressBus {
     pub fn new(renderer: fn(&[u8])) -> AddressBus {
         AddressBus {
@@ -74,24 +65,6 @@ impl AddressBus {
             cgb_mode: false,
             renderer
         }
-    }
-
-    pub fn as_memory_snapshot(&self) -> MemorySnapshot {
-        MemorySnapshot {
-            in_bios: self.in_bios,
-            working_ram: self.working_ram,
-            zero_page_ram: self.zero_page_ram,
-            svbk: self.svbk,
-            cartridge: self.cartridge_mapper.get_snapshot()
-        }
-    }
-
-    pub fn apply_memory_snapshot(&mut self, snapshot: MemorySnapshot) {
-        self.in_bios = snapshot.in_bios;
-        self.working_ram = snapshot.working_ram;
-        self.zero_page_ram = snapshot.zero_page_ram;
-        self.svbk = snapshot.svbk;
-        self.cartridge_mapper.apply_snapshot(snapshot.cartridge);
     }
 
     pub fn load_bios(&mut self, is_cgb: bool) {
@@ -536,8 +509,42 @@ impl AddressBus {
     pub fn cheats(&mut self) -> &mut CheatState {
         &mut self.cheats
     }
+}
 
+impl Serializable for AddressBus {
+    fn serialize(&self, writer: &mut dyn Write)-> std::io::Result<()> {
+        self.in_bios.serialize(writer)?;
+        self.working_ram.serialize(writer)?;
+        self.zero_page_ram.serialize(writer)?;
+        self.svbk.serialize(writer)?;
+        self.cartridge_mapper.serialize(writer)?;
+        self.interrupts.serialize(writer)?;
+        self.timers.serialize(writer)?;
+        self.gpu.serialize(writer)?;
+        self.apu.serialize(writer)?;
+        self.dma.serialize(writer)?;
+        self.hdma.serialize(writer)?;
+        self.serial.serialize(writer)?;
+        self.speed_switch.serialize(writer)?;
+        Ok(())
+    }
 
+    fn deserialize(&mut self, reader: &mut dyn Read)-> std::io::Result<()> {
+        self.in_bios.deserialize(reader)?;
+        self.working_ram.deserialize(reader)?;
+        self.zero_page_ram.deserialize(reader)?;
+        self.svbk.deserialize(reader)?;
+        self.cartridge_mapper.deserialize(reader)?;
+        self.interrupts.deserialize(reader)?;
+        self.timers.deserialize(reader)?;
+        self.gpu.deserialize(reader)?;
+        self.apu.deserialize(reader)?;
+        self.dma.deserialize(reader)?;
+        self.hdma.deserialize(reader)?;
+        self.serial.deserialize(reader)?;
+        self.speed_switch.deserialize(reader)?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]

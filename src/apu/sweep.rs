@@ -1,8 +1,9 @@
 use crate::utils::is_bit_set;
 use crate::apu::period::Period;
-use bincode::{Encode, Decode};
+use crate::serializable::Serializable;
+use serializable_derive::Serializable;
 
-#[derive(Clone, Debug, Encode, Decode)]
+#[derive(Debug, Serializable)]
 pub struct Sweep {
     initial_settings: u8,
     enabled: bool,

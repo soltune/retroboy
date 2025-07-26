@@ -1,14 +1,17 @@
-use crate::address_bus::bank_utils::{banked_read, banked_write};
-use crate::address_bus::cartridge::{Cartridge, CartridgeMapper, CartridgeMapperSnapshot, MBCSnapshot};
-use bincode::{Decode, Encode};
+use serializable_derive::Serializable;
 
-#[derive(Clone, Debug, PartialEq, Encode, Decode)]
+use crate::address_bus::bank_utils::{banked_read, banked_write};
+use crate::address_bus::cartridge::{Cartridge, CartridgeMapper};
+use crate::serializable::Serializable;
+use std::io::{Read, Write};
+
+#[derive(Debug, PartialEq, Serializable)]
 pub enum HUC1Mode {
     RAM,
     IR
 }
 
-#[derive(Clone, Debug, Encode, Decode)]
+#[derive(Debug, Serializable)]
 pub struct HUC1State {
     mode: HUC1Mode,
     ir_transmitter: bool,
@@ -105,22 +108,19 @@ impl CartridgeMapper for HUC1CartridgeMapper {
     fn get_ram_bank(&self) -> u8 {
         self.state.ram_bank_number
     }
+}
 
-    fn get_snapshot(&self) -> CartridgeMapperSnapshot {
-        CartridgeMapperSnapshot {
-            ram: self.cartridge.ram.clone(),
-            mbc: MBCSnapshot::HUC1(self.state.clone())
-        }
+impl Serializable for HUC1CartridgeMapper {
+    fn serialize(&self, writer: &mut dyn Write)-> std::io::Result<()> {
+        self.cartridge.ram.serialize(writer)?;
+        self.state.serialize(writer)?;
+        Ok(())
     }
 
-    fn apply_snapshot(&mut self, snapshot: CartridgeMapperSnapshot) {
-        if let MBCSnapshot::HUC1(huc1_state) = snapshot.mbc {
-            self.state = huc1_state;
-        } else {
-            panic!("Invalid snapshot type for HUC1");
-        }
-        
-        self.cartridge.ram = snapshot.ram;
+    fn deserialize(&mut self, reader: &mut dyn Read)-> std::io::Result<()> {
+        self.cartridge.ram.deserialize(reader)?;
+        self.state.deserialize(reader)?;
+        Ok(())
     }
 }
 

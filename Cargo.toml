@@ -1,4 +1,5 @@
-workspace = { members = ["frontends/json_test_runner"] }
+workspace = { members = ["frontends/json_test_runner", "tools/serializable_derive"] }
+
 [package]
 name = "retroboy"
 license = "Apache-2.0"
@@ -11,4 +12,4 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 wasm-bindgen = "0.2.92"
 console_error_panic_hook = "0.1.7"
-bincode = "2.0.1"
+serializable_derive = { path = "./tools/serializable_derive" }

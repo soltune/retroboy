@@ -1,7 +1,8 @@
 use crate::address_bus::AddressBus;
-use bincode::{Encode, Decode};
+use crate::serializable::Serializable;
+use serializable_derive::Serializable;
 
-#[derive(Clone, Debug, Encode, Decode)]
+#[derive(Debug, Serializable)]
 pub struct DMAState {
     source: u16,
     offset: u8,

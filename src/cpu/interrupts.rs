@@ -1,7 +1,8 @@
 use crate::cpu::jumps;
 use crate::cpu::microops;
 use crate::emulator::Emulator;
-use bincode::{Encode, Decode};
+use crate::serializable::Serializable;
+use serializable_derive::Serializable;
 
 pub enum InterruptType {
     VBlank,
@@ -11,7 +12,7 @@ pub enum InterruptType {
     JoypadPress
 }
 
-#[derive(Clone, Encode, Decode, Debug)]
+#[derive(Serializable, Debug)]
 pub struct InterruptRegisters {
     pub enabled: u8,
     pub flags: u8

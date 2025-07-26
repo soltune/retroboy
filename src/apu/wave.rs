@@ -1,10 +1,11 @@
 use crate::apu::period::Period;
 use crate::apu::length::{WAVE_MAX_LENGTH, Length};
 use crate::apu::utils::{bounded_wrapping_add, length_enabled};
+use crate::serializable::Serializable;
 use crate::utils::is_bit_set;
-use bincode::{Encode, Decode};
+use serializable_derive::Serializable;
 
-#[derive(Clone, Debug, Encode, Decode)]
+#[derive(Debug, Serializable)]
 pub struct WaveChannel {
     enabled: bool,
     dac_enabled: bool,

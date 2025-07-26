@@ -1,5 +1,6 @@
+use crate::serializable::Serializable;
 use crate::utils::{get_bit, is_bit_set};
-use bincode::{Encode, Decode};
+use serializable_derive::Serializable;
 
 // Each RGBA color is represented in four bytes.
 pub type Color = [u8; 4];
@@ -14,7 +15,7 @@ pub const CGB_PALETTES: usize = 8;
 
 const MONOCHROME_COLORS: [Color; 4] = [WHITE, LIGHT_GRAY, DARK_GRAY, BLACK];
 
-#[derive(Clone, Debug, Encode, Decode)]
+#[derive(Debug, Serializable)]
 pub struct Palettes {
     bgp: u8,
     obp0: u8,

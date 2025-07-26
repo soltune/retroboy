@@ -1,7 +1,9 @@
 use crate::emulator::Emulator;
-use bincode::{Encode, Decode};
+use crate::serializable::Serializable;
+use serializable_derive::Serializable;
+use std::io::{Read, Write};
 
-#[derive(Clone, Debug, Encode, Decode)]
+#[derive(Debug, Serializable)]
 pub struct Registers {
     pub a: u8,
     pub b: u8,
@@ -16,27 +18,27 @@ pub struct Registers {
     pub stack_pointer: u16
 }
 
-#[derive(Clone, Debug, Encode, Decode)]
+#[derive(Debug, Serializable)]
 pub struct Interrupts {
     enable_delay: u8,
     disable_delay: u8,
     enabled: bool
 }
 
-#[derive(Clone, Debug, Encode, Decode, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum BusActivityType {
     Read,
     Write
 }
 
-#[derive(Clone, Debug, PartialEq, Encode, Decode)]
+#[derive(Debug, PartialEq)]
 pub struct BusActivityEntry {
     pub address: u16,
     pub value: u8,
     pub activity_type: BusActivityType
 }
 
-#[derive(Clone, Debug, Encode, Decode)]
+#[derive(Debug)]
 pub struct CpuState {
     pub registers: Registers,
     pub halted: bool,
@@ -112,6 +114,26 @@ pub fn handle_illegal_opcode(opcode: u8) {
 
 pub fn at_end_of_boot_rom(cpu_state: &mut CpuState) -> bool {
     cpu_state.registers.program_counter == 0x100
+}
+
+impl Serializable for CpuState {
+    fn serialize(&self, writer: &mut dyn Write)-> std::io::Result<()> {
+        self.registers.serialize(writer)?;
+        self.halted.serialize(writer)?;
+        self.halt_bug.serialize(writer)?;
+        self.interrupts.serialize(writer)?;
+        self.instruction_clock_cycles.serialize(writer)?;
+        Ok(())
+    }
+
+    fn deserialize(&mut self, reader: &mut dyn Read)-> std::io::Result<()> {
+        self.registers.deserialize(reader)?;
+        self.halted.deserialize(reader)?;
+        self.halt_bug.deserialize(reader)?;
+        self.interrupts.deserialize(reader)?;
+        self.instruction_clock_cycles.deserialize(reader)?;
+        Ok(())
+    }
 }
 
 mod microops;

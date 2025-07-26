@@ -1,4 +1,6 @@
-use crate::address_bus::cartridge::{Cartridge, CartridgeMapper, CartridgeMapperSnapshot, MBCSnapshot};
+use crate::address_bus::cartridge::{Cartridge, CartridgeMapper};
+use crate::serializable::Serializable;
+use std::io::{Read, Write};
 
 #[derive(Debug)]
 pub struct MBCRomOnlyCartridgeMapper {
@@ -39,15 +41,16 @@ impl CartridgeMapper for MBCRomOnlyCartridgeMapper {
     fn get_ram_bank(&self) -> u8 {
         0
     }
+}
 
-    fn get_snapshot(&self) -> CartridgeMapperSnapshot {
-        CartridgeMapperSnapshot {
-            ram: self.cartridge.ram.clone(),
-            mbc: MBCSnapshot::RomOnly
-        }
+impl Serializable for MBCRomOnlyCartridgeMapper {
+    fn serialize(&self, writer: &mut dyn Write)-> std::io::Result<()> {
+        self.cartridge.ram.serialize(writer)?;
+        Ok(())
     }
 
-    fn apply_snapshot(&mut self, snapshot: CartridgeMapperSnapshot) {
-        self.cartridge.ram = snapshot.ram;
+    fn deserialize(&mut self, reader: &mut dyn Read)-> std::io::Result<()> {
+        self.cartridge.ram.deserialize(reader)?;
+        Ok(())
     }
 }

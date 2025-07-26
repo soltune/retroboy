@@ -1,14 +1,15 @@
 use crate::address_bus::AddressBus;
 use crate::utils::is_bit_set;
-use bincode::{Encode, Decode};
+use crate::serializable::Serializable;
+use serializable_derive::Serializable;
 
-#[derive(Clone, Encode, Decode, Debug, PartialEq, Eq)]
+#[derive(Serializable, Debug, PartialEq, Eq)]
 pub enum VRAMTransferMode {
     GeneralPurpose,
     HBlank
 }
 
-#[derive(Clone, Debug, Encode, Decode)]
+#[derive(Debug, Serializable)]
 pub struct HDMAState {
     hdma1: u8,
     hdma2: u8,

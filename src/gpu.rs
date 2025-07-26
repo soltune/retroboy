@@ -3,11 +3,13 @@ use crate::address_bus::hdma::HDMAState;
 use crate::gpu::palettes::Palettes;
 use crate::gpu::constants::{GB_SCREEN_HEIGHT, GB_SCREEN_WIDTH, BYTES_PER_COLOR};
 use crate::gpu::utils::{get_lcd_enabled_mode, get_window_enabled_mode};
+use crate::serializable::Serializable;
 use crate::utils::get_t_cycle_increment;
 use crate::utils::is_bit_set;
-use bincode::{Encode, Decode};
+use serializable_derive::Serializable;
+use std::io::{Read, Write};
 
-#[derive(Clone, Debug, Encode, Decode)]
+#[derive(Debug, Serializable)]
 pub struct GpuRegisters {
     lcdc: u8,
     scy: u8,
@@ -24,7 +26,7 @@ pub struct GpuRegisters {
     key0: u8
 }
 
-#[derive(Clone, Debug, Encode, Decode)]
+#[derive(Debug)]
 pub struct Gpu {
     mode: u8,
     mode_clock: u16,
@@ -368,6 +370,33 @@ impl Gpu {
 
     pub fn set_cgb_double_speed(&mut self, cgb_double_speed: bool) {
         self.cgb_double_speed = cgb_double_speed;
+    }
+}
+
+impl Serializable for Gpu {
+    fn serialize(&self, writer: &mut dyn Write)-> std::io::Result<()> {
+        self.mode.serialize(writer)?;
+        self.mode_clock.serialize(writer)?;
+        self.registers.serialize(writer)?;
+        self.video_ram.serialize(writer)?;
+        self.object_attribute_memory.serialize(writer)?;
+        self.cgb_mode.serialize(writer)?;
+        self.cgb_double_speed.serialize(writer)?;
+        Ok(())
+    }
+
+    fn deserialize(&mut self, reader: &mut dyn Read)-> std::io::Result<()> {
+        self.mode.deserialize(reader)?;
+        self.mode_clock.deserialize(reader)?;
+        self.registers.deserialize(reader)?;
+        self.video_ram.deserialize(reader)?;
+        self.object_attribute_memory.deserialize(reader)?;
+        self.cgb_mode.deserialize(reader)?;
+        self.cgb_double_speed.deserialize(reader)?;
+    
+        self.frame_buffer = initialize_blank_frame();
+
+        Ok(())
     }
 }
 

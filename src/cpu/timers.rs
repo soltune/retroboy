@@ -1,10 +1,11 @@
 use crate::cpu::interrupts::InterruptRegisters;
-use bincode::{Encode, Decode};
+use crate::serializable::Serializable;
+use serializable_derive::Serializable;
 
 const BASE_SPEED_RATE: u8 = 4;
 const DIVIDER_RATE: u8 = 16;
 
-#[derive(Clone, Encode, Decode, Debug)]
+#[derive(Serializable, Debug)]
 pub struct TimerRegisters {
     m_cycles_clock: u8,
     divider_clock: u8,

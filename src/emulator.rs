@@ -1,17 +1,20 @@
 use crate::cpu::{self, initialize_cpu, CpuState};
 use crate::address_bus::AddressBus;
+use crate::serializable::Serializable;
+use serializable_derive::Serializable;
 use std::cell::{Ref, RefMut};
 use std::io::Result;
 
 pub use crate::address_bus::effects::CartridgeEffects;
 pub use crate::address_bus::{CartridgeHeader, RTCState};
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Serializable)]
 pub enum Mode {
     DMG,
     CGB
 }
 
+#[derive(Serializable)]
 pub struct Emulator {
     pub cpu: CpuState,
     pub address_bus: AddressBus,

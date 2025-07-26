@@ -1,8 +1,9 @@
 use crate::address_bus::AddressBus;
 use crate::utils::is_bit_set;
-use bincode::{Encode, Decode};
+use crate::serializable::Serializable;
+use serializable_derive::Serializable;
 
-#[derive(Clone, Encode, Decode)]
+#[derive(Serializable)]
 pub struct SpeedSwitch {
     cgb_double_speed: bool,
     cgb_mode: bool,

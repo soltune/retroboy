@@ -3,10 +3,11 @@ use crate::apu::wave::WaveChannel;
 use crate::apu::pulse::PulseChannel;
 use crate::apu::utils::{bounded_wrapping_add, as_dac_output};
 use crate::utils::{get_bit, get_t_cycle_increment, is_bit_set};
+use crate::serializable::Serializable;
 use utils::{calculate_left_stereo_sample, calculate_right_stereo_sample};
-use bincode::{Decode, Encode};
+use std::io::{Read, Write};
 
-#[derive(Clone, Debug, Encode, Decode)]
+#[derive(Debug)]
 pub struct Apu {
     enabled: bool,
     sound_panning: u8,
@@ -632,6 +633,53 @@ impl Apu {
 
     pub fn channel4_readonly(&self) -> &NoiseChannel {
         &self.channel4
+    }
+}
+
+impl Serializable for Apu {
+    fn serialize(&self, writer: &mut dyn Write)-> std::io::Result<()> {
+        self.enabled.serialize(writer)?;
+        self.sound_panning.serialize(writer)?;
+        self.master_volume.serialize(writer)?;
+        self.channel1.serialize(writer)?;
+        self.channel2.serialize(writer)?;
+        self.channel3.serialize(writer)?;
+        self.channel4.serialize(writer)?;
+        self.divider_apu.serialize(writer)?;
+        self.last_divider_time.serialize(writer)?;
+        self.audio_buffer_clock.serialize(writer)?;
+        self.channel_clock.serialize(writer)?;
+        self.enqueue_rate.serialize(writer)?;
+        self.cgb_mode.serialize(writer)?;
+        self.cgb_double_speed.serialize(writer)?;
+        Ok(())
+    }
+
+    fn deserialize(&mut self, reader: &mut dyn Read)-> std::io::Result<()> {
+        self.enabled.deserialize(reader)?;
+        self.sound_panning.deserialize(reader)?;
+        self.master_volume.deserialize(reader)?;
+        self.channel1.deserialize(reader)?;
+        self.channel2.deserialize(reader)?;
+        self.channel3.deserialize(reader)?;
+        self.channel4.deserialize(reader)?;
+        self.divider_apu.deserialize(reader)?;
+        self.last_divider_time.deserialize(reader)?;
+        self.audio_buffer_clock.deserialize(reader)?;
+        self.channel_clock.deserialize(reader)?;
+        self.enqueue_rate.deserialize(reader)?;
+        self.cgb_mode.deserialize(reader)?;
+        self.cgb_double_speed.deserialize(reader)?;
+
+        self.summed_channel1_sample = 0.0;
+        self.summed_channel2_sample = 0.0;
+        self.summed_channel3_sample = 0.0;
+        self.summed_channel4_sample = 0.0;
+
+        self.left_sample_queue.clear();
+        self.right_sample_queue.clear();
+        
+        Ok(())
     }
 }
 

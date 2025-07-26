@@ -3,12 +3,13 @@ use std::io;
 
 use crate::address_bus::constants::*;
 use crate::address_bus::effects::CartridgeEffects;
-use crate::address_bus::huc1::{HUC1State, initialize_huc1_mapper};
-use crate::address_bus::mbc1::{MBC1State, initialize_mbc1_mapper};
-use crate::address_bus::mbc3::{MBC3State, initialize_mbc3_mapper};
-use crate::address_bus::mbc5::{MBC5State, initialize_mbc5_mapper};
+use crate::address_bus::huc1::initialize_huc1_mapper;
+use crate::address_bus::mbc1::initialize_mbc1_mapper;
+use crate::address_bus::mbc3::initialize_mbc3_mapper;
+use crate::address_bus::mbc5::initialize_mbc5_mapper;
 use crate::address_bus::mbc_rom_only::initialize_mbc_rom_only_mapper;
-use bincode::{Decode, Encode};
+use crate::serializable::Serializable;
+use std::fmt::Debug;
 
 #[derive(Debug, Clone)]
 pub struct CartridgeHeader {
@@ -28,22 +29,7 @@ pub struct Cartridge {
     pub effects: Box<dyn CartridgeEffects>
 }
 
-#[derive(Clone, Encode, Decode)]
-pub enum MBCSnapshot {
-    MBC1(MBC1State),
-    MBC3(MBC3State),
-    MBC5(MBC5State),
-    HUC1(HUC1State),
-    RomOnly
-}
-
-#[derive(Clone, Encode, Decode)]
-pub struct CartridgeMapperSnapshot {
-    pub ram: Vec<u8>,
-    pub mbc: MBCSnapshot
-}
-
-pub trait CartridgeMapper: std::fmt::Debug {
+pub trait CartridgeMapper: Debug + Serializable {
     fn read_rom(&self, address: u16) -> u8;
     fn write_rom(&mut self, address: u16, value: u8);
     fn read_ram(&self, address: u16) -> u8;
@@ -53,9 +39,6 @@ pub trait CartridgeMapper: std::fmt::Debug {
     fn set_cartridge_ram(&mut self, ram: Vec<u8>);
     
     fn get_ram_bank(&self) -> u8;
-
-    fn get_snapshot(&self) -> CartridgeMapperSnapshot;
-    fn apply_snapshot(&mut self, snapshot: CartridgeMapperSnapshot);
 
     fn title(&self) -> String {
         self.get_cartridge().header.title.clone()
