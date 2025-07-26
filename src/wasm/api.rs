@@ -166,7 +166,7 @@ pub fn validate_gamegenie_code(cheat: &str) -> Option<String> {
 pub fn register_gameshark_cheat(cheat_id: &str, cheat: &str) -> Option<String> {
     EMULATOR.with(|emulator_cell| {
         let mut emulator = emulator_cell.borrow_mut();
-        emulator.address_bus.cheats().register_gameshark_cheat(cheat_id, cheat)
+        emulator.address_bus.cheats_mut().register_gameshark_cheat(cheat_id, cheat)
     })
 }
 
@@ -174,7 +174,7 @@ pub fn register_gameshark_cheat(cheat_id: &str, cheat: &str) -> Option<String> {
 pub fn register_gamegenie_cheat(cheat_id: &str, cheat: &str) -> Option<String> {
     EMULATOR.with(|emulator_cell| {
         let mut emulator = emulator_cell.borrow_mut();
-        emulator.address_bus.cheats().register_gamegenie_cheat(cheat_id, cheat)
+        emulator.address_bus.cheats_mut().register_gamegenie_cheat(cheat_id, cheat)
     })
 }
 
@@ -182,7 +182,7 @@ pub fn register_gamegenie_cheat(cheat_id: &str, cheat: &str) -> Option<String> {
 pub fn unregister_cheat(cheat_id: &str) {
     EMULATOR.with(|emulator_cell| {
         let mut emulator = emulator_cell.borrow_mut();
-        emulator.address_bus.cheats().unregister(cheat_id)
+        emulator.address_bus.cheats_mut().unregister(cheat_id)
     })
 }
 

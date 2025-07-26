@@ -234,7 +234,7 @@ mod tests {
             maybe_bank: Some(1),
         };
 
-        address_bus.cheats().register("da9a7056-ad9b-4ca1-9049-688931b279a3", cheat);
+        address_bus.cheats_mut().register("da9a7056-ad9b-4ca1-9049-688931b279a3", cheat);
 
         // Switch to working RAM bank 1
         address_bus.write_byte(0xFF70, 1);
@@ -270,7 +270,7 @@ mod tests {
             maybe_bank: None,
         };
 
-        address_bus.cheats().register("da9a7056-ad9b-4ca1-9049-688931b279a3", cheat);
+        address_bus.cheats_mut().register("da9a7056-ad9b-4ca1-9049-688931b279a3", cheat);
 
         let byte = address_bus.read_byte(0x5D56);
 

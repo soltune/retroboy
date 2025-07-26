@@ -4,14 +4,21 @@ use crate::apu::utils::{bounded_wrapping_add, length_enabled};
 use crate::serializable::Serializable;
 use crate::utils::is_bit_set;
 use serializable_derive::Serializable;
+use getset::{CopyGetters, Getters, MutGetters, Setters};
 
-#[derive(Debug, Serializable)]
+#[derive(Debug, Serializable, CopyGetters, Setters, Getters, MutGetters)]
 pub struct WaveChannel {
+    #[getset(get_copy = "pub", set = "pub")]
     enabled: bool,
+    #[getset(get_copy = "pub", set = "pub")]
     dac_enabled: bool,
+    #[getset(get = "pub", get_mut = "pub")]
     length: Length,
+    #[getset(get_copy = "pub", set = "pub")]
     volume: u8,
+    #[getset(get = "pub", get_mut = "pub")]
     period: Period,
+    #[getset(get_copy = "pub", set = "pub")]
     wave_position: u8,
     wave_pattern_ram: [u8; 0x10],
 }
@@ -141,49 +148,6 @@ impl WaveChannel {
         is_bit_set(self.period.high(), PERIOD_HIGH_TRIGGER_INDEX)
     }
 
-    pub fn wave_position(&self) -> u8 {
-        self.wave_position
-    }
-
-    pub fn set_wave_position(&mut self, value: u8) {
-        self.wave_position = value;
-    }
-
-    pub fn enabled(&self) -> bool {
-        self.enabled
-    }
-
-    pub fn set_enabled(&mut self, value: bool) {
-        self.enabled = value;
-    }
-
-    pub fn dac_enabled(&self) -> bool {
-        self.dac_enabled
-    }
-
-    pub fn set_dac_enabled(&mut self, value: bool) {
-        self.dac_enabled = value;
-    }
-
-    pub fn volume(&self) -> u8 {
-        self.volume
-    }
-
-    pub fn set_volume(&mut self, value: u8) {
-        self.volume = value;
-    }
-
-    pub fn period(&mut self) -> &mut Period {
-        &mut self.period
-    }
-
-    pub fn period_readonly(&self) -> &Period {
-        &self.period
-    }
-
-    pub fn length(&mut self) -> &mut Length {
-        &mut self.length
-    }
 }
 
 #[cfg(test)]

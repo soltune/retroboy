@@ -1,9 +1,12 @@
 use crate::address_bus::AddressBus;
 use crate::serializable::Serializable;
+use getset::{CopyGetters, Setters};
 use serializable_derive::Serializable;
 
-#[derive(Debug, Serializable)]
+#[derive(Debug, Serializable, CopyGetters, Setters)]
+#[getset(get_copy = "pub", set = "pub")]
 pub struct DMAState {
+    #[getset(skip)]
     source: u16,
     offset: u8,
     delay: u8,
@@ -36,43 +39,14 @@ impl DMAState {
         (self.source >> 8) as u8
     }
 
-    pub fn offset(&self) -> u8 {
-        self.offset
-    }
-
-    pub fn delay(&self) -> u8 {
-        self.delay
-    }
-
-    pub fn set_delay(&mut self, delay: u8) {
-        self.delay = delay;
-    }
-
-    pub fn in_progress(&self) -> bool {
-        self.in_progress
-    }
-
     pub fn source_address(&self) -> u16 {
         self.source
-    }
-
-    pub fn set_in_progress(&mut self, in_progress: bool) {
-        self.in_progress = in_progress;
-    }
-
-    pub fn decrement_delay(&mut self) {
-        self.delay -= 1;
     }
 
     pub fn set_source_address(&mut self, source: u16) {
         self.source = source;
     }
-
-    pub fn set_offset(&mut self, offset: u8) {
-        self.offset = offset;
-    }
 }
-
 
 impl AddressBus {
     fn dma_transfer_byte(&mut self) {

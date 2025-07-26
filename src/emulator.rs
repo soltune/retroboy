@@ -63,7 +63,7 @@ pub fn set_mode(emulator: &mut Emulator, mode: Mode) {
 }
 
 pub fn set_sample_rate(emulator: &mut Emulator, sample_rate: u32) {
-    emulator.address_bus.apu().set_sample_rate(sample_rate);
+    emulator.address_bus.apu_mut().set_sample_rate(sample_rate);
 }
 
 pub fn step(emulator: &mut Emulator) {
@@ -71,15 +71,15 @@ pub fn step(emulator: &mut Emulator) {
 }
 
 pub fn step_until_next_audio_buffer(emulator: &mut Emulator) -> (&[f32], &[f32]) {
-    emulator.address_bus.apu().clear_audio_buffers();
+    emulator.address_bus.apu_mut().clear_audio_buffers();
 
-    while !emulator.address_bus.apu_readonly().audio_buffers_full() {
+    while !emulator.address_bus.apu().audio_buffers_full() {
         step(emulator);
     }
 
-    let apu_readonly = emulator.address_bus.apu_readonly();
-    let left_samples_slice = apu_readonly.get_left_sample_queue();
-    let right_samples_slice = apu_readonly.get_right_sample_queue();
+    let apu = emulator.address_bus.apu();
+    let left_samples_slice = apu.get_left_sample_queue();
+    let right_samples_slice = apu.get_right_sample_queue();
 
     (left_samples_slice, right_samples_slice)
 }

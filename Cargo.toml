@@ -13,3 +13,4 @@ crate-type = ["cdylib", "rlib"]
 wasm-bindgen = "0.2.92"
 console_error_panic_hook = "0.1.7"
 serializable_derive = { path = "./tools/serializable_derive" }
+getset = "0.1.6"

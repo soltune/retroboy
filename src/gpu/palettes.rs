@@ -1,6 +1,7 @@
 use crate::serializable::Serializable;
 use crate::utils::{get_bit, is_bit_set};
 use serializable_derive::Serializable;
+use getset::{CopyGetters, Setters};
 
 // Each RGBA color is represented in four bytes.
 pub type Color = [u8; 4];
@@ -15,12 +16,15 @@ pub const CGB_PALETTES: usize = 8;
 
 const MONOCHROME_COLORS: [Color; 4] = [WHITE, LIGHT_GRAY, DARK_GRAY, BLACK];
 
-#[derive(Debug, Serializable)]
+#[derive(Debug, Serializable, CopyGetters, Setters)]
+#[getset(get_copy = "pub", set = "pub")]
 pub struct Palettes {
     bgp: u8,
     obp0: u8,
     obp1: u8,
+    #[getset(skip)]
     cgb_bcpd: [u8; COLORS_PER_PALETTE * CGB_PALETTES * 2],
+    #[getset(skip)]
     cgb_ocpd: [u8; COLORS_PER_PALETTE * CGB_PALETTES * 2],
     cgb_bcps: u8,
     cgb_ocps: u8
@@ -144,21 +148,6 @@ impl Palettes {
         maybe_palette.map(rgb555_as_color)
     }
 
-    pub fn cgb_bcps(&self) -> u8 {
-        self.cgb_bcps
-    }
-
-    pub fn set_cgb_bcps(&mut self, value: u8) {
-        self.cgb_bcps = value;
-    }
-
-    pub fn cgb_ocps(&self) -> u8 {
-        self.cgb_ocps
-    }
-    
-    pub fn set_cgb_ocps(&mut self, value: u8) {
-        self.cgb_ocps = value;
-    }
 
     pub fn cgb_bcpd(&self) -> u8 {
         let address = (self.cgb_bcps & 0b00111111) as usize;
@@ -202,29 +191,6 @@ impl Palettes {
         };
     }
 
-    pub fn bgp(&self) -> u8 {
-        self.bgp
-    }
-
-    pub fn set_bgp(&mut self, value: u8) {
-        self.bgp = value;
-    }
-
-    pub fn obp0(&self) -> u8 {
-        self.obp0
-    }
-
-    pub fn set_obp0(&mut self, value: u8) {
-        self.obp0 = value;
-    }
-
-    pub fn obp1(&self) -> u8 {
-        self.obp1
-    }
-
-    pub fn set_obp1(&mut self, value: u8) {
-        self.obp1 = value;
-    }
 }
 
 #[cfg(test)]

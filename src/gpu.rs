@@ -6,35 +6,42 @@ use crate::gpu::utils::{get_lcd_enabled_mode, get_window_enabled_mode};
 use crate::serializable::Serializable;
 use crate::utils::get_t_cycle_increment;
 use crate::utils::is_bit_set;
-use serializable_derive::Serializable;
+use getset::{CopyGetters, Getters, MutGetters, Setters};
 use std::io::{Read, Write};
 
-#[derive(Debug, Serializable)]
-pub struct GpuRegisters {
-    lcdc: u8,
-    scy: u8,
-    scx: u8,
-    wx: u8,
-    wy: u8,
-    wly: u8,
-    ly: u8,
-    lyc: u8,
-    stat: u8,
-    palettes: Palettes,
-    cgb_vbk: u8,
-    cgb_opri: u8,
-    key0: u8
-}
-
-#[derive(Debug)]
+#[derive(Debug, CopyGetters, Getters, MutGetters, Setters)]
 pub struct Gpu {
     mode: u8,
     mode_clock: u16,
-    registers: GpuRegisters,
+    lcdc: u8,
+    #[getset(get_copy = "pub", set = "pub")]
+    scy: u8,
+    #[getset(get_copy = "pub", set = "pub")]
+    scx: u8,
+    #[getset(get_copy = "pub", set = "pub")]
+    wx: u8,
+    #[getset(get_copy = "pub", set = "pub")]
+    wy: u8,
+    #[getset(get_copy = "pub", set = "pub")]
+    wly: u8,
+    #[getset(get_copy = "pub", set = "pub")]
+    ly: u8,
+    #[getset(get_copy = "pub", set = "pub")]
+    lyc: u8,
+    #[getset(get_copy = "pub", set = "pub")]
+    stat: u8,
+    #[getset(get = "pub", get_mut = "pub")]
+    palettes: Palettes,
+    cgb_vbk: u8,
+    cgb_opri: u8,
+    #[getset(get_copy = "pub", set = "pub")]
+    key0: u8,
     frame_buffer: Vec<u8>,
     video_ram: [u8; 0x4000],
     object_attribute_memory: [u8; 0xa0],
+    #[getset(set = "pub")]
     cgb_mode: bool,
+    #[getset(set = "pub")]
     cgb_double_speed: bool,
     renderer: fn(&[u8])
 }
@@ -75,21 +82,19 @@ impl Gpu {
         Gpu {
             mode: 2,
             mode_clock: 0,
-            registers: GpuRegisters {
-                lcdc: 0,
-                scy: 0,
-                scx: 0,
-                wx: 0,
-                wy: 0,
-                wly: 0,
-                ly: 0,
-                lyc: 0,
-                stat: 0,
-                palettes: Palettes::new(),
-                cgb_vbk: 0,
-                cgb_opri: 0,
-                key0: 0
-            },
+            lcdc: 0,
+            scy: 0,
+            scx: 0,
+            wx: 0,
+            wy: 0,
+            wly: 0,
+            ly: 0,
+            lyc: 0,
+            stat: 0,
+            palettes: Palettes::new(),
+            cgb_vbk: 0,
+            cgb_opri: 0,
+            key0: 0,
             frame_buffer: initialize_blank_frame(),
             video_ram: [0; 0x4000],
             object_attribute_memory: [0; 0xa0],
@@ -112,7 +117,7 @@ impl Gpu {
     }
 
     fn lyc_check_enabled(&self) -> bool {
-        is_bit_set(self.registers.stat, STAT_INTERRUPT_LYC_CHECK_BIT)
+        is_bit_set(self.stat, STAT_INTERRUPT_LYC_CHECK_BIT)
     }
 
     fn fire_stat_interrupt(&mut self, interrupts: &mut InterruptRegisters) {
@@ -122,8 +127,8 @@ impl Gpu {
     fn update_mode(&mut self, new_mode: u8, interrupts: &mut InterruptRegisters) {
         self.mode = new_mode;
 
-        let stat = (self.registers.stat & 0b11111100) | new_mode;
-        self.registers.stat = stat;
+        let stat = (self.stat & 0b11111100) | new_mode;
+        self.stat = stat;
 
         let fire_interrupt_on_mode_switch = (new_mode == OAM_MODE && is_bit_set(stat, OAM_MODE_STAT_SOURCE_BIT))
             || (new_mode == VBLANK_MODE && is_bit_set(stat, VBLANK_MODE_STAT_SOURCE_BIT))
@@ -135,20 +140,20 @@ impl Gpu {
     }
 
     fn compare_ly_and_lyc(&mut self, interrupts: &mut InterruptRegisters) {
-        if self.registers.ly == self.registers.lyc {
-            self.registers.stat |= 0b00000100;
+        if self.ly == self.lyc {
+            self.stat |= 0b00000100;
             
             if self.lyc_check_enabled() {
                 self.fire_stat_interrupt(interrupts);
             }
         }
         else {
-            self.registers.stat &= 0b11111011;
+            self.stat &= 0b11111011;
         }
     }
 
     pub fn step(&mut self, params: GpuParams) {
-        let lcdc = self.registers.lcdc;
+        let lcdc = self.lcdc;
         let lcd_enabled = get_lcd_enabled_mode(lcdc);
 
         if lcd_enabled {
@@ -173,16 +178,16 @@ impl Gpu {
                 }
                 HBLANK_MODE => {
                     if self.mode_clock >= HBLANK_TIME {
-                        let wx = self.registers.wx;
-                        let wy = self.registers.wy;
+                        let wx = self.wx;
+                        let wy = self.wy;
                         let window_enabled = get_window_enabled_mode(lcdc);
                         let window_visible = (wx < 7 || wx - 7 < GB_SCREEN_WIDTH as u8) && wy < GB_SCREEN_HEIGHT as u8;
 
-                        if window_enabled && window_visible && self.registers.ly >= wy {
-                            self.registers.wly += 1;
+                        if window_enabled && window_visible && self.ly >= wy {
+                            self.wly += 1;
                         }
 
-                        if self.registers.ly == FRAME_SCANLINE_COUNT - VBLANK_SCANLINE_COUNT - 1 {
+                        if self.ly == FRAME_SCANLINE_COUNT - VBLANK_SCANLINE_COUNT - 1 {
                             self.update_mode(VBLANK_MODE, params.interrupt_registers);
                             (self.renderer)(&self.frame_buffer);
                             self.fire_vblank_interrupt(params.interrupt_registers);
@@ -191,7 +196,7 @@ impl Gpu {
                             self.update_mode(OAM_MODE, params.interrupt_registers);
                         }
 
-                        self.registers.ly += 1;
+                        self.ly += 1;
                         self.mode_clock = 0;
 
                         self.compare_ly_and_lyc(params.interrupt_registers);
@@ -200,11 +205,11 @@ impl Gpu {
                 VBLANK_MODE => {
                     if self.mode_clock >= SCANLINE_RENDER_TIME {
                         self.mode_clock = 0;
-                        self.registers.ly += 1;
+                        self.ly += 1;
 
-                        if self.registers.ly > FRAME_SCANLINE_COUNT - 1 {
-                            self.registers.ly = 0;
-                            self.registers.wly = 0;
+                        if self.ly > FRAME_SCANLINE_COUNT - 1 {
+                            self.ly = 0;
+                            self.wly = 0;
                             self.update_mode(OAM_MODE, params.interrupt_registers);
                         }
 
@@ -216,17 +221,9 @@ impl Gpu {
         }
     }
 
-    pub fn palettes(&mut self) -> &mut Palettes {
-        &mut self.registers.palettes
-    }
-
-    pub fn palettes_readonly(&self) -> &Palettes {
-        &self.registers.palettes
-    }
-
     fn calculate_video_ram_index(&self, index: u16) -> u16 {
         if self.cgb_mode {
-            let bank = self.registers.cgb_vbk & 0b1;
+            let bank = self.cgb_vbk & 0b1;
             if bank == 1 { index + 0x2000 } else { index }
         } else {
             index
@@ -252,125 +249,53 @@ impl Gpu {
 
     pub fn cgb_vbk(&self) -> u8 {
         if self.cgb_mode {
-            self.registers.cgb_vbk | 0b11111110
+            self.cgb_vbk | 0b11111110
         } else {
             0xFF
         }
     }
     pub fn set_cgb_vbk(&mut self, value: u8) {
         if self.cgb_mode {
-            self.registers.cgb_vbk = value;
+            self.cgb_vbk = value;
         }
     }
 
     pub fn cgb_opri(&self) -> u8 {
         if self.cgb_mode {
-            self.registers.cgb_opri & 0b1
+            self.cgb_opri & 0b1
         } else {
             0xFF
         }
     }
     pub fn set_cgb_opri(&mut self, value: u8) {
         if self.cgb_mode {
-            self.registers.cgb_opri = value & 0b1;
+            self.cgb_opri = value & 0b1;
         }
     }
 
     pub fn lcdc(&self) -> u8 {
-        self.registers.lcdc
+        self.lcdc
     }
     
     pub fn set_lcdc(&mut self, value: u8) {
-        self.registers.lcdc = value;
+        self.lcdc = value;
         let lcd_enabled = get_lcd_enabled_mode(value);
         if !lcd_enabled {
-            self.registers.ly = 0;
-            self.registers.wly = 0;
+            self.ly = 0;
+            self.wly = 0;
             self.mode_clock = 0;
             self.mode = HBLANK_MODE;
-            self.registers.stat = (self.registers.stat & 0b11111100) | HBLANK_MODE;
+            self.stat = (self.stat & 0b11111100) | HBLANK_MODE;
             self.frame_buffer = initialize_blank_frame();
         }
     }
-
-    pub fn key0(&self) -> u8 {
-        self.registers.key0
-    }
-
-    pub fn set_key0(&mut self, value: u8) {
-        self.registers.key0 = value;
-    }
     
     pub fn has_dmg_compatability(&self) -> bool {
-        self.registers.key0 == 0x04
-    }
-
-    pub fn stat(&self) -> u8 {
-        self.registers.stat
-    }
-
-    pub fn set_stat(&mut self, value: u8) {
-        self.registers.stat = value;
-    }
-
-    pub fn scy(&self) -> u8 {
-        self.registers.scy
-    }
-
-    pub fn set_scy(&mut self, value: u8) {
-        self.registers.scy = value;
-    }
-
-    pub fn scx(&self) -> u8 {
-        self.registers.scx
-    }
-
-    pub fn set_scx(&mut self, value: u8) {
-        self.registers.scx = value;
-    }
-
-    pub fn ly(&self) -> u8 {
-        self.registers.ly
-    }
-
-    pub fn set_ly(&mut self, value: u8) {
-        self.registers.ly = value;
-    }
-
-    pub fn lyc(&self) -> u8 {
-        self.registers.lyc
-    }
-
-    pub fn set_lyc(&mut self, value: u8) {
-        self.registers.lyc = value;
-    }
-
-    pub fn wy(&self) -> u8 {
-        self.registers.wy
-    }
-
-    pub fn set_wy(&mut self, value: u8) {
-        self.registers.wy = value;
-    }
-
-    pub fn wx(&self) -> u8 {
-        self.registers.wx
-    }
-
-    pub fn set_wx(&mut self, value: u8) {
-        self.registers.wx = value;
+        self.key0 == 0x04
     }
 
     pub fn set_mode(&mut self, value: u8) {
         self.mode = value;
-    }
-
-    pub fn set_cgb_mode(&mut self, cgb_mode: bool) {
-        self.cgb_mode = cgb_mode;
-    }
-
-    pub fn set_cgb_double_speed(&mut self, cgb_double_speed: bool) {
-        self.cgb_double_speed = cgb_double_speed;
     }
 }
 
@@ -378,7 +303,18 @@ impl Serializable for Gpu {
     fn serialize(&self, writer: &mut dyn Write)-> std::io::Result<()> {
         self.mode.serialize(writer)?;
         self.mode_clock.serialize(writer)?;
-        self.registers.serialize(writer)?;
+        self.lcdc.serialize(writer)?;
+        self.scy.serialize(writer)?;
+        self.scx.serialize(writer)?;
+        self.wx.serialize(writer)?;
+        self.wy.serialize(writer)?;
+        self.wly.serialize(writer)?;
+        self.ly.serialize(writer)?;
+        self.lyc.serialize(writer)?;
+        self.stat.serialize(writer)?;
+        self.palettes.serialize(writer)?;
+        self.cgb_vbk.serialize(writer)?;
+        self.cgb_opri.serialize(writer)?;
         self.video_ram.serialize(writer)?;
         self.object_attribute_memory.serialize(writer)?;
         self.cgb_mode.serialize(writer)?;
@@ -389,7 +325,18 @@ impl Serializable for Gpu {
     fn deserialize(&mut self, reader: &mut dyn Read)-> std::io::Result<()> {
         self.mode.deserialize(reader)?;
         self.mode_clock.deserialize(reader)?;
-        self.registers.deserialize(reader)?;
+        self.lcdc.deserialize(reader)?;
+        self.scy.deserialize(reader)?;
+        self.scx.deserialize(reader)?;
+        self.wx.deserialize(reader)?;
+        self.wy.deserialize(reader)?;
+        self.wly.deserialize(reader)?;
+        self.ly.deserialize(reader)?;
+        self.lyc.deserialize(reader)?;
+        self.stat.deserialize(reader)?;
+        self.palettes.deserialize(reader)?;
+        self.cgb_vbk.deserialize(reader)?;
+        self.cgb_opri.deserialize(reader)?;
         self.video_ram.deserialize(reader)?;
         self.object_attribute_memory.deserialize(reader)?;
         self.cgb_mode.deserialize(reader)?;

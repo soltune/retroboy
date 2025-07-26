@@ -1,10 +1,13 @@
 use crate::serializable::Serializable;
+use getset::{CopyGetters, Setters};
 use serializable_derive::Serializable;
 
-#[derive(Debug, Serializable)]
+#[derive(Debug, Serializable, CopyGetters, Setters)]
+#[getset(get_copy = "pub", set = "pub")]
 pub struct Length {
     initial_settings: u8,
     timer: u16,
+    #[getset(skip)]
     max_length: u16
 }
 
@@ -54,23 +57,7 @@ impl Length {
         }
     }
 
-    pub fn timer(&self) -> u16 {
-        self.timer
-    }
-
-    pub fn set_timer(&mut self, timer: u16) {
-        self.timer = timer;
-    }
-
     pub fn at_max_length(&self) -> bool {
         self.timer == self.max_length
-    }
-
-    pub fn initial_settings(&self) -> u8 {
-        self.initial_settings
-    }
-
-    pub fn set_initial_settings(&mut self, settings: u8) {
-        self.initial_settings = settings;
     }
 }

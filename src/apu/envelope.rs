@@ -1,9 +1,11 @@
 use crate::serializable::Serializable;
 
 use crate::utils::is_bit_set;
+use getset::{CopyGetters, Setters};
 use serializable_derive::Serializable;
 
-#[derive(Debug, Serializable)]
+#[derive(Debug, Serializable, CopyGetters, Setters)]
+#[getset(get_copy = "pub", set = "pub")]
 pub struct Envelope {
     initial_settings: u8,
     current_volume: u8,
@@ -54,29 +56,5 @@ impl Envelope {
 
     pub fn should_disable_dac(&self) -> bool {
         self.initial_settings & 0xF8 == 0
-    }
-
-    pub fn current_volume(&self) -> u8 {
-        self.current_volume
-    }
-
-    pub fn set_current_volume(&mut self, volume: u8) {
-        self.current_volume = volume;
-    }
-
-    pub fn initial_settings(&self) -> u8 {
-        self.initial_settings
-    }
-
-    pub fn set_initial_settings(&mut self, value: u8) {
-        self.initial_settings = value;
-    }
-
-    pub fn timer(&self) -> u8 {
-        self.timer
-    }
-
-    pub fn set_timer(&mut self, timer: u8) {
-        self.timer = timer;
     }
 }

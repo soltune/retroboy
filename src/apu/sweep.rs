@@ -2,14 +2,18 @@ use crate::utils::is_bit_set;
 use crate::apu::period::Period;
 use crate::serializable::Serializable;
 use serializable_derive::Serializable;
+use getset::{CopyGetters, Setters};
 
-#[derive(Debug, Serializable)]
+#[derive(Debug, Serializable, CopyGetters, Setters)]
+#[getset(get_copy = "pub", set = "pub")]
 pub struct Sweep {
     initial_settings: u8,
     enabled: bool,
     shadow_frequency: u16,
     timer: u8,
+    #[getset(skip)]
     frequency_calculated: bool,
+    #[getset(skip)]
     should_disable_channel: bool
 }
 
@@ -133,37 +137,5 @@ impl Sweep {
         else {
             self.frequency_calculated = false;
         }
-    }
-
-    pub fn initial_settings(&self) -> u8 {
-        self.initial_settings
-    }
-
-    pub fn set_initial_settings(&mut self, initial_settings: u8) {
-        self.initial_settings = initial_settings;
-    }
-
-    pub fn enabled(&self) -> bool {
-        self.enabled
-    }
-
-    pub fn set_enabled(&mut self, enabled: bool) {
-        self.enabled = enabled;
-    }
-
-    pub fn timer(&self) -> u8 {
-        self.timer
-    }
-
-    pub fn set_timer(&mut self, timer: u8) {
-        self.timer = timer;
-    }
-
-    pub fn shadow_frequency(&self) -> u16 {
-        self.shadow_frequency
-    }
-
-    pub fn set_shadow_frequency(&mut self, shadow_frequency: u16) {
-        self.shadow_frequency = shadow_frequency;
     }
 }

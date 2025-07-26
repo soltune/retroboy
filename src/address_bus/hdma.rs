@@ -1,6 +1,7 @@
 use crate::address_bus::AddressBus;
 use crate::utils::is_bit_set;
 use crate::serializable::Serializable;
+use getset::{CopyGetters, Getters, Setters};
 use serializable_derive::Serializable;
 
 #[derive(Serializable, Debug, PartialEq, Eq)]
@@ -9,19 +10,26 @@ pub enum VRAMTransferMode {
     HBlank
 }
 
-#[derive(Debug, Serializable)]
+#[derive(Debug, Serializable, CopyGetters, Getters, Setters)]
 pub struct HDMAState {
     hdma1: u8,
     hdma2: u8,
     hdma3: u8,
     hdma4: u8,
+    #[getset(get_copy = "pub", set = "pub")]
     offset: u16,
+    #[getset(get_copy = "pub", set = "pub")]
     transfer_length: u8,
+    #[getset(get = "pub")]
     transfer_mode: VRAMTransferMode,
+    #[getset(get_copy = "pub", set = "pub")]
     in_progress: bool,
+    #[getset(get_copy = "pub", set = "pub")]
     completed: bool,
     hblank_started: bool,
+    #[getset(set = "pub")]
     cgb_mode: bool,
+    #[getset(get_copy = "pub", set = "pub")]
     cgb_double_speed: bool
 }
 
@@ -121,78 +129,12 @@ impl HDMAState {
         0x8000 + offset
     }
 
-    pub fn set_cgb_mode(&mut self, cgb_mode: bool) {
-        self.cgb_mode = cgb_mode;
-    }
-
-    pub fn transfer_mode(&self) -> &VRAMTransferMode {
-        &self.transfer_mode
-    }
-
-    pub fn in_progress(&self) -> bool {
-        self.in_progress
-    }
-
     pub fn hblank_started(&self) -> bool {
         self.hblank_started
-    }
-
-    pub fn set_in_progress(&mut self, in_progress: bool) {
-        self.in_progress = in_progress;
-    }
-
-    pub fn set_completed(&mut self, completed: bool) {
-        self.completed = completed;
-    }
-
-    pub fn set_transfer_length(&mut self, transfer_length: u8) {
-        self.transfer_length = transfer_length;
-    }
-
-    pub fn offset(&self) -> u16 {
-        self.offset
-    }
-
-    pub fn set_offset(&mut self, offset: u16) {
-        self.offset = offset;
-    }
-
-    pub fn transfer_length(&self) -> u8 {
-        self.transfer_length
-    }
-
-    pub fn completed(&self) -> bool {
-        self.completed
-    }
-
-    pub fn cgb_double_speed(&self) -> bool {
-        self.cgb_double_speed
-    }
-
-    pub fn set_cgb_double_speed(&mut self, cgb_double_speed: bool) {
-        self.cgb_double_speed = cgb_double_speed;
     }
 }
 
 impl AddressBus {
-    pub fn hdma_step(&mut self) {
-        if self.cgb_mode && self.hdma.in_progress() {
-            let source = self.hdma.get_vram_dma_source();
-            let destination = self.hdma.get_vram_dma_destination();
-            
-            let is_hblank_mode = self.hdma.transfer_mode() == &VRAMTransferMode::HBlank;
-            if is_hblank_mode && self.hdma.hblank_started() {
-                self.hdma_transfer_block(source, destination);
-                self.hdma.set_hblank_started(false);
-            }
-            else if !is_hblank_mode {
-                while !self.hdma.completed() {
-                    self.hdma_transfer_block(source, destination);
-                }
-            }
-        }
-    }
-
     fn hdma_transfer_block(&mut self, source: u16, destination: u16) {
         for _ in (0..BLOCK_SIZE).step_by(2) {
             for _ in 0..2 {
@@ -218,6 +160,24 @@ impl AddressBus {
         else {
             let transfer_length = self.hdma.transfer_length();
             self.hdma.set_transfer_length(transfer_length - 1);
+        }
+    }
+
+    pub fn hdma_step(&mut self) {
+        if self.cgb_mode && self.hdma.in_progress() {
+            let source = self.hdma.get_vram_dma_source();
+            let destination = self.hdma.get_vram_dma_destination();
+            
+            let is_hblank_mode = self.hdma.transfer_mode() == &VRAMTransferMode::HBlank;
+            if is_hblank_mode && self.hdma.hblank_started() {
+                self.hdma_transfer_block(source, destination);
+                self.hdma.set_hblank_started(false);
+            }
+            else if !is_hblank_mode {
+                while !self.hdma.completed() {
+                    self.hdma_transfer_block(source, destination);
+                }
+            }
         }
     }
 }

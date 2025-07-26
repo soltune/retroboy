@@ -1,15 +1,16 @@
 use crate::address_bus::AddressBus;
 use crate::utils::is_bit_set;
 use crate::serializable::Serializable;
+use getset::{CopyGetters, Setters};
 use serializable_derive::Serializable;
 
-#[derive(Serializable)]
+#[derive(Serializable, CopyGetters, Setters)]
+#[getset(get_copy = "pub", set = "pub")]
 pub struct SpeedSwitch {
     cgb_double_speed: bool,
     cgb_mode: bool,
     armed: bool
 }
-
 
 const SPEED_SWITCH_ARMED_INDEX: u8 = 0;
 
@@ -20,18 +21,6 @@ impl SpeedSwitch {
             cgb_mode: false,
             armed: false
         }
-    }
-
-    pub fn cgb_double_speed(&self) -> bool {
-        self.cgb_double_speed
-    }
-
-    pub fn armed(&self) -> bool {
-        self.armed
-    }
-
-    pub fn set_armed(&mut self, armed: bool) {
-        self.armed = armed;
     }
 
     pub fn key1(&self) -> u8 {
@@ -49,14 +38,6 @@ impl SpeedSwitch {
         if self.cgb_mode {
             self.armed = is_bit_set(value, SPEED_SWITCH_ARMED_INDEX);
         }
-    }
-
-    pub fn set_cgb_double_speed(&mut self, cgb_double_speed: bool) {
-        self.cgb_double_speed = cgb_double_speed;
-    }
-
-    pub fn set_cgb_mode(&mut self, cgb_mode: bool) {
-        self.cgb_mode = cgb_mode;
     }
 }
 

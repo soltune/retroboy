@@ -6,11 +6,11 @@ use crate::gpu::prioritization::BackgroundPixel;
 
 impl Gpu {
     pub(super) fn read_window_color(&self, viewport_x: u8) -> Option<BackgroundPixel> {
-        let wx = self.registers.wx;
-        let wy = self.registers.wy;
-        let wly = self.registers.wly;
-        let ly = self.registers.ly;
-        let lcdc = self.registers.lcdc;
+        let wx = self.wx;
+        let wy = self.wy;
+        let wly = self.wly;
+        let ly = self.ly;
+        let lcdc = self.lcdc;
 
         let x_int = viewport_x as i16;
         let wx_int = wx as i16;
@@ -35,7 +35,7 @@ impl Gpu {
                 let dmg_compatible = self.has_dmg_compatability();
                 let palette_number = if dmg_compatible { 0 } else { attributes.palette_number };
                 let color_id = calculate_color_id(bit_index, msb_byte, lsb_byte, attributes.x_flip);
-                let color = self.registers.palettes.as_cgb_bg_color_rgb(palette_number, color_id, dmg_compatible);
+                let color = self.palettes.as_cgb_bg_color_rgb(palette_number, color_id, dmg_compatible);
 
                 Some(BackgroundPixel { color, color_id, prioritize_bg: attributes.priority })
             }
@@ -43,7 +43,7 @@ impl Gpu {
                 let (lsb_byte, msb_byte) = get_tile_line_bytes(&self.video_ram, tile_data_index, row_offset, false, false);
 
                 let color_id = calculate_color_id(bit_index, msb_byte, lsb_byte, false);
-                let color = self.registers.palettes.as_dmg_bg_color_rgb(color_id);
+                let color = self.palettes.as_dmg_bg_color_rgb(color_id);
 
                 Some(BackgroundPixel { color, color_id, prioritize_bg: false })
             }

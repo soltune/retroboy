@@ -71,12 +71,12 @@ fn setup_test_address_bus() -> AddressBus {
     address_bus.gpu.set_scx(0xA1);
     address_bus.gpu.set_wy(0xBB);
     address_bus.gpu.set_wx(0xDD);
-    address_bus.gpu.palettes().set_bgp(0xC1);
+    address_bus.gpu.palettes_mut().set_bgp(0xC1);
     address_bus.gpu.set_ly(0x2B);
     address_bus.gpu.set_lyc(0xAB);
     address_bus.gpu.set_stat(0xD2);
-    address_bus.gpu.palettes().set_obp0(0x1B);
-    address_bus.gpu.palettes().set_obp1(0xE4);
+    address_bus.gpu.palettes_mut().set_obp0(0x1B);
+    address_bus.gpu.palettes_mut().set_obp1(0xE4);
 
     address_bus.joypad.set_column(0x10);
     address_bus.joypad.set_select_buttons(0x4);
@@ -86,31 +86,31 @@ fn setup_test_address_bus() -> AddressBus {
     address_bus.apu.set_master_volume(0xC1);
     address_bus.apu.set_audio_buffer_clock(84);
 
-    address_bus.apu.channel1().sweep().set_initial_settings(0xDD);
-    address_bus.apu.channel1().length().set_initial_settings(0xB0);
-    address_bus.apu.channel1().envelope().set_initial_settings(0xAA);
-    address_bus.apu.channel1().period().set_low(0xB2);
-    address_bus.apu.channel1().period().set_high(0xC2);
+    address_bus.apu.channel1_mut().sweep_mut().set_initial_settings(0xDD);
+    address_bus.apu.channel1_mut().length_mut().set_initial_settings(0xB0);
+    address_bus.apu.channel1_mut().envelope_mut().set_initial_settings(0xAA);
+    address_bus.apu.channel1_mut().period_mut().set_low(0xB2);
+    address_bus.apu.channel1_mut().period_mut().set_high(0xC2);
 
-    address_bus.apu.channel2().length().set_initial_settings(0xC0);
-    address_bus.apu.channel2().envelope().set_initial_settings(0xC1);
-    address_bus.apu.channel2().period().set_low(0x14);
-    address_bus.apu.channel2().period().set_high(0x24);
+    address_bus.apu.channel2_mut().length_mut().set_initial_settings(0xC0);
+    address_bus.apu.channel2_mut().envelope_mut().set_initial_settings(0xC1);
+    address_bus.apu.channel2_mut().period_mut().set_low(0x14);
+    address_bus.apu.channel2_mut().period_mut().set_high(0x24);
 
-    address_bus.apu.channel3().set_enabled(true);
-    address_bus.apu.channel3().set_dac_enabled(true);
-    address_bus.apu.channel3().set_volume(0x60);
-    address_bus.apu.channel3().period().set_low(0xFF);
-    address_bus.apu.channel3().period().set_high(0x44);
-    address_bus.apu.channel3().period().set_divider(0x301);
-    address_bus.apu.channel3().period().set_reloaded(true);
-    address_bus.apu.channel3().write_to_wave_ram(0x0, 0xB1);
-    address_bus.apu.channel3().write_to_wave_ram(0x1, 0xD2);
+    address_bus.apu.channel3_mut().set_enabled(true);
+    address_bus.apu.channel3_mut().set_dac_enabled(true);
+    address_bus.apu.channel3_mut().set_volume(0x60);
+    address_bus.apu.channel3_mut().period_mut().set_low(0xFF);
+    address_bus.apu.channel3_mut().period_mut().set_high(0x44);
+    address_bus.apu.channel3_mut().period_mut().set_divider(0x301);
+    address_bus.apu.channel3_mut().period_mut().set_reloaded(true);
+    address_bus.apu.channel3_mut().write_to_wave_ram(0x0, 0xB1);
+    address_bus.apu.channel3_mut().write_to_wave_ram(0x1, 0xD2);
 
-    address_bus.apu.channel4().length().set_initial_settings(0x1A);
-    address_bus.apu.channel4().envelope().set_initial_settings(0xD2);
-    address_bus.apu.channel4().set_polynomial(0xCE);
-    address_bus.apu.channel4().set_control(0xC0);
+    address_bus.apu.channel4_mut().length_mut().set_initial_settings(0x1A);
+    address_bus.apu.channel4_mut().envelope_mut().set_initial_settings(0xD2);
+    address_bus.apu.channel4_mut().set_polynomial(0xCE);
+    address_bus.apu.channel4_mut().set_control(0xC0);
 
     address_bus.in_bios = false;
 
@@ -479,6 +479,6 @@ fn reads_from_ch4_control() {
 fn reads_from_key1() {
     let mut address_bus = setup_test_address_bus();
     address_bus.set_cgb_mode(true);
-    address_bus.speed_switch().set_cgb_mode(true);
+    address_bus.speed_switch_mut().set_cgb_mode(true);
     assert_eq!(address_bus.read_byte(0xFF4D), 0x0);
 }

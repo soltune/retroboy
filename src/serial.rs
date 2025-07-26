@@ -1,10 +1,12 @@
 use crate::cpu::interrupts::InterruptRegisters;
 use crate::utils::is_bit_set;
 use crate::serializable::Serializable;
+use getset::{CopyGetters, Setters};
 use serializable_derive::Serializable;
 
-#[derive(Serializable)]
+#[derive(Serializable, CopyGetters, Setters)]
 pub struct Serial {
+    #[getset(get_copy = "pub", set = "pub")]
     data: u8,
     clock: u16,
     is_high_speed_clock: bool,
@@ -92,10 +94,6 @@ impl Serial {
         }
     }
 
-    pub fn data(&self) -> u8 {
-        self.data
-    }
-
     pub fn control(&self) -> u8 {
         let transfer_enabled_bit = if self.transfer_enabled { 1 } else { 0 };
         let high_speed_clock_bit = if self.is_high_speed_clock { 1 } else { 0 };
@@ -103,10 +101,6 @@ impl Serial {
         (transfer_enabled_bit << 7)
             | (high_speed_clock_bit << 1)
             | master_bit
-    }
-
-    pub fn set_data(&mut self, value: u8) {
-        self.data = value;
     }
 
     pub fn set_control(&mut self, value: u8) {

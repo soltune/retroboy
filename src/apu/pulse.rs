@@ -6,15 +6,23 @@ use crate::apu::utils::{bounded_wrapping_add, length_enabled};
 use crate::serializable::Serializable;
 use crate::utils::{get_bit, is_bit_set};
 use serializable_derive::Serializable;
+use getset::{CopyGetters, Getters, MutGetters, Setters};
 
-#[derive(Debug, Serializable)]
+#[derive(Debug, Serializable, CopyGetters, Setters, Getters, MutGetters)]
 pub struct PulseChannel {
+    #[getset(get_copy = "pub", set = "pub")]
     enabled: bool,
+    #[getset(get_copy = "pub", set = "pub")]
     dac_enabled: bool,
+    #[getset(get_copy = "pub", set = "pub")]
     wave_duty_position: u8,
+    #[getset(get = "pub", get_mut = "pub")]
     sweep: Sweep,
+    #[getset(get = "pub", get_mut = "pub")]
     length: Length,
+    #[getset(get = "pub", get_mut = "pub")]
     envelope: Envelope,
+    #[getset(get = "pub", get_mut = "pub")]
     period: Period,
 }
 
@@ -127,62 +135,6 @@ impl PulseChannel {
 
     pub fn should_trigger(&self) -> bool {
         is_bit_set(self.period.high(), PERIOD_HIGH_TRIGGER_INDEX)
-    }
-
-    pub fn dac_enabled(&self) -> bool {
-        self.dac_enabled
-    }
-
-    pub fn set_dac_enabled(&mut self, value: bool) {
-        self.dac_enabled = value;
-    }
-
-    pub fn enabled(&self) -> bool {
-        self.enabled
-    }
-
-    pub fn set_enabled(&mut self, value: bool) {
-        self.enabled = value;
-    }
-
-    pub fn wave_duty_position(&self) -> u8 {
-        self.wave_duty_position
-    }
-
-    pub fn set_wave_duty_position(&mut self, value: u8) {
-        self.wave_duty_position = value;
-    }
-
-    pub fn period(&mut self) -> &mut Period {
-        &mut self.period
-    }
-
-    pub fn period_readonly(&self) -> &Period {
-        &self.period
-    }
-
-    pub fn envelope(&mut self) -> &mut Envelope {
-        &mut self.envelope
-    }
-
-    pub fn envelope_readonly(&self) -> &Envelope {
-        &self.envelope
-    }
-
-    pub fn sweep(&mut self) -> &mut Sweep {
-        &mut self.sweep
-    }
-
-    pub fn sweep_readonly(&self) -> &Sweep {
-        &self.sweep
-    }
-
-    pub fn length(&mut self) -> &mut Length {
-        &mut self.length
-    }
-
-    pub fn length_readonly(&self) -> &Length {
-        &self.length
     }
 }
 

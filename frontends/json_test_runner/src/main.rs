@@ -137,11 +137,11 @@ fn run_cpu_test(test: &JsonCpuTest) {
     emulator.cpu.registers.stack_pointer = test.initial.sp;
 
     for entry in &test.initial.ram {
-        let test_ram = emulator.address_bus.processor_test_ram();
+        let test_ram = emulator.address_bus.processor_test_ram_mut();
         test_ram[entry.0 as usize] = entry.1;
     }
 
-    emulator.cpu.registers.opcode = emulator.address_bus.processor_test_ram_readonly()[(test.initial.pc - 1) as usize];
+    emulator.cpu.registers.opcode = emulator.address_bus.processor_test_ram_mut()[(test.initial.pc - 1) as usize];
 
     emulator::step(&mut emulator);
 

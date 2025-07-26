@@ -4,16 +4,25 @@ use crate::serializable::Serializable;
 use crate::utils::is_bit_set;
 use crate::apu::utils::length_enabled;
 use serializable_derive::Serializable;
+use getset::{CopyGetters, Getters, MutGetters, Setters};
 
-#[derive(Debug, Serializable)]
+#[derive(Debug, Serializable, CopyGetters, Setters, Getters, MutGetters)]
 pub struct NoiseChannel {
+    #[getset(get_copy = "pub", set = "pub")]
     enabled: bool,
+    #[getset(get_copy = "pub", set = "pub")]
     dac_enabled: bool,
+    #[getset(get = "pub", get_mut = "pub")]
     length: Length,
+    #[getset(get = "pub", get_mut = "pub")]
     envelope: Envelope,
+    #[getset(get_copy = "pub", set = "pub")]
     polynomial: u8,
+    #[getset(get_copy = "pub", set = "pub")]
     lfsr: u16,
+    #[getset(get_copy = "pub", set = "pub")]
     control: u8,
+    #[getset(get_copy = "pub", set = "pub")]
     period_divider: u16,
     instruction_cycles: u16
 }
@@ -130,66 +139,6 @@ impl NoiseChannel {
 
     pub fn should_trigger(&self) -> bool {
         is_bit_set(self.control, CONTROL_TRIGGER_INDEX)
-    }
-
-    pub fn dac_enabled(&self) -> bool {
-        self.dac_enabled
-    }
-
-    pub fn set_dac_enabled(&mut self, value: bool) {
-        self.dac_enabled = value;
-    }
-
-    pub fn enabled(&self) -> bool {
-        self.enabled
-    }
-
-    pub fn set_enabled(&mut self, value: bool) {
-        self.enabled = value;
-    }
-
-    pub fn control(&self) -> u8 {
-        self.control
-    }
-
-    pub fn set_control(&mut self, value: u8) {
-        self.control = value;
-    }
-
-    pub fn polynomial(&self) -> u8 {
-        self.polynomial
-    }
-
-    pub fn set_polynomial(&mut self, value: u8) {
-        self.polynomial = value;
-    }
-
-    pub fn period_divider(&self) -> u16 {
-        self.period_divider
-    }
-
-    pub fn set_period_divider(&mut self, value: u16) {
-        self.period_divider = value;
-    }
-
-    pub fn lfsr(&self) -> u16 {
-        self.lfsr
-    }
-
-    pub fn set_lfsr(&mut self, value: u16) {
-        self.lfsr = value;
-    }
-
-    pub fn envelope(&mut self) -> &mut Envelope {
-        &mut self.envelope
-    }
-
-    pub fn envelope_readonly(&self) -> &Envelope {
-        &self.envelope
-    }
-
-    pub fn length(&mut self) -> &mut Length {
-        &mut self.length
     }
 }
 

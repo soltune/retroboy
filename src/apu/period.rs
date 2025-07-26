@@ -1,7 +1,9 @@
 use crate::serializable::Serializable;
 use serializable_derive::Serializable;
+use getset::{CopyGetters, Setters};
 
-#[derive(Debug, Serializable)]
+#[derive(Debug, Serializable, CopyGetters, Setters)]
+#[getset(get_copy = "pub", set = "pub")]
 pub struct Period {
     low: u8,
     high: u8,
@@ -53,37 +55,5 @@ impl Period {
 
     pub fn apply_wave_channel_trigger_delay(&mut self) {
         self.divider += WAVE_CHANNEL_PERIOD_DELAY;
-    }
-
-    pub fn high(&self) -> u8 {
-        self.high
-    }
-
-    pub fn set_high(&mut self, value: u8) {
-        self.high = value;
-    }
-
-    pub fn low(&self) -> u8 {
-        self.low
-    }
-
-    pub fn set_low(&mut self, value: u8) {
-        self.low = value;
-    }
-
-    pub fn divider(&self) -> u16 {
-        self.divider
-    }
-
-    pub fn set_divider(&mut self, value: u16) {
-        self.divider = value;
-    }
-
-    pub fn reloaded(&self) -> bool {
-        self.reloaded
-    }
-
-    pub fn set_reloaded(&mut self, value: bool) {
-        self.reloaded = value;
     }
 }

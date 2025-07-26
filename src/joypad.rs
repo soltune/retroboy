@@ -1,5 +1,6 @@
 use crate::cpu::interrupts::InterruptRegisters;
 use crate::utils::{reset_bit, set_bit};
+use getset::{CopyGetters, Setters};
 
 pub enum Key {
     Down,
@@ -12,7 +13,8 @@ pub enum Key {
     A
 }
 
-#[derive(Debug)]
+#[derive(Debug, CopyGetters, Setters)]
+#[getset(get_copy = "pub", set = "pub")]
 pub struct Joypad {
     column: u8,
     select_buttons: u8,
@@ -83,30 +85,6 @@ impl Joypad {
             Key::B => self.select_buttons = set_bit(self.select_buttons, B_BIT),
             Key::A => self.select_buttons = set_bit(self.select_buttons, A_BIT),
         }
-    }
-
-    pub fn column(&self) -> u8 {
-        self.column
-    }
-
-    pub fn set_column(&mut self, value: u8) {
-        self.column = value;
-    }
-
-    pub fn directional_buttons(&self) -> u8 {
-        self.directional_buttons
-    }
-
-    pub fn set_directional_buttons(&mut self, value: u8) {
-        self.directional_buttons = value;
-    }
-    
-    pub fn select_buttons(&self) -> u8 {
-        self.select_buttons
-    }
-    
-    pub fn set_select_buttons(&mut self, value: u8) {
-        self.select_buttons = value;
     }
 }
 
