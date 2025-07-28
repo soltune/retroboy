@@ -69,52 +69,54 @@ pub const REGISTER_HL: RegisterPair = RegisterPair { first: Register::H, second:
 pub const REGISTER_BC: RegisterPair = RegisterPair { first: Register::B, second: Register::C };
 pub const REGISTER_DE: RegisterPair = RegisterPair { first: Register::D, second: Register::E }; 
 
-pub fn initialize_cpu(address_bus: AddressBus) -> Cpu {
-    Cpu {
-        registers: Registers {
-            a: 0,
-            b: 0,
-            c: 0,
-            d: 0,
-            e: 0,
-            h: 0,
-            l: 0,
-            f: 0,
-            opcode: 0,
-            program_counter: 0,
-            stack_pointer: 0
-        },
-        halted: false,
-        halt_bug: false,
-        interrupts: Interrupts {
-            enable_delay: 0,
-            disable_delay: 0,
-            enabled: false
-        },
-        instruction_clock_cycles: 0,
-        opcode_bus_activity: Vec::new(),
-        address_bus
-    }
-}
-
-pub fn read_next_instruction_byte(cpu_state: &mut Cpu) -> u8 {
-    let byte = microops::read_byte_from_memory(cpu_state, cpu_state.registers.program_counter);
-    cpu_state.registers.program_counter += 1;
-    byte
-}
-
-pub fn read_next_instruction_word(cpu_state: &mut Cpu) -> u16 {
-    let word = microops::read_word_from_memory(cpu_state, cpu_state.registers.program_counter);
-    cpu_state.registers.program_counter += 2;
-    word
-}
-
 pub fn handle_illegal_opcode(opcode: u8) {
     panic!("Encountered illegal opcode {:#04X}", opcode);
 }
 
-pub fn at_end_of_boot_rom(cpu_state: &mut Cpu) -> bool {
-    cpu_state.registers.program_counter == 0x100
+impl Cpu {
+    pub fn new(address_bus: AddressBus) -> Self {
+        Cpu {
+            registers: Registers {
+                a: 0,
+                b: 0,
+                c: 0,
+                d: 0,
+                e: 0,
+                h: 0,
+                l: 0,
+                f: 0,
+                opcode: 0,
+                program_counter: 0,
+                stack_pointer: 0
+            },
+            halted: false,
+            halt_bug: false,
+            interrupts: Interrupts {
+                enable_delay: 0,
+                disable_delay: 0,
+                enabled: false
+            },
+            instruction_clock_cycles: 0,
+            opcode_bus_activity: Vec::new(),
+            address_bus
+        }
+    }
+
+    pub fn read_next_instruction_byte(&mut self) -> u8 {
+        let byte = self.read_byte_from_memory(self.registers.program_counter);
+        self.registers.program_counter += 1;
+        byte
+    }
+
+    pub fn read_next_instruction_word(&mut self) -> u16 {
+        let word = self.read_word_from_memory(self.registers.program_counter);
+        self.registers.program_counter += 2;
+        word
+    }
+
+    pub fn at_end_of_boot_rom(&mut self) -> bool {
+        self.registers.program_counter == 0x100
+    }
 }
 
 impl Serializable for Cpu {

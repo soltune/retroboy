@@ -1,4 +1,4 @@
-use crate::cpu::{self, initialize_cpu, Cpu};
+use crate::cpu::Cpu;
 use crate::address_bus::AddressBus;
 use crate::serializable::Serializable;
 use serializable_derive::Serializable;
@@ -22,7 +22,7 @@ pub struct Emulator {
 
 pub fn initialize_emulator(renderer: fn(&[u8])) -> Emulator {
     Emulator {
-        cpu: initialize_cpu(AddressBus::new(renderer)),
+        cpu: Cpu::new(AddressBus::new(renderer)),
         mode: Mode::DMG
     }
 }
@@ -65,7 +65,7 @@ pub fn set_sample_rate(emulator: &mut Emulator, sample_rate: u32) {
 }
 
 pub fn step(emulator: &mut Emulator) {
-    cpu::opcodes::step(&mut emulator.cpu);
+    emulator.cpu.step();
 }
 
 pub fn step_until_next_audio_buffer(emulator: &mut Emulator) -> (&[f32], &[f32]) {
