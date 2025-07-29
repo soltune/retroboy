@@ -136,7 +136,7 @@ pub fn press_key(key_code: &str) {
     as_maybe_key(key_code).map(|key| {
         EMULATOR.with(|emulator_cell| {
             let mut emulator = emulator_cell.borrow_mut();
-            emulator.cpu.address_bus.handle_key_press(&key);
+            emulator.cpu.address_bus_mut().handle_key_press(&key);
         })
     });
 }
@@ -147,7 +147,7 @@ pub fn release_key(key_code: &str) {
     as_maybe_key(key_code).map(|key| {
         EMULATOR.with(|emulator_cell| {
             let mut emulator = emulator_cell.borrow_mut();
-            emulator.cpu.address_bus.handle_key_release(&key);
+            emulator.cpu.address_bus_mut().handle_key_release(&key);
         })
     });
 }
@@ -166,7 +166,7 @@ pub fn validate_gamegenie_code(cheat: &str) -> Option<String> {
 pub fn register_gameshark_cheat(cheat_id: &str, cheat: &str) -> Option<String> {
     EMULATOR.with(|emulator_cell| {
         let mut emulator = emulator_cell.borrow_mut();
-        emulator.cpu.address_bus.cheats_mut().register_gameshark_cheat(cheat_id, cheat)
+        emulator.cpu.address_bus_mut().cheats_mut().register_gameshark_cheat(cheat_id, cheat)
     })
 }
 
@@ -174,7 +174,7 @@ pub fn register_gameshark_cheat(cheat_id: &str, cheat: &str) -> Option<String> {
 pub fn register_gamegenie_cheat(cheat_id: &str, cheat: &str) -> Option<String> {
     EMULATOR.with(|emulator_cell| {
         let mut emulator = emulator_cell.borrow_mut();
-        emulator.cpu.address_bus.cheats_mut().register_gamegenie_cheat(cheat_id, cheat)
+        emulator.cpu.address_bus_mut().cheats_mut().register_gamegenie_cheat(cheat_id, cheat)
     })
 }
 
@@ -182,7 +182,7 @@ pub fn register_gamegenie_cheat(cheat_id: &str, cheat: &str) -> Option<String> {
 pub fn unregister_cheat(cheat_id: &str) {
     EMULATOR.with(|emulator_cell| {
         let mut emulator = emulator_cell.borrow_mut();
-        emulator.cpu.address_bus.cheats_mut().unregister(cheat_id)
+        emulator.cpu.address_bus_mut().cheats_mut().unregister(cheat_id)
     })
 }
 

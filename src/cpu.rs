@@ -1,21 +1,23 @@
 use crate::address_bus::AddressBus;
 use crate::serializable::Serializable;
+use getset::{CopyGetters, Getters, MutGetters, Setters};
 use serializable_derive::Serializable;
 use std::io::{Read, Write};
 
-#[derive(Debug, Serializable)]
+#[derive(Debug, Serializable, CopyGetters, Setters)]
+#[getset(get_copy = "pub", set = "pub")]
 pub struct Registers {
-    pub a: u8,
-    pub b: u8,
-    pub c: u8,
-    pub d: u8,
-    pub e: u8,
-    pub h: u8,
-    pub l: u8,
-    pub f: u8,
-    pub opcode: u8,
-    pub program_counter: u16,
-    pub stack_pointer: u16
+    a: u8,
+    b: u8,
+    c: u8,
+    d: u8,
+    e: u8,
+    h: u8,
+    l: u8,
+    f: u8,
+    opcode: u8,
+    program_counter: u16,
+    stack_pointer: u16
 }
 
 #[derive(Debug, Serializable)]
@@ -25,27 +27,32 @@ pub struct Interrupts {
     enabled: bool
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum BusActivityType {
     Read,
     Write
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, CopyGetters)]
+#[getset(get_copy = "pub")]
 pub struct BusActivityEntry {
-    pub address: u16,
-    pub value: u8,
-    pub activity_type: BusActivityType
+    address: u16,
+    value: u8,
+    activity_type: BusActivityType
 }
 
+#[derive(Getters, MutGetters)]
 pub struct Cpu {
-    pub registers: Registers,
-    pub halted: bool,
-    pub halt_bug: bool,
-    pub interrupts: Interrupts,
-    pub instruction_clock_cycles: u8,
-    pub opcode_bus_activity: Vec<Option<BusActivityEntry>>,
-    pub address_bus: AddressBus
+    #[getset(get = "pub", get_mut = "pub")]
+    registers: Registers,
+    halted: bool,
+    halt_bug: bool,
+    interrupts: Interrupts,
+    instruction_clock_cycles: u8,
+    #[getset(get = "pub")]
+    opcode_bus_activity: Vec<Option<BusActivityEntry>>,
+    #[getset(get = "pub", get_mut = "pub")]
+    address_bus: AddressBus
 }
 
 pub enum Register {
