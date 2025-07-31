@@ -7,6 +7,5 @@ pub mod joypad;
 pub mod emulator;
 pub mod wasm;
 pub mod serial;
-pub mod save_state;
 mod serializable;
 mod bios;

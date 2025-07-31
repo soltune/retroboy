@@ -59,7 +59,7 @@ pub struct AddressBus {
 }
 
 impl AddressBus {
-    pub fn new(renderer: fn(&[u8])) -> AddressBus {
+    pub fn new(renderer: fn(&[u8]), processor_test_mode: bool) -> AddressBus {
         AddressBus {
             in_bios: true,
             bios: [0; 0x100].to_vec(),
@@ -68,7 +68,7 @@ impl AddressBus {
             svbk: 0,
             cartridge_mapper: initialize_cartridge_mapper(empty_cartridge_effects()),
             processor_test_ram: [0; 0xFFFF],
-            processor_test_mode: false,
+            processor_test_mode,
             interrupts: initialize_interrupt_registers(),
             timers: TimerRegisters::new(),
             gpu: Gpu::new(renderer),
@@ -160,7 +160,7 @@ impl AddressBus {
                     self.working_ram[index]
                 },
                 0xE00 if address < 0xFEA0 => self.gpu.get_object_attribute_memory_byte(address & 0xFF),
-                0xF00 if address == 0xFFFF => self.interrupts.enabled,
+                0xF00 if address == 0xFFFF => self.interrupts.enabled(),
                 0xF00 if address >= 0xFF80 => self.zero_page_ram[(address & 0x7F) as usize],
                 _ => match address & 0xFF {
                     0x00 => self.joypad.read_byte(),
@@ -247,7 +247,7 @@ impl AddressBus {
                     self.working_ram[index] = value;
                 },
                 0xE00 if address < 0xFEA0 => self.gpu.set_object_attribute_memory_byte(address & 0xFF, value),
-                0xF00 if address == 0xFFFF => self.interrupts.enabled = value,
+                0xF00 if address == 0xFFFF => { self.interrupts.set_enabled(value); },
                 0xF00 if address >= 0xFF80 => self.zero_page_ram[(address & 0x7F) as usize] = value,
                 _ => match address & 0xFF {
                     0x00 => self.joypad.write_byte(value),
@@ -458,7 +458,7 @@ pub mod test_utils {
     }
 
     pub fn initialize_test_address_bus() -> AddressBus {
-        AddressBus::new(|_| {})
+        AddressBus::new(|_| {}, false)
     }
 }
 

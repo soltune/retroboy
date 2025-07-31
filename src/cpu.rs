@@ -4,7 +4,7 @@ use getset::{CopyGetters, Getters, MutGetters, Setters};
 use serializable_derive::Serializable;
 use std::io::{Read, Write};
 
-#[derive(Debug, Serializable, CopyGetters, Setters)]
+#[derive(Debug, Serializable, CopyGetters, Setters, Default)]
 #[getset(get_copy = "pub", set = "pub")]
 pub struct Registers {
     a: u8,
@@ -20,10 +20,13 @@ pub struct Registers {
     stack_pointer: u16
 }
 
-#[derive(Debug, Serializable)]
+#[derive(Debug, Serializable, CopyGetters, Setters)]
 pub struct Interrupts {
+    #[getset(get_copy = "pub")]
     enable_delay: u8,
+    #[getset(get_copy = "pub")]
     disable_delay: u8,
+    #[getset(get_copy = "pub", set = "pub")]
     enabled: bool
 }
 
@@ -41,13 +44,16 @@ pub struct BusActivityEntry {
     activity_type: BusActivityType
 }
 
-#[derive(Getters, MutGetters)]
+#[derive(Getters, MutGetters, CopyGetters)]
 pub struct Cpu {
-    #[getset(get = "pub", get_mut = "pub")]
+    #[getset(get = "pub", get_mut = "pub", set = "pub")]
     registers: Registers,
+    #[getset(get_copy = "pub")]
     halted: bool,
     halt_bug: bool,
+    #[getset(get = "pub", get_mut = "pub")]
     interrupts: Interrupts,
+    #[getset(get_copy = "pub", set = "pub")]
     instruction_clock_cycles: u8,
     #[getset(get = "pub")]
     opcode_bus_activity: Vec<Option<BusActivityEntry>>,

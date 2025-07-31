@@ -1,5 +1,6 @@
 use crate::cpu::Cpu;
 use crate::serializable::Serializable;
+use getset::{CopyGetters, Setters};
 use serializable_derive::Serializable;
 
 pub enum InterruptType {
@@ -10,9 +11,10 @@ pub enum InterruptType {
     JoypadPress
 }
 
-#[derive(Serializable, Debug)]
+#[derive(Serializable, Debug, CopyGetters, Setters)]
+#[getset(get_copy = "pub", set = "pub")]
 pub struct InterruptRegisters {
-    pub enabled: u8,
+    enabled: u8,
 }
 
 pub fn initialize_interrupt_registers() -> InterruptRegisters {

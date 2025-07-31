@@ -58,7 +58,7 @@ fn setup_test_address_bus() -> AddressBus {
     address_bus.zero_page_ram[0x21] = 0x44;
     address_bus.zero_page_ram[0x5B] = 0x5F;
 
-    address_bus.interrupts.enabled = 0x1F;
+    address_bus.interrupts.set_enabled(0x1F);
 
     address_bus.timers.set_divider(0x3A);
     address_bus.timers.set_counter(0x04);

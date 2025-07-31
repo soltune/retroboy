@@ -259,7 +259,7 @@ mod tests {
 
     #[test]
     fn should_transfer_sixteen_bytes_in_hblank_mode() {
-        let mut address_bus = AddressBus::new(|_| {});
+        let mut address_bus = AddressBus::new(|_| {}, false);
         address_bus.cgb_mode = true;
         address_bus.hdma.set_cgb_mode(true);
 
@@ -294,7 +294,7 @@ mod tests {
 
     #[test]
     fn should_transfer_all_bytes_in_general_purpose_mode() {
-        let mut address_bus = AddressBus::new(|_| {});
+        let mut address_bus = AddressBus::new(|_| {}, false);
         address_bus.cgb_mode = true;
         address_bus.hdma.set_cgb_mode(true);
 
