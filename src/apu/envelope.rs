@@ -5,7 +5,7 @@ use getset::{CopyGetters, Setters};
 use serializable_derive::Serializable;
 
 #[derive(Debug, Serializable, CopyGetters, Setters)]
-#[getset(get_copy = "pub", set = "pub")]
+#[getset(get_copy = "pub(crate)", set = "pub(crate)")]
 pub struct Envelope {
     initial_settings: u8,
     current_volume: u8,
@@ -15,7 +15,7 @@ pub struct Envelope {
 const ENVELOPE_DIRECTION_INDEX: u8 = 3;
 
 impl Envelope {
-    pub fn new() -> Self {
+    pub(super) fn new() -> Self {
         Envelope {
             initial_settings: 0,
             current_volume: 0,
@@ -23,7 +23,7 @@ impl Envelope {
         }
     }
 
-    pub fn step(&mut self) {
+    pub(super) fn step(&mut self) {
         let initial_timer = self.initial_settings & 0b00000111;
         let is_upwards = is_bit_set(self.initial_settings, ENVELOPE_DIRECTION_INDEX);
 
@@ -47,14 +47,14 @@ impl Envelope {
         }
     }
 
-    pub fn reset_settings(&mut self) {
+    pub(super) fn reset_settings(&mut self) {
         let initial_timer = self.initial_settings & 0b00000111;
         let initial_volume = (self.initial_settings & 0b11110000) >> 4;
         self.timer = initial_timer;
         self.current_volume = initial_volume;
     }
 
-    pub fn should_disable_dac(&self) -> bool {
+    pub(super) fn should_disable_dac(&self) -> bool {
         self.initial_settings & 0xF8 == 0
     }
 }

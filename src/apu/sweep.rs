@@ -5,7 +5,7 @@ use serializable_derive::Serializable;
 use getset::{CopyGetters, Setters};
 
 #[derive(Debug, Serializable, CopyGetters, Setters)]
-#[getset(get_copy = "pub", set = "pub")]
+#[getset(get_copy = "pub(crate)", set = "pub(crate)")]
 pub struct Sweep {
     initial_settings: u8,
     enabled: bool,
@@ -20,7 +20,7 @@ pub struct Sweep {
 const SWEEP_DIRECTION_INDEX: u8 = 3;
 
 impl Sweep {
-    pub fn new() -> Self {
+    pub(super) fn new() -> Self {
         Sweep {
             initial_settings: 0,
             enabled: false,
@@ -31,15 +31,15 @@ impl Sweep {
         }
     }
 
-    pub fn initial_sweep_shift(&self) -> u8 {
+    pub(super) fn initial_sweep_shift(&self) -> u8 {
         self.initial_settings & 0b111
     }
 
-    pub fn initial_sweep_period(&self) -> u8 {
+    pub(super) fn initial_sweep_period(&self) -> u8 {
         (self.initial_settings & 0b01110000) >> 4
     }
 
-    pub fn calculate_frequency(&mut self) -> u16 {
+    pub(super) fn calculate_frequency(&mut self) -> u16 {
         let sweep_shift = self.initial_sweep_shift();
         let mut new_frequency = self.shadow_frequency >> sweep_shift;
 
@@ -61,7 +61,7 @@ impl Sweep {
         new_frequency
     }
 
-    pub fn load_sweep_timer(&mut self, sweep_period: u8) {
+    pub(super) fn load_sweep_timer(&mut self, sweep_period: u8) {
         if sweep_period > 0 {
             self.timer = sweep_period;
         }
@@ -70,7 +70,7 @@ impl Sweep {
         } 
     }
 
-    pub fn update_initial_settings(&mut self, new_initial_settings: u8) {
+    pub(super) fn update_initial_settings(&mut self, new_initial_settings: u8) {
         let original_sweep_settings = self.initial_settings;
         self.initial_settings = new_initial_settings;
 
@@ -83,11 +83,11 @@ impl Sweep {
         }
     }
 
-    pub fn should_disable_channel(&self) -> bool {
+    pub(super) fn should_disable_channel(&self) -> bool {
         self.should_disable_channel
     }
 
-    pub fn step(&mut self, period: &mut Period) {
+    pub(super) fn step(&mut self, period: &mut Period) {
         if self.timer > 0 {
             self.timer -= 1;
         }
@@ -119,7 +119,7 @@ impl Sweep {
         }
     }
 
-    pub fn trigger(&mut self, period: &Period) {
+    pub(super) fn trigger(&mut self, period: &Period) {
         self.shadow_frequency = period.calculate_period_value();
 
         let sweep_period = self.initial_sweep_period();

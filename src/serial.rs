@@ -5,7 +5,7 @@ use serializable_derive::Serializable;
 
 #[derive(Serializable, CopyGetters, Setters)]
 pub struct Serial {
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(super)", set = "pub(super)")]
     data: u8,
     clock: u16,
     is_high_speed_clock: bool,
@@ -14,7 +14,7 @@ pub struct Serial {
     bits_transferred: u8,
     cgb_mode: bool,
     cgb_double_speed: bool,
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(super)", set = "pub(super)")]
     interrupt: bool
 }
 
@@ -25,7 +25,7 @@ fn serial_disconnected_exchange(_: bool) -> bool {
 }
 
 impl Serial {
-    pub fn new() -> Self {
+    pub(super) fn new() -> Self {
         Serial {
             data: 0,
             clock: 0,
@@ -39,11 +39,11 @@ impl Serial {
         }
     }
 
-    pub fn set_cgb_mode(&mut self, cgb_mode: bool) {
+    pub(super) fn set_cgb_mode(&mut self, cgb_mode: bool) {
         self.cgb_mode = cgb_mode;
     }
 
-    pub fn set_cgb_double_speed(&mut self, cgb_double_speed: bool) {
+    pub(super) fn set_cgb_double_speed(&mut self, cgb_double_speed: bool) {
         self.cgb_double_speed = cgb_double_speed;
     }
 
@@ -68,7 +68,7 @@ impl Serial {
         This is a very bare bones serial implementation that always assumes there is no
         serial device connected and doesn't know how to operate in slave mode.
     */
-    pub fn step(&mut self) {
+    pub(super) fn step(&mut self) {
         if self.transfer_enabled && self.is_master {
             self.clock += 1;
 
@@ -88,7 +88,7 @@ impl Serial {
         }
     }
 
-    pub fn control(&self) -> u8 {
+    pub(super) fn control(&self) -> u8 {
         let transfer_enabled_bit = if self.transfer_enabled { 1 } else { 0 };
         let high_speed_clock_bit = if self.is_high_speed_clock { 1 } else { 0 };
         let master_bit = if self.is_master { 1 } else { 0 };
@@ -97,7 +97,7 @@ impl Serial {
             | master_bit
     }
 
-    pub fn set_control(&mut self, value: u8) {
+    pub(super) fn set_control(&mut self, value: u8) {
         self.transfer_enabled = is_bit_set(value, 7);
         if self.cgb_mode {
             self.is_high_speed_clock = is_bit_set(value, 1);

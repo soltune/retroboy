@@ -5,31 +5,31 @@ use getset::{CopyGetters, Getters, Setters};
 use serializable_derive::Serializable;
 
 #[derive(Serializable, Debug, PartialEq, Eq)]
-pub enum VRAMTransferMode {
+pub(super) enum VRAMTransferMode {
     GeneralPurpose,
     HBlank
 }
 
 #[derive(Debug, Serializable, CopyGetters, Getters, Setters)]
-pub struct HDMAState {
+pub(crate) struct HDMAState {
     hdma1: u8,
     hdma2: u8,
     hdma3: u8,
     hdma4: u8,
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(super)", set = "pub(super)")]
     offset: u16,
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(super)", set = "pub(super)")]
     transfer_length: u8,
-    #[getset(get = "pub")]
+    #[getset(get = "pub(super)")]
     transfer_mode: VRAMTransferMode,
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(crate)", set = "pub(super)")]
     in_progress: bool,
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(super)", set = "pub(super)")]
     completed: bool,
     hblank_started: bool,
-    #[getset(set = "pub")]
+    #[getset(set = "pub(super)")]
     cgb_mode: bool,
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(super)", set = "pub(super)")]
     cgb_double_speed: bool
 }
 
@@ -37,7 +37,7 @@ const VRAM_TRANSFER_INDEX: u8 = 7;
 const BLOCK_SIZE: u8 = 16;
 
 impl HDMAState {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         HDMAState {
             hdma1: 0x0,
             hdma2: 0x0,
@@ -54,31 +54,31 @@ impl HDMAState {
         }
     }
 
-    pub fn set_hdma1(&mut self, value: u8) {
+    pub(super) fn set_hdma1(&mut self, value: u8) {
         if self.cgb_mode {
             self.hdma1 = value;
         }
     }
 
-    pub fn set_hdma2(&mut self, value: u8) {
+    pub(super) fn set_hdma2(&mut self, value: u8) {
         if self.cgb_mode {
             self.hdma2 = value;
         }
     }
 
-    pub fn set_hdma3(&mut self, value: u8) {
+    pub(super) fn set_hdma3(&mut self, value: u8) {
         if self.cgb_mode {
             self.hdma3 = value;
         }
     }
 
-    pub fn set_hdma4(&mut self, value: u8) {
+    pub(super) fn set_hdma4(&mut self, value: u8) {
         if self.cgb_mode {
             self.hdma4 = value;
         }
     }
 
-    pub fn set_hdma5(&mut self, value: u8) {
+    pub(super) fn set_hdma5(&mut self, value: u8) {
         if self.cgb_mode {
             if self.in_progress && !is_bit_set(value, VRAM_TRANSFER_INDEX) {
                 self.in_progress = false;
@@ -97,7 +97,7 @@ impl HDMAState {
         }
     }
 
-    pub fn hdma5(&self) -> u8 {
+    pub(super) fn hdma5(&self) -> u8 {
         if self.cgb_mode {
             if self.in_progress {
                 self.transfer_length & 0b01111111
@@ -112,24 +112,24 @@ impl HDMAState {
         }
     }
 
-    pub fn set_hblank_started(&mut self, value: bool) {
+    pub(crate) fn set_hblank_started(&mut self, value: bool) {
         if self.in_progress {
             self.hblank_started = value; 
         }
     }
 
-    pub fn get_vram_dma_source(&self) -> u16 {
+    pub(super) fn get_vram_dma_source(&self) -> u16 {
         ((self.hdma1 as u16) << 8) | ((self.hdma2 as u16) & 0b11110000)
     }
 
-    pub fn get_vram_dma_destination(&self) -> u16 {
+    pub(super) fn get_vram_dma_destination(&self) -> u16 {
         let offset = (((self.hdma3 as u16) & 0b00011111) << 8) |
             ((self.hdma4 as u16) & 0b11110000);
 
         0x8000 + offset
     }
 
-    pub fn hblank_started(&self) -> bool {
+    pub(super) fn hblank_started(&self) -> bool {
         self.hblank_started
     }
 }
@@ -163,7 +163,7 @@ impl AddressBus {
         }
     }
 
-    pub fn hdma_step(&mut self) {
+    pub(crate) fn hdma_step(&mut self) {
         if self.cgb_mode && self.hdma.in_progress() {
             let source = self.hdma.get_vram_dma_source();
             let destination = self.hdma.get_vram_dma_destination();

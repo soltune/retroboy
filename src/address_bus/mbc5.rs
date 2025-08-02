@@ -5,7 +5,7 @@ use crate::serializable::Serializable;
 use std::io::{Read, Write};
 
 #[derive(Debug)]
-pub struct MBC5CartridgeMapper {
+pub(super) struct MBC5CartridgeMapper {
     cartridge: Cartridge,
     ram_enabled: bool,
     rumble: bool,
@@ -32,7 +32,7 @@ fn battery_supported(cartridge: &Cartridge) -> bool {
 }
 
 impl MBC5CartridgeMapper {
-    pub fn new(cartridge: Cartridge) -> Self {
+    pub(super) fn new(cartridge: Cartridge) -> Self {
         MBC5CartridgeMapper {
             cartridge,
             ram_enabled: false,

@@ -1,12 +1,12 @@
 use crate::gpu::palettes::{Color, WHITE};
 
-pub struct BackgroundPixel {
+pub(super) struct BackgroundPixel {
     pub color: Color,
     pub color_id: u8,
     pub prioritize_bg: bool
 }
 
-pub struct SpritePixel {
+pub(super) struct SpritePixel {
     pub color: Color,
     pub prioritize_bg: bool
 }

@@ -15,7 +15,7 @@ const SPRITE_WIDTH: i16 = 8;
 const CGB_OPRI_PRIORITY_BIT: u8 = 0;
 
 #[derive(Debug)]
-pub struct Sprite {
+pub(super) struct Sprite {
     pub y_pos: i16,
     pub x_pos: i16,
     pub tile_index: u8,
@@ -29,7 +29,7 @@ pub struct Sprite {
 }
 
 impl Sprite {
-    pub fn has_higher_priority_than(&self, compared_sprite: &Sprite, oam_location_prioritization: bool) -> bool {
+    pub(super) fn has_higher_priority_than(&self, compared_sprite: &Sprite, oam_location_prioritization: bool) -> bool {
         let has_lower_x = self.x_pos < compared_sprite.x_pos;
         let has_same_x = self.x_pos == compared_sprite.x_pos;
         let located_earlier_in_oam = self.oam_index < compared_sprite.oam_index;
@@ -79,7 +79,7 @@ fn pull_sprite(object_attribute_memory: &[u8], sprite_number: u16) -> Sprite {
     }
 }
 
-pub fn collect_scanline_sprites(object_attribute_memory: &[u8], ly: u8, lcdc: u8) -> Vec<Sprite> {
+pub(super) fn collect_scanline_sprites(object_attribute_memory: &[u8], ly: u8, lcdc: u8) -> Vec<Sprite> {
     let mut sprites = Vec::new();
 
     let eight_by_sixteen_mode = get_obj_size_mode(lcdc);

@@ -10,20 +10,20 @@ pub struct TimerRegisters {
     m_cycles_clock: u8,
     divider_clock: u8,
     base_clock: u8,
-    #[getset(get_copy = "pub")]
+    #[getset(get_copy = "pub(crate)")]
     divider: u8,
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(crate)", set = "pub(crate)")]
     counter: u8,
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(crate)", set = "pub(crate)")]
     modulo: u8,
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(crate)", set = "pub(crate)")]
     control: u8,
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(crate)", set = "pub(crate)")]
     interrupt: bool
 }
 
 impl TimerRegisters {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         TimerRegisters {
             m_cycles_clock: 0,
             divider_clock: 0,
@@ -71,7 +71,7 @@ impl TimerRegisters {
         }
     }
 
-    pub fn step(&mut self) {
+    pub(crate) fn step(&mut self) {
         self.m_cycles_clock += 1;
 
         if self.m_cycles_clock >= BASE_SPEED_RATE {
@@ -88,7 +88,7 @@ impl TimerRegisters {
         }
     }
 
-    pub fn set_divider(&mut self, value: u8) {
+    pub(crate) fn set_divider(&mut self, value: u8) {
         self.divider = value;
         self.divider_clock = 0;
         self.m_cycles_clock = 0;

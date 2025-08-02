@@ -1,4 +1,4 @@
-use crate::cpu::{BusActivityEntry, Cpu};
+use crate::cpu::Cpu;
 use crate::address_bus::AddressBus;
 use crate::joypad::Key;
 use crate::serializable::Serializable;
@@ -8,10 +8,10 @@ use std::io::Result;
 
 pub use crate::address_bus::effects::CartridgeEffects;
 pub use crate::address_bus::{CartridgeHeader, RTCState};
-pub use crate::cpu::Registers;
+pub use crate::cpu::{Registers, BusActivityEntry, BusActivityType};
 
 #[derive(Serializable, Getters, MutGetters)]
-#[getset(get = "pub", get_mut = "pub")]
+#[getset(get = "pub(crate)", get_mut = "pub(crate)")]
 pub struct Emulator {
     cpu: Cpu,
 }

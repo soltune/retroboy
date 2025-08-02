@@ -5,8 +5,8 @@ use getset::{CopyGetters, Setters};
 use serializable_derive::Serializable;
 
 #[derive(Serializable, CopyGetters, Setters)]
-#[getset(get_copy = "pub", set = "pub")]
-pub struct SpeedSwitch {
+#[getset(get_copy = "pub(crate)", set = "pub(crate)")]
+pub(crate) struct SpeedSwitch {
     cgb_double_speed: bool,
     cgb_mode: bool,
     armed: bool
@@ -15,7 +15,7 @@ pub struct SpeedSwitch {
 const SPEED_SWITCH_ARMED_INDEX: u8 = 0;
 
 impl SpeedSwitch {
-    pub fn new() -> Self {
+    pub(super) fn new() -> Self {
         SpeedSwitch {
             cgb_double_speed: false,
             cgb_mode: false,
@@ -23,7 +23,7 @@ impl SpeedSwitch {
         }
     }
 
-    pub fn key1(&self) -> u8 {
+    pub(super) fn key1(&self) -> u8 {
         if self.cgb_mode {
             let double_speed_bit = if self.cgb_double_speed { 1 } else { 0 };
             let speed_switch_armed_bit = if self.armed { 1 } else { 0 };
@@ -34,7 +34,7 @@ impl SpeedSwitch {
         }
     }
 
-    pub fn set_key1(&mut self, value: u8) {
+    pub(super) fn set_key1(&mut self, value: u8) {
         if self.cgb_mode {
             self.armed = is_bit_set(value, SPEED_SWITCH_ARMED_INDEX);
         }
@@ -42,7 +42,7 @@ impl SpeedSwitch {
 }
 
 impl AddressBus {
-    pub fn toggle_speed_switch(&mut self) {
+    pub(crate) fn toggle_speed_switch(&mut self) {
         if self.cgb_mode && self.speed_switch.armed() {
             self.speed_switch.set_armed(false);
 

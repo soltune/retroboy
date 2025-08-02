@@ -2,14 +2,14 @@ use crate::address_bus::AddressBus;
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind, Result};
 
-pub struct Cheat {
+pub(super) struct Cheat {
     pub address: u16,
     pub new_data: u8,
     pub maybe_old_data: Option<u8>,
     pub maybe_bank: Option<u8>,
 }
 
-pub struct CheatState {
+pub(crate) struct CheatState {
     registered: HashMap<String, Cheat>,
 }
 
@@ -29,7 +29,7 @@ fn parse_hex_word(slice: &str, field: &str) -> Result<u16> {
                 format!("Invalid {} word: {}", field, slice)))
 }
 
-pub fn parse_gameshark_code(gameshark_code: &str) -> Result<Cheat> {
+pub(super) fn parse_gameshark_code(gameshark_code: &str) -> Result<Cheat> {
     if gameshark_code.len() != 8 {
         Err(Error::new(
             ErrorKind::InvalidInput, 
@@ -59,7 +59,7 @@ pub fn parse_gameshark_code(gameshark_code: &str) -> Result<Cheat> {
     }
 }
 
-pub fn parse_gamegenie_code(gamegenie_code: &str) -> Result<Cheat> {
+pub(super) fn parse_gamegenie_code(gamegenie_code: &str) -> Result<Cheat> {
     if gamegenie_code.len() != 11 && gamegenie_code.len() != 7 {
         Err(Error::new(
             ErrorKind::InvalidInput, 
@@ -104,14 +104,14 @@ pub fn parse_gamegenie_code(gamegenie_code: &str) -> Result<Cheat> {
     }
 }
 
-pub fn validate_gameshark_code(cheat_code: &str) -> Option<String> {
+pub(crate) fn validate_gameshark_code(cheat_code: &str) -> Option<String> {
     match parse_gameshark_code(cheat_code) {
         Ok(_) => None,
         Err(error) => Some(error.to_string())
     }
 }
 
-pub fn validate_gamegenie_code(cheat_code: &str) -> Option<String> {
+pub(crate) fn validate_gamegenie_code(cheat_code: &str) -> Option<String> {
     match parse_gamegenie_code(cheat_code) {
         Ok(_) => None,
         Err(error) => Some(error.to_string())
@@ -121,7 +121,7 @@ pub fn validate_gamegenie_code(cheat_code: &str) -> Option<String> {
 const CHEAT_LIMIT: usize = 10;
 
 impl CheatState {
-    pub fn new() -> CheatState {
+    pub(super) fn new() -> CheatState {
         CheatState {
             registered: HashMap::new(),
         }
@@ -137,11 +137,11 @@ impl CheatState {
         }
     }
 
-    pub fn unregister(&mut self, cheat_id: &str) {
+    pub(crate) fn unregister(&mut self, cheat_id: &str) {
         self.registered.remove(cheat_id);
     }
 
-    pub fn register_gameshark_cheat(&mut self, cheat_id: &str, cheat_code: &str) -> Option<String> {
+    pub(crate) fn register_gameshark_cheat(&mut self, cheat_id: &str, cheat_code: &str) -> Option<String> {
         match parse_gameshark_code(cheat_code) {
             Ok(cheat) => {
                 self.register(cheat_id, cheat)
@@ -150,7 +150,7 @@ impl CheatState {
         }
     }
 
-    pub fn register_gamegenie_cheat(&mut self, cheat_id: &str, cheat_code: &str) -> Option<String> {
+    pub(crate) fn register_gamegenie_cheat(&mut self, cheat_id: &str, cheat_code: &str) -> Option<String> {
         match parse_gamegenie_code(cheat_code) {
             Ok(cheat) => {
                 self.register(cheat_id, cheat)
@@ -159,7 +159,7 @@ impl CheatState {
         }
     }
 
-    pub fn registered_cheats(&self) -> &HashMap<String, Cheat> {
+    pub(super) fn registered_cheats(&self) -> &HashMap<String, Cheat> {
         &self.registered
     }
 }
@@ -173,7 +173,7 @@ impl AddressBus {
         }
     }
 
-    pub fn apply_cheat_if_needed(&self, address: u16, old_data: u8) -> u8 {
+    pub(super) fn apply_cheat_if_needed(&self, address: u16, old_data: u8) -> u8 {
         let mut maybe_found_cheat = None;
 
         for (_, cheat) in self.cheats.registered_cheats() {

@@ -3,7 +3,7 @@ use crate::cpu::{Register, Cpu};
 use super::{REGISTER_HL, RegisterPair};
 
 impl Cpu {
-    pub fn add_value_to_register(&mut self, register: Register, value: u8) {
+    pub(super) fn add_value_to_register(&mut self, register: Register, value: u8) {
         let byte = self.read_from_register(&register);
         let sum = byte.wrapping_add(value);
 
@@ -15,7 +15,7 @@ impl Cpu {
         self.set_flag_c((value as u16 + byte as u16) > 0xFF);
     }
 
-    pub fn add_value_to_register_pair(&mut self, register_pair: RegisterPair, value: u16) {
+    pub(super) fn add_value_to_register_pair(&mut self, register_pair: RegisterPair, value: u16) {
         let word = self.read_from_register_pair(&register_pair);
         let sum = word.wrapping_add(value);
 
@@ -28,7 +28,7 @@ impl Cpu {
         self.step_one_machine_cycle();
     }
 
-    pub fn add_value_and_carry_to_register(&mut self, register: Register, value: u8) {
+    pub(super) fn add_value_and_carry_to_register(&mut self, register: Register, value: u8) {
         let carry_value = if self.is_c_flag_set() { 1 as u8 } else { 0 as u8 };
         let byte = self.read_from_register(&register);
         let sum = byte.wrapping_add(value).wrapping_add(carry_value);
@@ -41,7 +41,7 @@ impl Cpu {
         self.set_flag_c((value as u16 + byte as u16 + carry_value as u16) > 0xFF);
     }
 
-    pub fn subtract_value_from_register(&mut self, register: Register, value: u8) {
+    pub(super) fn subtract_value_from_register(&mut self, register: Register, value: u8) {
         let byte = self.read_from_register(&register);
         let difference = byte.wrapping_sub(value);
 
@@ -53,7 +53,7 @@ impl Cpu {
         self.set_flag_c(byte < value);
     }
 
-    pub fn subtract_value_and_carry_from_register(&mut self, register: Register, value: u8) {
+    pub(super) fn subtract_value_and_carry_from_register(&mut self, register: Register, value: u8) {
         let carry_value = if self.is_c_flag_set() { 1 as u8 } else { 0 as u8 };
         let byte = self.read_from_register(&register);
         let difference = byte.wrapping_sub(value).wrapping_sub(carry_value);
@@ -66,7 +66,7 @@ impl Cpu {
         self.set_flag_c(((value as u16) + (carry_value as u16)) > (byte as u16));
     }
 
-    pub fn logical_and_with_register(&mut self, register: Register, value: u8) {
+    pub(super) fn logical_and_with_register(&mut self, register: Register, value: u8) {
         let byte = self.read_from_register(&register);
         let result = byte & value;
 
@@ -78,7 +78,7 @@ impl Cpu {
         self.set_flag_c(false);
     }
 
-    pub fn logical_or_with_register(&mut self, register: Register, value: u8) {
+    pub(super) fn logical_or_with_register(&mut self, register: Register, value: u8) {
         let byte = self.read_from_register(&register);
         let result = byte | value;
 
@@ -90,7 +90,7 @@ impl Cpu {
         self.set_flag_c(false);
     }
 
-    pub fn logical_xor_with_register(&mut self, register: Register, value: u8) {
+    pub(super) fn logical_xor_with_register(&mut self, register: Register, value: u8) {
         let byte = self.read_from_register(&register);
         let result = byte ^ value;
 
@@ -102,7 +102,7 @@ impl Cpu {
         self.set_flag_c(false);
     }
 
-    pub fn compare_value_with_register(&mut self, register: Register, value: u8) {
+    pub(super) fn compare_value_with_register(&mut self, register: Register, value: u8) {
         let byte = self.read_from_register(&register);
         let difference = byte.wrapping_sub(value);
 
@@ -112,7 +112,7 @@ impl Cpu {
         self.set_flag_c(byte < value);
     }
 
-    pub fn increment_register(&mut self, register: Register) {
+    pub(super) fn increment_register(&mut self, register: Register) {
         let byte = self.read_from_register(&register);
         let sum = byte.wrapping_add(1);
 
@@ -123,7 +123,7 @@ impl Cpu {
         self.set_flag_h((1 + (byte & 0xF)) > 0xF);
     }
 
-    pub fn decrement_register(&mut self, register: Register) {
+    pub(super) fn decrement_register(&mut self, register: Register) {
         let byte = self.read_from_register(&register);
         let difference = byte.wrapping_sub(1);
 
@@ -134,7 +134,7 @@ impl Cpu {
         self.set_flag_h((byte & 0xF) < 1);
     }
 
-    pub fn increment_memory_byte(&mut self) {
+    pub(super) fn increment_memory_byte(&mut self) {
         let address = self.read_from_register_pair(&REGISTER_HL);
         let byte = self.read_byte_from_memory(address);
         let sum = byte.wrapping_add(1);
@@ -146,7 +146,7 @@ impl Cpu {
         self.set_flag_h((1 + (byte & 0xF)) > 0xF);
     }
 
-    pub fn decrement_memory_byte(&mut self) {
+    pub(super) fn decrement_memory_byte(&mut self) {
         let address = self.read_from_register_pair(&REGISTER_HL);
         let byte = self.read_byte_from_memory(address);
         let difference = byte.wrapping_sub(1);
@@ -158,21 +158,21 @@ impl Cpu {
         self.set_flag_h((byte & 0xF) < 1);
     }
 
-    pub fn increment_register_pair(&mut self, register_pair: RegisterPair) {
+    pub(super) fn increment_register_pair(&mut self, register_pair: RegisterPair) {
         let word = self.read_from_register_pair(&register_pair);
         let sum = word.wrapping_add(1);
         self.store_in_register_pair(register_pair, sum);
         self.step_one_machine_cycle();
     }
 
-    pub fn decrement_register_pair(&mut self, register_pair: RegisterPair) {
+    pub(super) fn decrement_register_pair(&mut self, register_pair: RegisterPair) {
         let word = self.read_from_register_pair(&register_pair);
         let sum = word.wrapping_sub(1);
         self.store_in_register_pair(register_pair, sum);
         self.step_one_machine_cycle();
     }
 
-    pub fn bcd_adjust(&mut self) {
+    pub(super) fn bcd_adjust(&mut self) {
         let c_flag = self.is_c_flag_set();
         let n_flag = self.is_n_flag_set();
         let h_flag = self.is_h_flag_set();

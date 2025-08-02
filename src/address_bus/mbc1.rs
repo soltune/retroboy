@@ -6,13 +6,13 @@ use serializable_derive::Serializable;
 use std::io::{Read, Write};
 
 #[derive(Debug, PartialEq, Serializable)]
-pub enum MBCMode {
+pub(super) enum MBCMode {
     ROM,
     RAM
 }
 
 #[derive(Debug)]
-pub struct MBC1CartridgeMapper {
+pub(super) struct MBC1CartridgeMapper {
     cartridge: Cartridge,
     ram_enabled: bool,
     rom_bank_number: u8,
@@ -30,7 +30,7 @@ fn battery_supported(cartridge: &Cartridge) -> bool {
 }
 
 impl MBC1CartridgeMapper {
-    pub fn new(cartridge: Cartridge) -> Self {
+    pub(super) fn new(cartridge: Cartridge) -> Self {
         MBC1CartridgeMapper {
             cartridge,
             ram_enabled: false,

@@ -22,14 +22,14 @@ pub struct CartridgeHeader {
 }
 
 #[derive(Debug)]
-pub struct Cartridge {
+pub(crate) struct Cartridge {
     pub rom: Vec<u8>,
     pub ram: Vec<u8>,
     pub header: CartridgeHeader,
     pub effects: Box<dyn CartridgeEffects>
 }
 
-pub trait CartridgeMapper: Debug + Serializable {
+pub(crate) trait CartridgeMapper: Debug + Serializable {
     fn read_rom(&self, address: u16) -> u8;
     fn write_rom(&mut self, address: u16, value: u8);
     fn read_ram(&self, address: u16) -> u8;
@@ -62,7 +62,7 @@ const SUPPORTED_CARTRIDGE_TYPES: [u8; 16] = [CART_TYPE_ROM_ONLY,
     CART_TYPE_MBC5_RUMBLE_RAM_BATTERY,
     CART_TYPE_HUC1_RAM_BATTERY];
 
-pub fn initialize_cartridge(effects: Box<dyn CartridgeEffects>) -> Cartridge {
+pub(super) fn initialize_cartridge(effects: Box<dyn CartridgeEffects>) -> Cartridge {
     Cartridge {
         rom: Vec::new(),
         ram: Vec::new(),
@@ -78,7 +78,7 @@ pub fn initialize_cartridge(effects: Box<dyn CartridgeEffects>) -> Cartridge {
     }
 }
 
-pub fn initialize_cartridge_mapper(effects: Box<dyn CartridgeEffects>) -> Box<dyn CartridgeMapper> {
+pub(super) fn initialize_cartridge_mapper(effects: Box<dyn CartridgeEffects>) -> Box<dyn CartridgeMapper> {
     Box::new(MBCRomOnlyCartridgeMapper::new(initialize_cartridge(effects)))
 }
 
@@ -86,11 +86,11 @@ fn cartridge_type_supported(type_code: u8) -> bool {
     SUPPORTED_CARTRIDGE_TYPES.contains(&type_code)
 }
 
-pub fn as_max_banks(rom_size_index: u8) -> u16 {
+pub(super) fn as_max_banks(rom_size_index: u8) -> u16 {
     (2 as u16).pow(rom_size_index as u32 + 1)
 }
 
-pub fn as_max_ram_banks(ram_size: u32) -> u8 {
+pub(super) fn as_max_ram_banks(ram_size: u32) -> u8 {
     match ram_size {
         0 => 0,
         0x800 => 1,
@@ -156,7 +156,7 @@ fn is_cgb_compatability_flag(index: usize, byte: u8) -> bool {
     index == CGB_COMPATABILITY_INDEX && (byte == 0xC0 || byte == 0x80)
 }
 
-pub fn convert_cartridge_type_to_text(type_code: u8) -> String {
+pub(super) fn convert_cartridge_type_to_text(type_code: u8) -> String {
     match type_code {
         0x00 => "ROM ONLY",
         0x01 => "MBC1",
@@ -206,7 +206,7 @@ fn as_mapper(cartridge: Cartridge, type_code: u8) -> Box<dyn CartridgeMapper> {
     }
 }
 
-pub fn load_rom_buffer(buffer: Vec<u8>, effects: Box<dyn CartridgeEffects>) -> io::Result<Box<dyn CartridgeMapper>> {
+pub(super) fn load_rom_buffer(buffer: Vec<u8>, effects: Box<dyn CartridgeEffects>) -> io::Result<Box<dyn CartridgeMapper>> {
     if buffer.len() > ENTRY_POINT_ADDRESS {
         let type_code = buffer[CARTRIDGE_TYPE_ADDRESS];
         let sgb_support = buffer[SGB_SUPPORT_ADDRESS] == 0x03;
@@ -269,12 +269,12 @@ pub mod test_utils {
     use crate::address_bus::effects::empty_cartridge_effects;
     use crate::address_bus::test_utils::*;
 
-    pub fn build_cartridge_mapper(cartridge_type: u8, rom_size_index: u8, ram_size_index: u8) -> Box<dyn CartridgeMapper> {
+    pub(crate) fn build_cartridge_mapper(cartridge_type: u8, rom_size_index: u8, ram_size_index: u8) -> Box<dyn CartridgeMapper> {
         let rom_buffer = build_rom(cartridge_type, rom_size_index, ram_size_index);
         load_rom_buffer(rom_buffer, empty_cartridge_effects()).unwrap()
     }
 
-    pub fn build_cartridge_mapper_with_effects(cartridge_type: u8, rom_size_index: u8, ram_size_index: u8, cartridge_effects: Box<dyn CartridgeEffects>) -> Box<dyn CartridgeMapper> {
+    pub(crate) fn build_cartridge_mapper_with_effects(cartridge_type: u8, rom_size_index: u8, ram_size_index: u8, cartridge_effects: Box<dyn CartridgeEffects>) -> Box<dyn CartridgeMapper> {
         let rom_buffer = build_rom(cartridge_type, rom_size_index, ram_size_index);
         load_rom_buffer(rom_buffer, cartridge_effects).unwrap()
     }

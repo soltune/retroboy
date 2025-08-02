@@ -4,21 +4,21 @@ use serializable_derive::Serializable;
 use getset::{CopyGetters, Setters};
 
 // Each RGBA color is represented in four bytes.
-pub type Color = [u8; 4];
+pub(super) type Color = [u8; 4];
 
-pub const BLACK: Color = [0x0, 0x0, 0x0, 0xFF];
-pub const DARK_GRAY: Color = [0xA9, 0xA9, 0xA9, 0xFF];
-pub const LIGHT_GRAY: Color = [0xD3, 0xD3, 0xD3, 0xFF];
-pub const WHITE: Color = [0xFF, 0xFF, 0xFF, 0xFF];
+pub(super) const BLACK: Color = [0x0, 0x0, 0x0, 0xFF];
+pub(super) const DARK_GRAY: Color = [0xA9, 0xA9, 0xA9, 0xFF];
+pub(super) const LIGHT_GRAY: Color = [0xD3, 0xD3, 0xD3, 0xFF];
+pub(super) const WHITE: Color = [0xFF, 0xFF, 0xFF, 0xFF];
 
-pub const COLORS_PER_PALETTE: usize = 4;
-pub const CGB_PALETTES: usize = 8;
+pub(super) const COLORS_PER_PALETTE: usize = 4;
+pub(super) const CGB_PALETTES: usize = 8;
 
 const MONOCHROME_COLORS: [Color; 4] = [WHITE, LIGHT_GRAY, DARK_GRAY, BLACK];
 
 #[derive(Debug, Serializable, CopyGetters, Setters)]
-#[getset(get_copy = "pub", set = "pub")]
-pub struct Palettes {
+#[getset(get_copy = "pub(crate)", set = "pub(crate)")]
+pub(crate) struct Palettes {
     bgp: u8,
     obp0: u8,
     obp1: u8,
@@ -30,7 +30,7 @@ pub struct Palettes {
     cgb_ocps: u8
 }
 
-pub fn calculate_color_id(bit_index: u8, msb_byte: u8, lsb_byte: u8, x_flip: bool) -> u8 {
+pub(super) fn calculate_color_id(bit_index: u8, msb_byte: u8, lsb_byte: u8, x_flip: bool) -> u8 {
     let calculated_index = if x_flip { bit_index } else { 7 - bit_index };
     let msb = get_bit(msb_byte, calculated_index);
     let lsb = get_bit(lsb_byte, calculated_index);
@@ -73,7 +73,7 @@ fn rgb555_as_color(rgb555: u16) -> Color {
 }
 
 impl Palettes {
-    pub fn new() -> Self {
+    pub(super) fn new() -> Self {
         Palettes {
             bgp: 0,
             obp0: 0,
@@ -149,12 +149,12 @@ impl Palettes {
     }
 
 
-    pub fn cgb_bcpd(&self) -> u8 {
+    pub(crate) fn cgb_bcpd(&self) -> u8 {
         let address = (self.cgb_bcps & 0b00111111) as usize;
         self.cgb_bcpd[address]
     }
 
-    pub fn set_cgb_bcpd(&mut self, value: u8) {
+    pub(crate) fn set_cgb_bcpd(&mut self, value: u8) {
         let address = (self.cgb_bcps & 0b00111111) as usize;
         self.cgb_bcpd[address] = value;
 
@@ -168,16 +168,17 @@ impl Palettes {
         };
     }
 
-    pub fn set_cgb_bcpd_by_index(&mut self, index: usize, value: u8) {
+    #[cfg(test)]
+    pub(super) fn set_cgb_bcpd_by_index(&mut self, index: usize, value: u8) {
         self.cgb_bcpd[index] = value;
     }
 
-    pub fn cgb_ocpd(&self) -> u8 {
+    pub(crate) fn cgb_ocpd(&self) -> u8 {
         let address = (self.cgb_ocps & 0b00111111) as usize;
         self.cgb_ocpd[address]
     }
 
-    pub fn set_cgb_ocpd(&mut self, value: u8) {
+    pub(crate) fn set_cgb_ocpd(&mut self, value: u8) {
         let address = (self.cgb_ocps & 0b00111111) as usize;
         self.cgb_ocpd[address] = value;
 

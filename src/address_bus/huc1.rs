@@ -6,13 +6,13 @@ use crate::serializable::Serializable;
 use std::io::{Read, Write};
 
 #[derive(Debug, PartialEq, Serializable)]
-pub enum HUC1Mode {
+pub(super) enum HUC1Mode {
     RAM,
     IR
 }
 
 #[derive(Debug)]
-pub struct HUC1CartridgeMapper {
+pub(super) struct HUC1CartridgeMapper {
     cartridge: Cartridge,
     mode: HUC1Mode,
     ir_transmitter: bool,
@@ -21,7 +21,7 @@ pub struct HUC1CartridgeMapper {
 }
 
 impl HUC1CartridgeMapper {
-    pub fn new(cartridge: Cartridge) -> Self {
+    pub(super) fn new(cartridge: Cartridge) -> Self {
         HUC1CartridgeMapper {
             cartridge,
             mode: HUC1Mode::RAM,

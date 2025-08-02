@@ -8,17 +8,17 @@ use getset::{CopyGetters, Getters, MutGetters, Setters};
 
 #[derive(Debug, Serializable, CopyGetters, Setters, Getters, MutGetters)]
 pub struct WaveChannel {
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(crate)", set = "pub(crate)")]
     enabled: bool,
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(crate)", set = "pub(crate)")]
     dac_enabled: bool,
-    #[getset(get = "pub", get_mut = "pub")]
+    #[getset(get = "pub(crate)", get_mut = "pub(crate)")]
     length: Length,
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(crate)", set = "pub(crate)")]
     volume: u8,
-    #[getset(get = "pub", get_mut = "pub")]
+    #[getset(get = "pub(crate)", get_mut = "pub(crate)")]
     period: Period,
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(crate)", set = "pub(crate)")]
     wave_position: u8,
     wave_pattern_ram: [u8; 0x10],
 }
@@ -27,7 +27,7 @@ const MAX_WAVE_SAMPLE_STEPS: u8 = 31;
 const PERIOD_HIGH_TRIGGER_INDEX: u8 = 7;
 
 impl WaveChannel {
-    pub fn new() -> Self {
+    pub(super) fn new() -> Self {
         WaveChannel {
             enabled: false,
             dac_enabled: false,
@@ -39,7 +39,7 @@ impl WaveChannel {
         }
     }
 
-    pub fn reset(original_channel: &WaveChannel, cgb_mode: bool) -> WaveChannel {
+    pub(super) fn reset(original_channel: &WaveChannel, cgb_mode: bool) -> WaveChannel {
         let mut new_channel = WaveChannel::new();
 
         if !cgb_mode {
@@ -52,7 +52,7 @@ impl WaveChannel {
         new_channel
     }
 
-    pub fn step(&mut self, last_instruction_clock_cycles: u8) {
+    pub(super) fn step(&mut self, last_instruction_clock_cycles: u8) {
         if self.enabled {
             self.period.step(last_instruction_clock_cycles / 2, || {
                 self.wave_position = bounded_wrapping_add(self.wave_position, MAX_WAVE_SAMPLE_STEPS);
@@ -60,18 +60,18 @@ impl WaveChannel {
         }
     }
 
-    pub fn should_clock_length_on_enable(&self, original_period_high_value: u8) -> bool {
+    pub(super) fn should_clock_length_on_enable(&self, original_period_high_value: u8) -> bool {
         let new_period_high_value = self.period.high();
         !length_enabled(original_period_high_value) &&
             length_enabled(new_period_high_value)
     }
 
-    pub fn should_clock_length_on_trigger(&self) -> bool {
+    pub(super) fn should_clock_length_on_trigger(&self) -> bool {
         let period_high = self.period.high();
         self.length.at_max_length() && length_enabled(period_high)
     }
 
-    pub fn step_length(&mut self) {
+    pub(super) fn step_length(&mut self) {
         let period_high = self.period.high();
         let length_timer_enabled = length_enabled(period_high);
         if length_timer_enabled {
@@ -82,15 +82,15 @@ impl WaveChannel {
         }
     }
 
-    pub fn read_from_wave_ram(&self, localized_address: u8) -> u8 {
+    pub(super) fn read_from_wave_ram(&self, localized_address: u8) -> u8 {
         self.wave_pattern_ram[localized_address as usize]
     }
 
-    pub fn write_to_wave_ram(&mut self, localized_address: u8, new_value: u8) {
+    pub(crate) fn write_to_wave_ram(&mut self, localized_address: u8, new_value: u8) {
         self.wave_pattern_ram[localized_address as usize] = new_value;
     }
 
-    pub fn digital_output(&self) -> f32 {
+    pub(super) fn digital_output(&self) -> f32 {
         if self.enabled {
             let localized_address = self.wave_position / 2;
             let byte_offset = self.wave_position % 2;
@@ -127,7 +127,7 @@ impl WaveChannel {
         } 
     }
 
-    pub fn trigger(&mut self, cgb_mode: bool) {
+    pub(super) fn trigger(&mut self, cgb_mode: bool) {
         let period_divider = self.period.divider();
         if self.enabled && period_divider == 1 && !cgb_mode {
             self.corrupt_wave_ram_bug();
@@ -144,7 +144,7 @@ impl WaveChannel {
         self.length.reload_timer();
     }
 
-    pub fn should_trigger(&self) -> bool {
+    pub(super) fn should_trigger(&self) -> bool {
         is_bit_set(self.period.high(), PERIOD_HIGH_TRIGGER_INDEX)
     }
 

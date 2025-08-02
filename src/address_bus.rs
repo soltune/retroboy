@@ -22,44 +22,44 @@ pub use crate::address_bus::mbc3::RTCState;
 
 #[derive(CopyGetters, Getters, MutGetters, Setters)]
 pub struct AddressBus {
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(crate)", set = "pub(super)")]
     in_bios: bool,
     bios: Vec<u8>,
     working_ram: [u8; 0x10000],
-    #[getset(get = "pub", get_mut = "pub")]
+    #[getset(get = "pub(super)", get_mut = "pub(super)")]
     zero_page_ram: [u8; 0x80],
     svbk: u8,
     cartridge_mapper: Box<dyn CartridgeMapper>,
-    #[getset(get = "pub", get_mut = "pub")]
+    #[getset(get = "pub(crate)", get_mut = "pub(crate)")]
     processor_test_ram: [u8; 0xFFFF],
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(crate)", set = "pub(super)")]
     processor_test_mode: bool,
-    #[getset(get = "pub", get_mut = "pub")]
+    #[getset(get = "pub(super)", get_mut = "pub(super)")]
     interrupts: InterruptRegisters,
-    #[getset(get = "pub", get_mut = "pub")]
+    #[getset(get = "pub(super)", get_mut = "pub(super)")]
     timers: TimerRegisters,
-    #[getset(get = "pub", get_mut = "pub")]
+    #[getset(get = "pub(super)", get_mut = "pub(super)")]
     gpu: Gpu,
-    #[getset(get = "pub", get_mut = "pub")]
+    #[getset(get = "pub(super)", get_mut = "pub(super)")]
     joypad: Joypad,
-    #[getset(get = "pub", get_mut = "pub")]
+    #[getset(get = "pub(crate)", get_mut = "pub(crate)")]
     apu: Apu,
-    #[getset(get = "pub", get_mut = "pub")]
+    #[getset(get = "pub(super)", get_mut = "pub(super)")]
     dma: DMAState,
-    #[getset(get = "pub", get_mut = "pub")]
+    #[getset(get = "pub(super)", get_mut = "pub(super)")]
     hdma: HDMAState,
-    #[getset(get = "pub", get_mut = "pub")]
+    #[getset(get = "pub(super)", get_mut = "pub(super)")]
     serial: Serial,
-    #[getset(get = "pub", get_mut = "pub")]
+    #[getset(get = "pub(crate)", get_mut = "pub(crate)")]
     cheats: CheatState,
-    #[getset(get = "pub", get_mut = "pub")]
+    #[getset(get = "pub(super)", get_mut = "pub(super)")]
     speed_switch: SpeedSwitch,
-    #[getset(get_copy = "pub")]
+    #[getset(get_copy = "pub(crate)")]
     cgb_mode: bool,
 }
 
 impl AddressBus {
-    pub fn new(renderer: fn(&[u8]), processor_test_mode: bool) -> AddressBus {
+    pub(super) fn new(renderer: fn(&[u8]), processor_test_mode: bool) -> AddressBus {
         AddressBus {
             in_bios: true,
             bios: [0; 0x100].to_vec(),
@@ -83,7 +83,7 @@ impl AddressBus {
         }
     }
 
-    pub fn load_bios(&mut self, is_cgb: bool) {
+    pub(crate) fn load_bios(&mut self, is_cgb: bool) {
         self.bios = if is_cgb {
             CGB_BOOT.to_vec()
         }
@@ -92,7 +92,7 @@ impl AddressBus {
         }
     }
 
-    pub fn get_working_ram_bank(&self) -> u8 {
+    pub(super) fn get_working_ram_bank(&self) -> u8 {
         if self.cgb_mode {
             let masked_value = self.svbk & 0b111;
             if masked_value == 0 { 1 } else { masked_value }
@@ -119,7 +119,7 @@ impl AddressBus {
         }
     }
 
-    pub fn read_byte(&mut self, address: u16) -> u8 {
+    pub(super) fn read_byte(&mut self, address: u16) -> u8 {
         if self.processor_test_mode {
             self.processor_test_ram[address as usize]
         }
@@ -133,7 +133,7 @@ impl AddressBus {
         }
     }
 
-    pub fn unsafe_read_byte(&mut self, address: u16) -> u8 {
+    pub(super) fn unsafe_read_byte(&mut self, address: u16) -> u8 {
         let byte = match address & 0xF000 {
             0x0000 if address <= 0x00FE && self.in_bios => {
                 if address == 0x00FE {
@@ -218,7 +218,7 @@ impl AddressBus {
         self.apply_cheat_if_needed(address, byte)
     }
 
-    pub fn write_byte(&mut self, address: u16, value: u8) {
+    pub(super) fn write_byte(&mut self, address: u16, value: u8) {
         if self.processor_test_mode {
             self.processor_test_ram[address as usize] = value;
         }
@@ -229,7 +229,7 @@ impl AddressBus {
         }
     }
 
-    pub fn unsafe_write_byte(&mut self, address: u16, value: u8) {
+    pub(super) fn unsafe_write_byte(&mut self, address: u16, value: u8) {
         let _ = match address & 0xF000 {
             0x0000..=0x7FFF =>
                 self.cartridge_mapper.write_rom(address, value),
@@ -317,7 +317,7 @@ impl AddressBus {
         };
     }
 
-    pub fn load_rom_buffer(&mut self, buffer: Vec<u8>, cartridge_effects: Box<dyn CartridgeEffects>) -> io::Result<CartridgeHeader> {
+    pub(crate) fn load_rom_buffer(&mut self, buffer: Vec<u8>, cartridge_effects: Box<dyn CartridgeEffects>) -> io::Result<CartridgeHeader> {
         let cartridge_result = cartridge::load_rom_buffer(buffer, cartridge_effects); 
         match cartridge_result {
             Ok(mapper) => {
@@ -330,16 +330,16 @@ impl AddressBus {
         }
     }
 
-    pub fn get_cartridge_ram(&self) -> Vec<u8> {
+    pub(crate) fn get_cartridge_ram(&self) -> Vec<u8> {
         let cartridge = &self.cartridge_mapper.get_cartridge();
         cartridge.ram.clone()
     }
 
-    pub fn set_cartridge_ram(&mut self, buffer: Vec<u8>) {
+    pub(crate) fn set_cartridge_ram(&mut self, buffer: Vec<u8>) {
         self.cartridge_mapper.set_cartridge_ram(buffer);
     }
 
-    pub fn sync(&mut self) {
+    pub(super) fn sync(&mut self) {
         let in_color_bios = self.in_bios && self.cgb_mode;
 
         self.timers.step();
@@ -355,7 +355,7 @@ impl AddressBus {
         self.serial.step();
     }
 
-    pub fn set_cgb_mode(&mut self, value: bool) {
+    pub(crate) fn set_cgb_mode(&mut self, value: bool) {
         self.cgb_mode = value;
         self.apu.set_cgb_mode(value);
         self.gpu.set_cgb_mode(value);
@@ -364,19 +364,19 @@ impl AddressBus {
         self.speed_switch.set_cgb_mode(value);
     }
 
-    pub fn cartridge_mapper(&self) -> &dyn CartridgeMapper {
+    pub(crate) fn cartridge_mapper(&self) -> &dyn CartridgeMapper {
         self.cartridge_mapper.as_ref()
     }
 
-    pub fn handle_key_press(&mut self, key: &Key) {
+    pub(crate) fn handle_key_press(&mut self, key: &Key) {
         self.joypad.handle_key_press(key);
     }
 
-    pub fn handle_key_release(&mut self, key: &Key) {
+    pub(crate) fn handle_key_release(&mut self, key: &Key) {
         self.joypad.handle_key_release(key);
     }
 
-    pub fn interrupt_flags(&self) -> u8 {
+    pub(super) fn interrupt_flags(&self) -> u8 {
         let mut flags = 0;
         if self.gpu.vblank_interrupt() {
             flags |= 0x1;
@@ -396,7 +396,7 @@ impl AddressBus {
         flags
     }
 
-    pub fn set_interrupt_flags(&mut self, flags: u8) {
+    pub(super) fn set_interrupt_flags(&mut self, flags: u8) {
         self.gpu.set_vblank_interrupt(is_bit_set(flags, 0));
         self.gpu.set_stat_interrupt(is_bit_set(flags, 1));
         self.timers.set_interrupt(is_bit_set(flags, 2));
@@ -447,7 +447,7 @@ pub mod test_utils {
     use crate::address_bus::cartridge::*;
     use crate::address_bus::constants::*;
 
-    pub fn build_rom(cartridge_type: u8, rom_size_index: u8, ram_size_index: u8) -> Vec<u8> {
+    pub(crate) fn build_rom(cartridge_type: u8, rom_size_index: u8, ram_size_index: u8) -> Vec<u8> {
         let mut rom_buffer: Vec<u8> = Vec::new();
         let number_of_banks = as_max_banks(rom_size_index) as u32;
         rom_buffer.resize((0x4000 * number_of_banks) as usize, 0);
@@ -457,7 +457,7 @@ pub mod test_utils {
         rom_buffer
     }
 
-    pub fn initialize_test_address_bus() -> AddressBus {
+    pub(crate) fn initialize_test_address_bus() -> AddressBus {
         AddressBus::new(|_| {}, false)
     }
 }

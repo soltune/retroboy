@@ -13,7 +13,7 @@ pub enum Key {
 }
 
 #[derive(Debug, CopyGetters, Setters)]
-#[getset(get_copy = "pub", set = "pub")]
+#[getset(get_copy = "pub(super)", set = "pub(super)")]
 pub struct Joypad {
     column: u8,
     select_buttons: u8,
@@ -32,7 +32,7 @@ const B_BIT: u8 = 1;
 const A_BIT: u8 = 0;
 
 impl Joypad {
-    pub fn new() -> Self {
+    pub(super) fn new() -> Self {
         Joypad {
             column: 0x0,
             select_buttons: 0xF,
@@ -41,11 +41,11 @@ impl Joypad {
         }
     }
 
-    pub fn write_byte(&mut self, value: u8) {
+    pub(super) fn write_byte(&mut self, value: u8) {
         self.column = value & 0x30;
     }
 
-    pub fn read_byte(&self) -> u8 {
+    pub(super) fn read_byte(&self) -> u8 {
         if self.column & 0x20 == 0 {
             0xD0 | (self.select_buttons & 0x0F)
         }
@@ -57,7 +57,7 @@ impl Joypad {
         }  
     }
 
-    pub fn handle_key_press(&mut self, key: &Key) {
+    pub(super) fn handle_key_press(&mut self, key: &Key) {
         match key {
             Key::Down => self.directional_buttons = reset_bit(self.directional_buttons, DOWN_BIT),
             Key::Up => self.directional_buttons = reset_bit(self.directional_buttons, UP_BIT),
@@ -71,7 +71,7 @@ impl Joypad {
         self.interrupt = true;
     }
 
-    pub fn handle_key_release(&mut self, key: &Key) {
+    pub(super) fn handle_key_release(&mut self, key: &Key) {
         match key {
             Key::Down => self.directional_buttons = set_bit(self.directional_buttons, DOWN_BIT),
             Key::Up => self.directional_buttons = set_bit(self.directional_buttons, UP_BIT),

@@ -4,8 +4,8 @@ use getset::{CopyGetters, Setters};
 use serializable_derive::Serializable;
 
 #[derive(Debug, Serializable, CopyGetters, Setters)]
-#[getset(get_copy = "pub", set = "pub")]
-pub struct DMAState {
+#[getset(get_copy = "pub(super)", set = "pub(super)")]
+pub(super) struct DMAState {
     #[getset(skip)]
     source: u16,
     offset: u8,
@@ -13,10 +13,10 @@ pub struct DMAState {
     in_progress: bool
 }
 
-pub const DMA_TRANSFER_BYTES: u8 = 160;
+pub(super) const DMA_TRANSFER_BYTES: u8 = 160;
 
 impl DMAState {
-    pub fn new() -> Self {
+    pub(super) fn new() -> Self {
         DMAState {
             source: 0x0,
             offset: 0x0,
@@ -25,7 +25,7 @@ impl DMAState {
         }
     }
 
-    pub fn start_dma(&mut self, source: u8) {
+    pub(super) fn start_dma(&mut self, source: u8) {
         self.source = (source as u16) << 8;
 
         if !self.in_progress {
@@ -35,15 +35,16 @@ impl DMAState {
         }
     }
 
-    pub fn source(&self) -> u8 {
+    pub(super) fn source(&self) -> u8 {
         (self.source >> 8) as u8
     }
 
-    pub fn source_address(&self) -> u16 {
+    pub(super) fn source_address(&self) -> u16 {
         self.source
     }
 
-    pub fn set_source_address(&mut self, source: u16) {
+    #[cfg(test)]
+    pub(super) fn set_source_address(&mut self, source: u16) {
         self.source = source;
     }
 }
@@ -56,7 +57,7 @@ impl AddressBus {
         self.unsafe_write_byte(0xFE00 + offset, byte_to_transfer);
     }
 
-    pub fn dma_step(&mut self) {
+    pub(super) fn dma_step(&mut self) {
         if self.dma.in_progress() {
             let delay = self.dma.delay();
             if delay > 0 {

@@ -22,11 +22,8 @@ pub struct Registers {
 
 #[derive(Debug, Serializable, CopyGetters, Setters)]
 pub struct Interrupts {
-    #[getset(get_copy = "pub")]
     enable_delay: u8,
-    #[getset(get_copy = "pub")]
     disable_delay: u8,
-    #[getset(get_copy = "pub", set = "pub")]
     enabled: bool
 }
 
@@ -46,18 +43,15 @@ pub struct BusActivityEntry {
 
 #[derive(Getters, MutGetters, CopyGetters)]
 pub struct Cpu {
-    #[getset(get = "pub", get_mut = "pub", set = "pub")]
+    #[getset(get = "pub(crate)", get_mut = "pub(crate)", set = "pub(super)")]
     registers: Registers,
-    #[getset(get_copy = "pub")]
     halted: bool,
     halt_bug: bool,
-    #[getset(get = "pub", get_mut = "pub")]
     interrupts: Interrupts,
-    #[getset(get_copy = "pub", set = "pub")]
     instruction_clock_cycles: u8,
-    #[getset(get = "pub")]
+    #[getset(get = "pub(crate)")]
     opcode_bus_activity: Vec<Option<BusActivityEntry>>,
-    #[getset(get = "pub", get_mut = "pub")]
+    #[getset(get = "pub(crate)", get_mut = "pub(crate)")]
     address_bus: AddressBus
 }
 
@@ -82,12 +76,12 @@ pub const REGISTER_HL: RegisterPair = RegisterPair { first: Register::H, second:
 pub const REGISTER_BC: RegisterPair = RegisterPair { first: Register::B, second: Register::C };
 pub const REGISTER_DE: RegisterPair = RegisterPair { first: Register::D, second: Register::E }; 
 
-pub fn handle_illegal_opcode(opcode: u8) {
+pub(super) fn handle_illegal_opcode(opcode: u8) {
     panic!("Encountered illegal opcode {:#04X}", opcode);
 }
 
 impl Cpu {
-    pub fn new(address_bus: AddressBus) -> Self {
+    pub(super) fn new(address_bus: AddressBus) -> Self {
         Cpu {
             registers: Registers {
                 a: 0,
@@ -115,20 +109,16 @@ impl Cpu {
         }
     }
 
-    pub fn read_next_instruction_byte(&mut self) -> u8 {
+    pub(super) fn read_next_instruction_byte(&mut self) -> u8 {
         let byte = self.read_byte_from_memory(self.registers.program_counter);
         self.registers.program_counter += 1;
         byte
     }
 
-    pub fn read_next_instruction_word(&mut self) -> u16 {
+    pub(super) fn read_next_instruction_word(&mut self) -> u16 {
         let word = self.read_word_from_memory(self.registers.program_counter);
         self.registers.program_counter += 2;
         word
-    }
-
-    pub fn at_end_of_boot_rom(&mut self) -> bool {
-        self.registers.program_counter == 0x100
     }
 }
 

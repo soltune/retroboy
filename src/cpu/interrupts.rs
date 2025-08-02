@@ -76,12 +76,12 @@ impl Cpu {
         }
     }
 
-    pub fn interrupts_fired(&self) -> bool {
+    pub(super) fn interrupts_fired(&self) -> bool {
         let fired_interrupt_bits = self.get_fired_interrupt_bits();
         fired_interrupt_bits != 0
     }
 
-    pub fn interrupt_step(&mut self) -> bool {
+    pub(super) fn interrupt_step(&mut self) -> bool {
         if self.interrupts.enabled && self.interrupts_fired() {
             let maybe_fired_interrupt = self.get_fired_interrupt();
             match maybe_fired_interrupt {

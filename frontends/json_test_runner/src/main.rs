@@ -1,5 +1,4 @@
-use retroboy::emulator::{Emulator, Registers};
-use retroboy::cpu::{BusActivityEntry, BusActivityType};
+use retroboy::emulator::{Emulator, Registers, BusActivityEntry, BusActivityType};
 use serde::Deserialize;
 use std::fs;
 use std::io;

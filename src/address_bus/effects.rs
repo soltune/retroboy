@@ -9,7 +9,7 @@ pub trait CartridgeEffects {
     fn save_ram(&self, key: &str, ram: &[u8]);
 }
 
-pub struct EmptyCartridgeEffects;
+pub(super) struct EmptyCartridgeEffects;
 
 impl CartridgeEffects for EmptyCartridgeEffects {
     fn current_time_millis(&self) -> f64 {
@@ -34,6 +34,6 @@ impl Debug for dyn CartridgeEffects {
         write!(f, "CartridgeEffects")
     }
 }
-pub fn empty_cartridge_effects() -> Box<dyn CartridgeEffects> {
+pub(crate) fn empty_cartridge_effects() -> Box<dyn CartridgeEffects> {
     Box::new(EmptyCartridgeEffects {})
 }

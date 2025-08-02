@@ -13,45 +13,45 @@ pub struct Gpu {
     mode: u8,
     mode_clock: u16,
     lcdc: u8,
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(super)", set = "pub(super)")]
     scy: u8,
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(super)", set = "pub(super)")]
     scx: u8,
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(super)", set = "pub(super)")]
     wx: u8,
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(super)", set = "pub(super)")]
     wy: u8,
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(super)", set = "pub(super)")]
     wly: u8,
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(super)", set = "pub(super)")]
     ly: u8,
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(super)", set = "pub(super)")]
     lyc: u8,
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(super)", set = "pub(super)")]
     stat: u8,
-    #[getset(get = "pub", get_mut = "pub")]
+    #[getset(get = "pub(super)", get_mut = "pub(super)")]
     palettes: Palettes,
     cgb_vbk: u8,
     cgb_opri: u8,
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(super)", set = "pub(super)")]
     key0: u8,
     frame_buffer: Vec<u8>,
     video_ram: [u8; 0x4000],
     object_attribute_memory: [u8; 0xa0],
-    #[getset(set = "pub")]
+    #[getset(set = "pub(super)")]
     cgb_mode: bool,
-    #[getset(set = "pub")]
+    #[getset(set = "pub(super)")]
     cgb_double_speed: bool,
     renderer: fn(&[u8]),
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(super)", set = "pub(super)")]
     stat_interrupt: bool,
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get_copy = "pub(super)", set = "pub(super)")]
     vblank_interrupt: bool
 }
 
 pub struct GpuParams<'a> {
-    pub hdma: &'a mut HDMAState,
-    pub in_color_bios: bool,
+    pub(crate) hdma: &'a mut HDMAState,
+    pub(crate) in_color_bios: bool,
 }
 
 const OAM_MODE: u8 = 2;
@@ -80,7 +80,7 @@ fn initialize_blank_frame() -> Vec<u8> {
 }
 
 impl Gpu {
-    pub fn new(renderer: fn(&[u8])) -> Self {
+    pub(super) fn new(renderer: fn(&[u8])) -> Self {
         Gpu {
             mode: 2,
             mode_clock: 0,
@@ -106,14 +106,6 @@ impl Gpu {
             stat_interrupt: false,
             vblank_interrupt: false
         }
-    }
-
-    pub fn reset_frame_buffer(&mut self) {
-        self.frame_buffer = initialize_blank_frame();
-    }
-
-    pub fn remove_frame_buffer(&mut self) {
-        self.frame_buffer.clear();
     }
 
     fn lyc_check_enabled(&self) -> bool {
@@ -148,7 +140,7 @@ impl Gpu {
         }
     }
 
-    pub fn step(&mut self, params: GpuParams) {
+    pub(super) fn step(&mut self, params: GpuParams) {
         let lcdc = self.lcdc;
         let lcd_enabled = get_lcd_enabled_mode(lcdc);
 
@@ -225,55 +217,55 @@ impl Gpu {
             index
         }
     }
-    pub fn get_video_ram_byte(&self, index: u16) -> u8 {
+    pub(super) fn get_video_ram_byte(&self, index: u16) -> u8 {
         let calculated_index = self.calculate_video_ram_index(index);
         self.video_ram[calculated_index as usize]
     }
 
-    pub fn set_video_ram_byte(&mut self, index: u16, value: u8) {
+    pub(super) fn set_video_ram_byte(&mut self, index: u16, value: u8) {
         let calculated_index = self.calculate_video_ram_index(index);
         self.video_ram[calculated_index as usize] = value;
     }
 
-    pub fn get_object_attribute_memory_byte(&self, index: u16) -> u8 {
+    pub(super) fn get_object_attribute_memory_byte(&self, index: u16) -> u8 {
         self.object_attribute_memory[index as usize]
     }
 
-    pub fn set_object_attribute_memory_byte(&mut self, index: u16, value: u8) {
+    pub(super) fn set_object_attribute_memory_byte(&mut self, index: u16, value: u8) {
         self.object_attribute_memory[index as usize] = value;
     }
 
-    pub fn cgb_vbk(&self) -> u8 {
+    pub(super) fn cgb_vbk(&self) -> u8 {
         if self.cgb_mode {
             self.cgb_vbk | 0b11111110
         } else {
             0xFF
         }
     }
-    pub fn set_cgb_vbk(&mut self, value: u8) {
+    pub(super) fn set_cgb_vbk(&mut self, value: u8) {
         if self.cgb_mode {
             self.cgb_vbk = value;
         }
     }
 
-    pub fn cgb_opri(&self) -> u8 {
+    pub(super) fn cgb_opri(&self) -> u8 {
         if self.cgb_mode {
             self.cgb_opri & 0b1
         } else {
             0xFF
         }
     }
-    pub fn set_cgb_opri(&mut self, value: u8) {
+    pub(super) fn set_cgb_opri(&mut self, value: u8) {
         if self.cgb_mode {
             self.cgb_opri = value & 0b1;
         }
     }
 
-    pub fn lcdc(&self) -> u8 {
+    pub(super) fn lcdc(&self) -> u8 {
         self.lcdc
     }
     
-    pub fn set_lcdc(&mut self, value: u8) {
+    pub(super) fn set_lcdc(&mut self, value: u8) {
         self.lcdc = value;
         let lcd_enabled = get_lcd_enabled_mode(value);
         if !lcd_enabled {
@@ -286,11 +278,12 @@ impl Gpu {
         }
     }
     
-    pub fn has_dmg_compatability(&self) -> bool {
+    pub(super) fn has_dmg_compatability(&self) -> bool {
         self.key0 == 0x04
     }
 
-    pub fn set_mode(&mut self, value: u8) {
+    #[cfg(test)]
+    pub(super) fn set_mode(&mut self, value: u8) {
         self.mode = value;
     }
 }

@@ -3,14 +3,14 @@ use crate::cpu::{BusActivityEntry, BusActivityType, Register, RegisterPair, Cpu}
 use crate::utils::get_t_cycle_increment;
 
 impl Cpu {
-    pub fn step_one_machine_cycle(&mut self) {
+    pub(super) fn step_one_machine_cycle(&mut self) {
         let double_speed_mode = self.address_bus.speed_switch().cgb_double_speed();
         let t_cycle_increment = get_t_cycle_increment(double_speed_mode);
         self.instruction_clock_cycles = self.instruction_clock_cycles.wrapping_add(t_cycle_increment);
         self.address_bus.sync();
     }
 
-    pub fn step_machine_cycles(&mut self, cycles: u8) {
+    pub(super) fn step_machine_cycles(&mut self, cycles: u8) {
         for _ in 0..cycles {
             self.step_one_machine_cycle();
         }
@@ -48,7 +48,7 @@ impl Cpu {
         self.record_bus_activity(bus_activity_entry);
     }
 
-    pub fn read_byte_from_memory(&mut self, address: u16) -> u8 {
+    pub(super) fn read_byte_from_memory(&mut self, address: u16) -> u8 {
         self.step_one_machine_cycle();
         let byte = self.address_bus.read_byte(address);
 
@@ -59,13 +59,13 @@ impl Cpu {
         byte
     }
 
-    pub fn read_word_from_memory(&mut self, address: u16) -> u16 {
+    pub(super) fn read_word_from_memory(&mut self, address: u16) -> u16 {
         let first_byte = self.read_byte_from_memory(address);
         let second_byte = self.read_byte_from_memory(address + 1);
         utils::as_word(first_byte, second_byte)
     }
 
-    pub fn store_byte_in_memory(&mut self, address: u16, byte: u8) {
+    pub(super) fn store_byte_in_memory(&mut self, address: u16, byte: u8) {
         self.step_one_machine_cycle();
         self.address_bus.write_byte(address, byte);
         
@@ -74,13 +74,13 @@ impl Cpu {
         }
     }
 
-    pub fn store_word_in_memory(&mut self, address: u16, word: u16) {
+    pub(super) fn store_word_in_memory(&mut self, address: u16, word: u16) {
         let (first_byte, second_byte) = utils::as_bytes(word);
         self.store_byte_in_memory(address, first_byte);
         self.store_byte_in_memory(address + 1, second_byte);
     }
 
-    pub fn read_from_register(&self, register: &Register) -> u8 {
+    pub(super) fn read_from_register(&self, register: &Register) -> u8 {
         match register {
             Register::A => self.registers.a,
             Register::B => self.registers.b,
@@ -93,7 +93,7 @@ impl Cpu {
         } 
     }
 
-    pub fn store_in_register(&mut self, register: Register, value: u8) {
+    pub(super) fn store_in_register(&mut self, register: Register, value: u8) {
         match register {
             Register::A => self.registers.a = value,
             Register::B => self.registers.b = value,
@@ -106,18 +106,18 @@ impl Cpu {
         } 
     }
 
-    pub fn read_from_register_pair(&self, register_pair: &RegisterPair) -> u16 {
+    pub(super) fn read_from_register_pair(&self, register_pair: &RegisterPair) -> u16 {
         let first_byte = self.read_from_register(&register_pair.first);
         let second_byte = self.read_from_register(&register_pair.second);
         ((first_byte as u16) << 8) | (second_byte as u16 & 0xFF)
     }
 
-    pub fn store_in_register_pair(&mut self, register_pair: RegisterPair, value: u16) {
+    pub(super) fn store_in_register_pair(&mut self, register_pair: RegisterPair, value: u16) {
         self.store_in_register(register_pair.first, ((value >> 8) & 0xFF) as u8);
         self.store_in_register(register_pair.second, (value & 0xFF) as u8);
     }
 
-    pub fn set_flag_z(&mut self, flag: bool) {
+    pub(super) fn set_flag_z(&mut self, flag: bool) {
         if flag {
             self.registers.f = self.registers.f | 0x80;
         } else {
@@ -125,7 +125,7 @@ impl Cpu {
         }
     }
 
-    pub fn set_flag_n(&mut self, flag: bool) {
+    pub(super) fn set_flag_n(&mut self, flag: bool) {
         if flag {
             self.registers.f = self.registers.f | 0x40;
         } else {
@@ -133,7 +133,7 @@ impl Cpu {
         }
     }
 
-    pub fn set_flag_h(&mut self, flag: bool) {
+    pub(super) fn set_flag_h(&mut self, flag: bool) {
         if flag {
             self.registers.f = self.registers.f | 0x20;
         } else {
@@ -141,7 +141,7 @@ impl Cpu {
         }
     }
 
-    pub fn set_flag_c(&mut self, flag: bool) {
+    pub(super) fn set_flag_c(&mut self, flag: bool) {
         if flag {
             self.registers.f = self.registers.f | 0x10;
         } else {
@@ -149,22 +149,22 @@ impl Cpu {
         }
     }
 
-    pub fn is_z_flag_set(&self) -> bool {
+    pub(super) fn is_z_flag_set(&self) -> bool {
         let value = self.read_from_register(&Register::F);
         (value & 0x80) == 0x80
     }
 
-    pub fn is_n_flag_set(&self) -> bool {
+    pub(super) fn is_n_flag_set(&self) -> bool {
         let value = self.read_from_register(&Register::F);
         (value & 0x40) == 0x40
     }
 
-    pub fn is_h_flag_set(&self) -> bool {
+    pub(super) fn is_h_flag_set(&self) -> bool {
         let value = self.read_from_register(&Register::F);
         (value & 0x20) == 0x20
     }
 
-    pub fn is_c_flag_set(&self) -> bool {
+    pub(super) fn is_c_flag_set(&self) -> bool {
         let value = self.read_from_register(&Register::F);
         (value & 0x10) == 0x10
     }

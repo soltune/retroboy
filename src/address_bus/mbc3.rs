@@ -18,7 +18,7 @@ pub struct RTCState {
 }
 
 #[derive(Debug)]
-pub struct MBC3CartridgeMapper {
+pub(super) struct MBC3CartridgeMapper {
     cartridge: Cartridge,
     rom_bank_number: u8,
     ram_rtc_enabled: bool,
@@ -44,7 +44,7 @@ fn battery_supported(cartridge: &Cartridge) -> bool {
 }
 
 impl MBC3CartridgeMapper {
-    pub fn new(cartridge: Cartridge) -> Self {
+    pub(super) fn new(cartridge: Cartridge) -> Self {
         let rtc_state_key = format!("{}-rtc", cartridge.header.title);
         let maybe_rtc_state = cartridge.effects.load_rtc_state(&rtc_state_key);
         MBC3CartridgeMapper {

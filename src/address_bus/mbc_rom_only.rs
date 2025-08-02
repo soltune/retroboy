@@ -3,12 +3,12 @@ use crate::serializable::Serializable;
 use std::io::{Read, Write};
 
 #[derive(Debug)]
-pub struct MBCRomOnlyCartridgeMapper {
+pub(super) struct MBCRomOnlyCartridgeMapper {
     cartridge: Cartridge
 }
 
 impl MBCRomOnlyCartridgeMapper {
-    pub fn new(cartridge: Cartridge) -> Self {
+    pub(super) fn new(cartridge: Cartridge) -> Self {
         MBCRomOnlyCartridgeMapper {
             cartridge
         }

@@ -50,59 +50,59 @@ impl Cpu {
         rotated_value
     }
 
-    pub fn rotate_register_left(&mut self, register: Register) {
+    pub(super) fn rotate_register_left(&mut self, register: Register) {
         let byte = self.read_from_register(&register);
         let rotated_value = self.rotate_left(byte);
         self.store_in_register(register, rotated_value);
     }
 
-    pub fn rotate_register_left_through_carry(&mut self, register: Register) {
+    pub(super) fn rotate_register_left_through_carry(&mut self, register: Register) {
         let byte = self.read_from_register(&register);
         let rotated_value = self.rotate_left_through_carry(byte);
         self.store_in_register(register, rotated_value);
     }
 
-    pub fn rotate_register_right(&mut self, register: Register) {
+    pub(super) fn rotate_register_right(&mut self, register: Register) {
         let byte = self.read_from_register(&register);
         let rotated_value = self.rotate_right(byte);
         self.store_in_register(register, rotated_value);
     }
 
-    pub fn rotate_register_right_through_carry(&mut self, register: Register) {
+    pub(super) fn rotate_register_right_through_carry(&mut self, register: Register) {
         let byte = self.read_from_register(&register);
         let rotated_value = self.rotate_right_through_carry(byte);
         self.store_in_register(register, rotated_value);
     }
 
-    pub fn rotate_memory_byte_left(&mut self) {
+    pub(super) fn rotate_memory_byte_left(&mut self) {
         let address = self.read_from_register_pair(&REGISTER_HL);
         let byte = self.read_byte_from_memory(address);
         let rotated_value = self.rotate_left(byte);
         self.store_byte_in_memory(address, rotated_value);
     }
 
-    pub fn rotate_memory_byte_left_through_carry(&mut self) {
+    pub(super) fn rotate_memory_byte_left_through_carry(&mut self) {
         let address = self.read_from_register_pair(&REGISTER_HL);
         let byte = self.read_byte_from_memory(address);
         let rotated_value = self.rotate_left_through_carry(byte);
         self.store_byte_in_memory(address, rotated_value);
     }
 
-    pub fn rotate_memory_byte_right(&mut self) {
+    pub(super) fn rotate_memory_byte_right(&mut self) {
         let address = self.read_from_register_pair(&REGISTER_HL);
         let byte = self.read_byte_from_memory(address);
         let rotated_value = self.rotate_right(byte);
         self.store_byte_in_memory(address, rotated_value);
     }
 
-    pub fn rotate_memory_byte_right_through_carry(&mut self) {
+    pub(super) fn rotate_memory_byte_right_through_carry(&mut self) {
         let address = self.read_from_register_pair(&REGISTER_HL);
         let byte = self.read_byte_from_memory(address);
         let rotated_value = self.rotate_right_through_carry(byte);
         self.store_byte_in_memory(address, rotated_value);
     }
 
-    pub fn swap_nibbles_in_register(&mut self, register: Register) {
+    pub(super) fn swap_nibbles_in_register(&mut self, register: Register) {
         let byte = self.read_from_register(&register);
         let with_swapped_nibbles = swap_nibbles(byte);
 
@@ -114,7 +114,7 @@ impl Cpu {
         self.set_flag_c(false); 
     }
 
-    pub fn swap_nibbles_in_memory_byte(&mut self, address: u16) {
+    pub(super) fn swap_nibbles_in_memory_byte(&mut self, address: u16) {
         let byte = self.read_byte_from_memory(address);
         let with_swapped_nibbles = swap_nibbles(byte);
 
@@ -136,13 +136,13 @@ impl Cpu {
         shifted_value
     }
 
-    pub fn shift_register_left(&mut self, register: Register) {
+    pub(super) fn shift_register_left(&mut self, register: Register) {
         let byte = self.read_from_register(&register);
         let shifted_value = self.shift_left(byte);
         self.store_in_register(register, shifted_value);
     }
 
-    pub fn shift_memory_byte_left(&mut self) {
+    pub(super) fn shift_memory_byte_left(&mut self) {
         let address = self.read_from_register_pair(&REGISTER_HL);
         let byte = self.read_byte_from_memory(address);
         let shifted_value = self.shift_left(byte);
@@ -160,26 +160,26 @@ impl Cpu {
         shifted_value
     }
 
-    pub fn shift_register_right_maintaining_msb(&mut self, register: Register) {
+    pub(super) fn shift_register_right_maintaining_msb(&mut self, register: Register) {
         let byte = self.read_from_register(&register);
         let shifted_value = self.shift_right(byte, true);
         self.store_in_register(register, shifted_value);
     }
 
-    pub fn shift_memory_byte_right_maintaining_msb(&mut self) {
+    pub(super) fn shift_memory_byte_right_maintaining_msb(&mut self) {
         let address = self.read_from_register_pair(&REGISTER_HL);
         let byte = self.read_byte_from_memory(address);
         let shifted_value = self.shift_right(byte, true);
         self.store_byte_in_memory(address, shifted_value);
     }
 
-    pub fn shift_register_right(&mut self, register: Register) {
+    pub(super) fn shift_register_right(&mut self, register: Register) {
         let byte = self.read_from_register(&register);
         let shifted_value = self.shift_right(byte, false);
         self.store_in_register(register, shifted_value);
     }
 
-    pub fn shift_memory_byte_right(&mut self) {
+    pub(super) fn shift_memory_byte_right(&mut self) {
         let address = self.read_from_register_pair(&REGISTER_HL);
         let byte = self.read_byte_from_memory(address);
         let shifted_value = self.shift_right(byte, false);
@@ -192,37 +192,37 @@ impl Cpu {
         self.set_flag_h(true);
     }
 
-    pub fn test_register_bit(&mut self, register: Register, bit_index: u8) {
+    pub(super) fn test_register_bit(&mut self, register: Register, bit_index: u8) {
         let byte = self.read_from_register(&register);
         self.test_bit(byte, bit_index);
     }
 
-    pub fn test_memory_bit(&mut self, bit_index: u8) {
+    pub(super) fn test_memory_bit(&mut self, bit_index: u8) {
         let address = self.read_from_register_pair(&REGISTER_HL);
         let byte = self.read_byte_from_memory(address);
         self.test_bit(byte, bit_index);
     }
 
-    pub fn reset_register_bit(&mut self, register: Register, bit_index: u8) {
+    pub(super) fn reset_register_bit(&mut self, register: Register, bit_index: u8) {
         let byte = self.read_from_register(&register);
         let updated_byte = reset_bit(byte, bit_index);
         self.store_in_register(register, updated_byte);
     }
 
-    pub fn reset_memory_bit(&mut self, bit_index: u8) {
+    pub(super) fn reset_memory_bit(&mut self, bit_index: u8) {
         let address = self.read_from_register_pair(&REGISTER_HL);
         let byte = self.read_byte_from_memory(address);
         let updated_byte = reset_bit(byte, bit_index);
         self.store_byte_in_memory(address, updated_byte);
     }
 
-    pub fn set_register_bit(&mut self, register: Register, bit_index: u8) {
+    pub(super) fn set_register_bit(&mut self, register: Register, bit_index: u8) {
         let byte = self.read_from_register(&register);
         let updated_byte = set_bit(byte, bit_index);
         self.store_in_register(register, updated_byte);
     }
 
-    pub fn set_memory_bit(&mut self, bit_index: u8) {
+    pub(super) fn set_memory_bit(&mut self, bit_index: u8) {
         let address = self.read_from_register_pair(&REGISTER_HL);
         let byte = self.read_byte_from_memory(address);
         let updated_byte = set_bit(byte, bit_index);

@@ -39,7 +39,7 @@ impl Cpu {
         self.registers.opcode = next_opcode;
     }
 
-    pub fn step(&mut self) {
+    pub(crate) fn step(&mut self) {
         if self.address_bus.hdma().in_progress() {
             self.address_bus.hdma_step();
         }
