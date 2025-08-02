@@ -442,7 +442,7 @@ impl Serializable for AddressBus {
 }
 
 #[cfg(test)]
-pub mod test_utils {
+pub(crate) mod test_utils {
     use crate::address_bus::AddressBus;
     use crate::address_bus::cartridge::*;
     use crate::address_bus::constants::*;
@@ -465,12 +465,12 @@ pub mod test_utils {
 #[cfg(test)]
 mod tests;
 
-pub mod constants;
-pub mod effects;
-pub mod dma;
-pub mod hdma;
-pub mod cheats;
-pub mod speed_switch;
+pub(crate) mod constants;
+pub(crate) mod effects;
+mod dma;
+pub(crate) mod hdma;
+pub(crate) mod cheats;
+mod speed_switch;
 mod cartridge;
 mod huc1;
 mod mbc1;

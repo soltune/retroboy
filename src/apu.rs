@@ -637,11 +637,11 @@ impl Serializable for Apu {
 #[cfg(test)]
 mod tests;
 
-pub mod pulse;
-pub mod wave;
-pub mod noise;
-pub mod length;
-pub mod sweep;
+mod pulse;
+mod wave;
+mod noise;
+mod length;
+mod sweep;
 mod envelope;
 mod period;
 mod utils;

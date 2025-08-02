@@ -264,7 +264,7 @@ pub(super) fn load_rom_buffer(buffer: Vec<u8>, effects: Box<dyn CartridgeEffects
 }
 
 #[cfg(test)]
-pub mod test_utils {
+pub(crate) mod test_utils {
     use super::*;
     use crate::address_bus::effects::empty_cartridge_effects;
     use crate::address_bus::test_utils::*;
