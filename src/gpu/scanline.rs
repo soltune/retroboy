@@ -6,8 +6,8 @@ use crate::gpu::utils::get_bg_and_window_enabled_mode;
 
 impl Gpu {
     pub(super) fn write_scanline(&mut self) {
-        let ly = self.registers.ly;
-        let lcdc = self.registers.lcdc;
+        let ly = self.ly;
+        let lcdc = self.lcdc;
 
         let sprite_buffer = collect_scanline_sprites(&self.object_attribute_memory, ly, lcdc);
 

@@ -15,7 +15,7 @@ const SPRITE_WIDTH: i16 = 8;
 const CGB_OPRI_PRIORITY_BIT: u8 = 0;
 
 #[derive(Debug)]
-pub struct Sprite {
+pub(super) struct Sprite {
     pub y_pos: i16,
     pub x_pos: i16,
     pub tile_index: u8,
@@ -29,7 +29,7 @@ pub struct Sprite {
 }
 
 impl Sprite {
-    pub fn has_higher_priority_than(&self, compared_sprite: &Sprite, oam_location_prioritization: bool) -> bool {
+    pub(super) fn has_higher_priority_than(&self, compared_sprite: &Sprite, oam_location_prioritization: bool) -> bool {
         let has_lower_x = self.x_pos < compared_sprite.x_pos;
         let has_same_x = self.x_pos == compared_sprite.x_pos;
         let located_earlier_in_oam = self.oam_index < compared_sprite.oam_index;
@@ -79,7 +79,7 @@ fn pull_sprite(object_attribute_memory: &[u8], sprite_number: u16) -> Sprite {
     }
 }
 
-pub fn collect_scanline_sprites(object_attribute_memory: &[u8], ly: u8, lcdc: u8) -> Vec<Sprite> {
+pub(super) fn collect_scanline_sprites(object_attribute_memory: &[u8], ly: u8, lcdc: u8) -> Vec<Sprite> {
     let mut sprites = Vec::new();
 
     let eight_by_sixteen_mode = get_obj_size_mode(lcdc);
@@ -133,7 +133,7 @@ impl Gpu {
         let y_int = y as i16;
         let x_int  = x as i16;
 
-        let lcdc = self.registers.lcdc;
+        let lcdc = self.lcdc;
         let eight_by_sixteen_mode = get_obj_size_mode(lcdc);
 
         let calculated_index = calculate_tile_index(&sprite, y_int, eight_by_sixteen_mode);
@@ -150,12 +150,12 @@ impl Gpu {
                 let palette_number = if dmg_compatible { sprite.dmg_palette } else { sprite.cgb_palette };
                 let color_id = calculate_color_id(column_offset as u8, msb_byte, lsb_byte, sprite.x_flip);
                 
-                self.registers.palettes.as_cgb_obj_color_rgb(palette_number, color_id, dmg_compatible)
+                self.palettes.as_cgb_obj_color_rgb(palette_number, color_id, dmg_compatible)
             }
             else {            
                 let color_id = calculate_color_id(column_offset as u8, msb_byte, lsb_byte, sprite.x_flip);
                 
-                self.registers.palettes.as_dmg_obj_color_rgb(sprite.dmg_palette, color_id) 
+                self.palettes.as_dmg_obj_color_rgb(sprite.dmg_palette, color_id) 
             }
         }
         else {
@@ -166,7 +166,7 @@ impl Gpu {
     fn resolve_highest_priority_sprite<'a>(&self, sprites: Vec<&'a Sprite>, x: u8, y: u8) -> Option<(&'a Sprite, Option<Color>)> {
         let mut maybe_highest_priority: Option<(&'a Sprite, Option<Color>)> = None;
         let cgb_mode = self.cgb_mode;
-        let oam_location_prioritization = cgb_mode && !is_bit_set(self.registers.cgb_opri, CGB_OPRI_PRIORITY_BIT);
+        let oam_location_prioritization = cgb_mode && !is_bit_set(self.cgb_opri, CGB_OPRI_PRIORITY_BIT);
 
         for sprite in sprites {
             match maybe_highest_priority {
@@ -197,8 +197,8 @@ impl Gpu {
     }
 
     pub(super) fn read_sprite_pixel_color(&self, sprite_buffer: &Vec<Sprite>, viewport_x: u8) -> Option<SpritePixel> {
-        let lcdc = self.registers.lcdc;
-        let ly = self.registers.ly;
+        let lcdc = self.lcdc;
+        let ly = self.ly;
 
         let eight_by_sixteen_mode = get_obj_size_mode(lcdc);
         let sprites_enabled = get_obj_enabled_mode(lcdc);
@@ -234,9 +234,9 @@ mod tests {
 
     #[test]
     fn should_get_ten_sprites_from_oam_memory() {
-        let mut gpu = Gpu::new();
+        let mut gpu = Gpu::new(|_| {});
         
-        gpu.registers.ly = 0;
+        gpu.ly = 0;
 
         write_sprite(&mut gpu.object_attribute_memory, 0, 0, 0, 0);
         write_sprite(&mut gpu.object_attribute_memory, 1, 16, 0, 0);
@@ -255,7 +255,7 @@ mod tests {
         write_sprite(&mut gpu.object_attribute_memory, 14, 14, 0x22, 0);
         write_sprite(&mut gpu.object_attribute_memory, 15, 15, 0x23, 0);
 
-        let sprites = collect_scanline_sprites(&gpu.object_attribute_memory, gpu.registers.ly, gpu.registers.lcdc);
+        let sprites = collect_scanline_sprites(&gpu.object_attribute_memory, gpu.ly, gpu.lcdc);
 
         assert_eq!(sprites.len(), 10);
         assert_eq!(sprites[0].y_pos, 0);
@@ -272,11 +272,11 @@ mod tests {
 
     #[test]
     fn should_parse_sprite_attributes_correctly() {
-        let mut gpu = Gpu::new();
+        let mut gpu = Gpu::new(|_| {});
         
         write_sprite(&mut gpu.object_attribute_memory, 0, 16, 0, 0b11000000);
         
-        let sprites = collect_scanline_sprites(&gpu.object_attribute_memory, gpu.registers.ly, gpu.registers.lcdc);
+        let sprites = collect_scanline_sprites(&gpu.object_attribute_memory, gpu.ly, gpu.lcdc);
 
         assert_eq!(sprites[0].priority, true);
         assert_eq!(sprites[0].y_flip, true);

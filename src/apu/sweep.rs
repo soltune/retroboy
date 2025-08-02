@@ -1,21 +1,26 @@
 use crate::utils::is_bit_set;
 use crate::apu::period::Period;
-use bincode::{Encode, Decode};
+use crate::serializable::Serializable;
+use serializable_derive::Serializable;
+use getset::{CopyGetters, Setters};
 
-#[derive(Clone, Debug, Encode, Decode)]
+#[derive(Debug, Serializable, CopyGetters, Setters)]
+#[getset(get_copy = "pub(crate)", set = "pub(crate)")]
 pub struct Sweep {
     initial_settings: u8,
     enabled: bool,
     shadow_frequency: u16,
     timer: u8,
+    #[getset(skip)]
     frequency_calculated: bool,
+    #[getset(skip)]
     should_disable_channel: bool
 }
 
 const SWEEP_DIRECTION_INDEX: u8 = 3;
 
 impl Sweep {
-    pub fn new() -> Self {
+    pub(super) fn new() -> Self {
         Sweep {
             initial_settings: 0,
             enabled: false,
@@ -26,15 +31,15 @@ impl Sweep {
         }
     }
 
-    pub fn initial_sweep_shift(&self) -> u8 {
+    pub(super) fn initial_sweep_shift(&self) -> u8 {
         self.initial_settings & 0b111
     }
 
-    pub fn initial_sweep_period(&self) -> u8 {
+    pub(super) fn initial_sweep_period(&self) -> u8 {
         (self.initial_settings & 0b01110000) >> 4
     }
 
-    pub fn calculate_frequency(&mut self) -> u16 {
+    pub(super) fn calculate_frequency(&mut self) -> u16 {
         let sweep_shift = self.initial_sweep_shift();
         let mut new_frequency = self.shadow_frequency >> sweep_shift;
 
@@ -56,7 +61,7 @@ impl Sweep {
         new_frequency
     }
 
-    pub fn load_sweep_timer(&mut self, sweep_period: u8) {
+    pub(super) fn load_sweep_timer(&mut self, sweep_period: u8) {
         if sweep_period > 0 {
             self.timer = sweep_period;
         }
@@ -65,7 +70,7 @@ impl Sweep {
         } 
     }
 
-    pub fn update_initial_settings(&mut self, new_initial_settings: u8) {
+    pub(super) fn update_initial_settings(&mut self, new_initial_settings: u8) {
         let original_sweep_settings = self.initial_settings;
         self.initial_settings = new_initial_settings;
 
@@ -78,11 +83,11 @@ impl Sweep {
         }
     }
 
-    pub fn should_disable_channel(&self) -> bool {
+    pub(super) fn should_disable_channel(&self) -> bool {
         self.should_disable_channel
     }
 
-    pub fn step(&mut self, period: &mut Period) {
+    pub(super) fn step(&mut self, period: &mut Period) {
         if self.timer > 0 {
             self.timer -= 1;
         }
@@ -114,7 +119,7 @@ impl Sweep {
         }
     }
 
-    pub fn trigger(&mut self, period: &Period) {
+    pub(super) fn trigger(&mut self, period: &Period) {
         self.shadow_frequency = period.calculate_period_value();
 
         let sweep_period = self.initial_sweep_period();
@@ -132,37 +137,5 @@ impl Sweep {
         else {
             self.frequency_calculated = false;
         }
-    }
-
-    pub fn initial_settings(&self) -> u8 {
-        self.initial_settings
-    }
-
-    pub fn set_initial_settings(&mut self, initial_settings: u8) {
-        self.initial_settings = initial_settings;
-    }
-
-    pub fn enabled(&self) -> bool {
-        self.enabled
-    }
-
-    pub fn set_enabled(&mut self, enabled: bool) {
-        self.enabled = enabled;
-    }
-
-    pub fn timer(&self) -> u8 {
-        self.timer
-    }
-
-    pub fn set_timer(&mut self, timer: u8) {
-        self.timer = timer;
-    }
-
-    pub fn shadow_frequency(&self) -> u16 {
-        self.shadow_frequency
-    }
-
-    pub fn set_shadow_frequency(&mut self, shadow_frequency: u16) {
-        self.shadow_frequency = shadow_frequency;
     }
 }

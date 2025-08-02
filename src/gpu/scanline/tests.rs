@@ -121,14 +121,14 @@ fn assert_that(frame_buffer: &Vec<u8>) -> FrameBufferAssertion {
 
 #[test]
 fn should_render_tile_line() {
-    let mut gpu = Gpu::new();
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut gpu.registers.palettes);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
     write_tile_to_bg_memory(&mut gpu, 0, SAMPLE_TILE_A);
 
-    gpu.registers.ly = 0;
-    gpu.registers.lcdc = 0b10000011;
+    gpu.ly = 0;
+    gpu.lcdc = 0b10000011;
 
     gpu.write_scanline();
 
@@ -141,17 +141,17 @@ fn should_render_tile_line() {
 
 #[test]
 fn should_render_multiple_tile_lines() {
-    let mut gpu = Gpu::new();
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut gpu.registers.palettes);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
     write_tile_to_bg_memory(&mut gpu, 0, SAMPLE_TILE_A);
 
-    gpu.registers.lcdc = 0b10000011;
+    gpu.lcdc = 0b10000011;
 
     for _ in 0..3 {
         gpu.write_scanline();
-        gpu.registers.ly += 1;
+        gpu.ly += 1;
     }
 
     let frame_buffer = &gpu.frame_buffer;
@@ -171,21 +171,21 @@ fn should_render_multiple_tile_lines() {
 
 #[test]
 fn should_render_multiple_tile_lines_in_color_mode() {
-    let mut gpu = Gpu::new();
+    let mut gpu = Gpu::new(|_| {});
     
     gpu.cgb_mode = true;
 
-    initialize_color_palettes(&mut gpu.registers.palettes);
+    initialize_color_palettes(&mut gpu.palettes);
 
     write_tile_to_bg_memory(&mut gpu, 0, SAMPLE_TILE_A);
 
     write_tile_attributes(&mut gpu, 0, 0b00000001);
 
-    gpu.registers.lcdc = 0b10000011;
+    gpu.lcdc = 0b10000011;
 
     for _ in 0..8 {
         gpu.write_scanline();
-        gpu.registers.ly += 1;
+        gpu.ly += 1;
     }
 
     let frame_buffer = &gpu.frame_buffer;
@@ -209,21 +209,21 @@ fn should_render_multiple_tile_lines_in_color_mode() {
 
 #[test]
 fn should_render_multiple_tile_lines_in_color_mode_from_bank_one() {
-    let mut gpu = Gpu::new();
+    let mut gpu = Gpu::new(|_| {});
 
     gpu.cgb_mode = true;
 
-    initialize_color_palettes(&mut gpu.registers.palettes);
+    initialize_color_palettes(&mut gpu.palettes);
 
     write_tile_to_bg_memory_in_bank_one(&mut gpu, 0, SAMPLE_TILE_A);
 
     write_tile_attributes(&mut gpu, 0, 0b00001001);
 
-    gpu.registers.lcdc = 0b10000011;
+    gpu.lcdc = 0b10000011;
 
     for _ in 0..8 {
         gpu.write_scanline();
-        gpu.registers.ly += 1;
+        gpu.ly += 1;
     }
 
     let frame_buffer = &gpu.frame_buffer;
@@ -247,21 +247,21 @@ fn should_render_multiple_tile_lines_in_color_mode_from_bank_one() {
 
 #[test]
 fn should_flip_background_tile_on_y_axis() {
-    let mut gpu = Gpu::new();
+    let mut gpu = Gpu::new(|_| {});
 
     gpu.cgb_mode = true;
 
-    initialize_color_palettes(&mut gpu.registers.palettes);
+    initialize_color_palettes(&mut gpu.palettes);
 
     write_tile_to_bg_memory(&mut gpu, 0, SAMPLE_TILE_A);
 
     write_tile_attributes(&mut gpu, 0, 0b01000001);
 
-    gpu.registers.lcdc = 0b10000011;
+    gpu.lcdc = 0b10000011;
 
     for _ in 0..8 {
         gpu.write_scanline();
-        gpu.registers.ly += 1;
+        gpu.ly += 1;
     }
 
     let frame_buffer = &gpu.frame_buffer;
@@ -285,21 +285,21 @@ fn should_flip_background_tile_on_y_axis() {
 
 #[test]
 fn should_flip_background_tile_on_x_axis() {
-    let mut gpu = Gpu::new();
+    let mut gpu = Gpu::new(|_| {});
 
     gpu.cgb_mode = true;
 
-    initialize_color_palettes(&mut gpu.registers.palettes);
+    initialize_color_palettes(&mut gpu.palettes);
 
     write_tile_to_bg_memory(&mut gpu, 0, SAMPLE_TILE_A);
 
     write_tile_attributes(&mut gpu, 0, 0b00100001);
 
-    gpu.registers.lcdc = 0b10000011;
+    gpu.lcdc = 0b10000011;
 
     for _ in 0..8 {
         gpu.write_scanline();
-        gpu.registers.ly += 1;
+        gpu.ly += 1;
     }
 
     let frame_buffer = &gpu.frame_buffer;
@@ -311,21 +311,21 @@ fn should_flip_background_tile_on_x_axis() {
 
 #[test]
 fn should_overlay_window_over_multiple_tile_lines() {
-    let mut gpu = Gpu::new();
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut gpu.registers.palettes);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
     write_tile_to_bg_memory(&mut gpu, 0, SAMPLE_TILE_A);
     write_tile_to_bg_memory(&mut gpu, 1, WINDOW_TILE);
     write_window_tile_index_to_memory(&mut gpu, 0, 1);
 
-    gpu.registers.wy = 1;
-    gpu.registers.wx = 8;
-    gpu.registers.lcdc = 0b11100011;
+    gpu.wy = 1;
+    gpu.wx = 8;
+    gpu.lcdc = 0b11100011;
 
     for _ in 0..3 {
         gpu.write_scanline();
-        gpu.registers.ly += 1;
+        gpu.ly += 1;
     }
 
     let frame_buffer = &gpu.frame_buffer;
@@ -345,17 +345,17 @@ fn should_overlay_window_over_multiple_tile_lines() {
 
 #[test]
 fn should_render_tile_line_in_middle_of_frame() {
-    let mut gpu = Gpu::new();
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut gpu.registers.palettes);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
     write_tile_to_bg_memory(&mut gpu, 1, SAMPLE_TILE_A);
 
     gpu.video_ram[0x1A10] = 0x1;
-    gpu.registers.ly = 3;
-    gpu.registers.scy = 0x80;
-    gpu.registers.scx = 0x80;
-    gpu.registers.lcdc = 0b10000011;
+    gpu.ly = 3;
+    gpu.scy = 0x80;
+    gpu.scx = 0x80;
+    gpu.lcdc = 0b10000011;
     
     gpu.write_scanline();
 
@@ -368,17 +368,17 @@ fn should_render_tile_line_in_middle_of_frame() {
 
 #[test]
 fn should_render_tile_line_properly_with_greater_scroll_x_value() {
-    let mut gpu = Gpu::new();
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut gpu.registers.palettes);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
     write_tile_to_bg_memory(&mut gpu, 1, SAMPLE_TILE_A);
 
     gpu.video_ram[0x1A10] = 0x1;
-    gpu.registers.ly = 3;
-    gpu.registers.scy = 0x80;
-    gpu.registers.scx = 0x82;
-    gpu.registers.lcdc = 0b10000011;
+    gpu.ly = 3;
+    gpu.scy = 0x80;
+    gpu.scx = 0x82;
+    gpu.lcdc = 0b10000011;
 
     gpu.write_scanline();
 
@@ -391,16 +391,16 @@ fn should_render_tile_line_properly_with_greater_scroll_x_value() {
 
 #[test]
 fn should_wrap_around_when_rendering_past_max_tile_map_x_value() {
-    let mut gpu = Gpu::new();
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut gpu.registers.palettes);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
     write_tile_to_bg_memory(&mut gpu, 1, SAMPLE_TILE_A);
 
     gpu.video_ram[0x1800] = 0x1;
-    gpu.registers.ly = 0;
-    gpu.registers.scx = 0xFE;
-    gpu.registers.lcdc = 0b10000011;
+    gpu.ly = 0;
+    gpu.scx = 0xFE;
+    gpu.lcdc = 0b10000011;
 
     gpu.write_scanline();
 
@@ -413,16 +413,16 @@ fn should_wrap_around_when_rendering_past_max_tile_map_x_value() {
 
 #[test]
 fn should_wrap_around_when_rendering_past_max_tile_map_y_value() {
-    let mut gpu = Gpu::new();
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut gpu.registers.palettes);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
     write_tile_to_bg_memory(&mut gpu, 1, SAMPLE_TILE_A);
 
     gpu.video_ram[0x1800] = 0x1;
-    gpu.registers.ly = 2;
-    gpu.registers.scy = 0xFE;
-    gpu.registers.lcdc = 0b10000011;
+    gpu.ly = 2;
+    gpu.scy = 0xFE;
+    gpu.lcdc = 0b10000011;
 
     gpu.write_scanline();
 
@@ -435,9 +435,9 @@ fn should_wrap_around_when_rendering_past_max_tile_map_y_value() {
 
 #[test]
 fn should_render_tile_line_with_sprite() {
-    let mut gpu = Gpu::new();
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut gpu.registers.palettes);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
     write_tile_to_bg_memory(&mut gpu, 0, SAMPLE_TILE_A);
     write_tile_to_obj_memory(&mut gpu, 1, SAMPLE_TILE_B);
@@ -455,8 +455,8 @@ fn should_render_tile_line_with_sprite() {
         cgb_palette: 0
     });
 
-    gpu.registers.ly = 0;
-    gpu.registers.lcdc = 0b10000011;
+    gpu.ly = 0;
+    gpu.lcdc = 0b10000011;
 
     gpu.write_scanline();
 
@@ -469,9 +469,9 @@ fn should_render_tile_line_with_sprite() {
 
 #[test]
 fn should_render_sprite_with_white_background_if_background_and_window_enabled_is_cleared() {
-     let mut gpu = Gpu::new();
+     let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut gpu.registers.palettes);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
     write_tile_to_bg_memory(&mut gpu, 0, SAMPLE_TILE_A);
     write_tile_to_obj_memory(&mut gpu, 1, SAMPLE_TILE_B);
@@ -489,8 +489,8 @@ fn should_render_sprite_with_white_background_if_background_and_window_enabled_i
         cgb_palette: 0
     });
 
-    gpu.registers.ly = 0;
-    gpu.registers.lcdc = 0b10000010;
+    gpu.ly = 0;
+    gpu.lcdc = 0b10000010;
 
     gpu.write_scanline();
 
@@ -503,9 +503,9 @@ fn should_render_sprite_with_white_background_if_background_and_window_enabled_i
 
 #[test]
 fn should_render_tile_line_with_sprite_having_negative_y_pos() {
-    let mut gpu = Gpu::new();
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut gpu.registers.palettes);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
     write_tile_to_bg_memory(&mut gpu, 0, SAMPLE_TILE_A);
     write_tile_to_obj_memory(&mut gpu, 1, SAMPLE_TILE_B);
@@ -523,8 +523,8 @@ fn should_render_tile_line_with_sprite_having_negative_y_pos() {
         cgb_palette: 0
     });
 
-    gpu.registers.ly = 0;
-    gpu.registers.lcdc = 0b10000011;
+    gpu.ly = 0;
+    gpu.lcdc = 0b10000011;
 
     gpu.write_scanline();
 
@@ -537,9 +537,9 @@ fn should_render_tile_line_with_sprite_having_negative_y_pos() {
 
 #[test]
 fn should_flip_sprite_on_x_axis() {
-    let mut gpu = Gpu::new();
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut gpu.registers.palettes);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
     write_tile_to_bg_memory(&mut gpu, 0, SAMPLE_TILE_A);
     write_tile_to_obj_memory(&mut gpu, 1, SAMPLE_TILE_B);
@@ -557,8 +557,8 @@ fn should_flip_sprite_on_x_axis() {
         cgb_palette: 0
     });
 
-    gpu.registers.ly = 0;
-    gpu.registers.lcdc = 0b10000011;
+    gpu.ly = 0;
+    gpu.lcdc = 0b10000011;
 
     gpu.write_scanline();
 
@@ -571,9 +571,9 @@ fn should_flip_sprite_on_x_axis() {
 
 #[test]
 fn should_flip_sprite_on_y_axis() {
-    let mut gpu = Gpu::new();
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut gpu.registers.palettes);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
     write_tile_to_bg_memory(&mut gpu, 0, SAMPLE_TILE_A);
     write_tile_to_obj_memory(&mut gpu, 1, SAMPLE_TILE_B);
@@ -591,8 +591,8 @@ fn should_flip_sprite_on_y_axis() {
         cgb_palette: 0
     });
     
-    gpu.registers.ly = 0;
-    gpu.registers.lcdc = 0b10000011;
+    gpu.ly = 0;
+    gpu.lcdc = 0b10000011;
 
     gpu.write_scanline();
 
@@ -605,9 +605,9 @@ fn should_flip_sprite_on_y_axis() {
 
 #[test]
 fn should_render_eight_by_sixteen_sprite() {
-    let mut gpu = Gpu::new();
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut gpu.registers.palettes);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
     write_tile_to_bg_memory(&mut gpu, 0, BLACK_TILE);
     write_tile_to_obj_memory(&mut gpu, 2, SAMPLE_TILE_A);
@@ -626,12 +626,12 @@ fn should_render_eight_by_sixteen_sprite() {
         cgb_palette: 0
     });
 
-    gpu.registers.ly = 0;
-    gpu.registers.lcdc = 0b10000111;
+    gpu.ly = 0;
+    gpu.lcdc = 0b10000111;
 
     for _ in 0..9 {
         gpu.write_scanline();
-        gpu.registers.ly += 1;
+        gpu.ly += 1;
     }
 
     let frame_buffer = &gpu.frame_buffer;
@@ -647,9 +647,9 @@ fn should_render_eight_by_sixteen_sprite() {
 
 #[test]
 fn should_prioritize_non_color_id_zero_background_colors_when_sprite_priority_flag_set_to_true() {
-    let mut gpu = Gpu::new();
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut gpu.registers.palettes);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
     write_tile_to_bg_memory(&mut gpu, 0, SAMPLE_TILE_A);
     write_tile_to_obj_memory(&mut gpu, 1, SAMPLE_TILE_B);
@@ -667,8 +667,8 @@ fn should_prioritize_non_color_id_zero_background_colors_when_sprite_priority_fl
         cgb_palette: 0
     });
 
-    gpu.registers.ly = 0;
-    gpu.registers.lcdc = 0b10000011;
+    gpu.ly = 0;
+    gpu.lcdc = 0b10000011;
 
     gpu.write_scanline();
 
@@ -681,9 +681,9 @@ fn should_prioritize_non_color_id_zero_background_colors_when_sprite_priority_fl
 
 #[test]
 fn should_prioritize_background_colors_when_lcdc_bit_1_is_off() {
-    let mut gpu = Gpu::new();
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut gpu.registers.palettes);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
     write_tile_to_bg_memory(&mut gpu, 0, SAMPLE_TILE_A);
     write_tile_to_obj_memory(&mut gpu, 1, SAMPLE_TILE_B);
@@ -701,8 +701,8 @@ fn should_prioritize_background_colors_when_lcdc_bit_1_is_off() {
         cgb_palette: 0
     });
     
-    gpu.registers.ly = 0;
-    gpu.registers.lcdc = 0b10000001;
+    gpu.ly = 0;
+    gpu.lcdc = 0b10000001;
 
     gpu.write_scanline();
 

@@ -1,18 +1,28 @@
 use crate::apu::envelope::Envelope;
 use crate::apu::length::{DEFAULT_MAX_LENGTH, Length};
+use crate::serializable::Serializable;
 use crate::utils::is_bit_set;
 use crate::apu::utils::length_enabled;
-use bincode::{Encode, Decode};
+use serializable_derive::Serializable;
+use getset::{CopyGetters, Getters, MutGetters, Setters};
 
-#[derive(Clone, Debug, Encode, Decode)]
+#[derive(Debug, Serializable, CopyGetters, Setters, Getters, MutGetters)]
 pub struct NoiseChannel {
+    #[getset(get_copy = "pub(crate)", set = "pub(crate)")]
     enabled: bool,
+    #[getset(get_copy = "pub(crate)", set = "pub(crate)")]
     dac_enabled: bool,
+    #[getset(get = "pub(crate)", get_mut = "pub(crate)")]
     length: Length,
+    #[getset(get = "pub(crate)", get_mut = "pub(crate)")]
     envelope: Envelope,
+    #[getset(get_copy = "pub(crate)", set = "pub(crate)")]
     polynomial: u8,
+    #[getset(get_copy = "pub(crate)", set = "pub(crate)")]
     lfsr: u16,
+    #[getset(get_copy = "pub(crate)", set = "pub(crate)")]
     control: u8,
+    #[getset(get_copy = "pub(crate)", set = "pub(crate)")]
     period_divider: u16,
     instruction_cycles: u16
 }
@@ -21,7 +31,7 @@ const WIDTH_MODE_INDEX: u8 = 3;
 const CONTROL_TRIGGER_INDEX: u8 = 7;
 
 impl NoiseChannel {
-    pub fn new() -> Self {
+    pub(super) fn new() -> Self {
         NoiseChannel {
             enabled: false,
             dac_enabled: false,
@@ -35,7 +45,7 @@ impl NoiseChannel {
         }
     }
 
-    pub fn reset(original_channel: &NoiseChannel, cgb_mode: bool) -> NoiseChannel {
+    pub(super) fn reset(original_channel: &NoiseChannel, cgb_mode: bool) -> NoiseChannel {
         let mut new_channel = NoiseChannel::new();
 
         if !cgb_mode {
@@ -73,7 +83,7 @@ impl NoiseChannel {
         next_lfsr >> 1
     }
 
-    pub fn step(&mut self, last_instruction_clock_cycles: u8) {
+    pub(super) fn step(&mut self, last_instruction_clock_cycles: u8) {
         self.instruction_cycles += last_instruction_clock_cycles as u16;
         if self.instruction_cycles >= self.period_divider {
             self.instruction_cycles = 0;
@@ -82,22 +92,22 @@ impl NoiseChannel {
         }
     }
 
-    pub fn step_envelope(&mut self) {
+    pub(super) fn step_envelope(&mut self) {
         if self.enabled {
             self.envelope.step();
         }
     }
 
-    pub fn should_clock_length_on_enable(&self, original_control_value: u8) -> bool {
+    pub(super) fn should_clock_length_on_enable(&self, original_control_value: u8) -> bool {
         let new_control_value = self.control;
         !length_enabled(original_control_value) && length_enabled(new_control_value)
     }
 
-    pub fn should_clock_length_on_trigger(&self) -> bool {
+    pub(super) fn should_clock_length_on_trigger(&self) -> bool {
         self.length.at_max_length() && length_enabled(self.control)
     }
 
-    pub fn step_length(&mut self) {
+    pub(super) fn step_length(&mut self) {
         if length_enabled(self.control) {
             self.length.step();
             if self.length.timer_expired() {
@@ -106,7 +116,7 @@ impl NoiseChannel {
         }
     }
 
-    pub fn digital_output(&self) -> f32 {
+    pub(super) fn digital_output(&self) -> f32 {
         if self.enabled {
             let amplitude = (self.lfsr & 0x01) as u8;
             let current_volume = self.envelope.current_volume();
@@ -117,7 +127,7 @@ impl NoiseChannel {
         }
     }
 
-    pub fn trigger(&mut self) {
+    pub(super) fn trigger(&mut self) {
         if self.dac_enabled {
             self.enabled = true;
         }
@@ -127,68 +137,8 @@ impl NoiseChannel {
         self.envelope.reset_settings();
     }
 
-    pub fn should_trigger(&self) -> bool {
+    pub(super) fn should_trigger(&self) -> bool {
         is_bit_set(self.control, CONTROL_TRIGGER_INDEX)
-    }
-
-    pub fn dac_enabled(&self) -> bool {
-        self.dac_enabled
-    }
-
-    pub fn set_dac_enabled(&mut self, value: bool) {
-        self.dac_enabled = value;
-    }
-
-    pub fn enabled(&self) -> bool {
-        self.enabled
-    }
-
-    pub fn set_enabled(&mut self, value: bool) {
-        self.enabled = value;
-    }
-
-    pub fn control(&self) -> u8 {
-        self.control
-    }
-
-    pub fn set_control(&mut self, value: u8) {
-        self.control = value;
-    }
-
-    pub fn polynomial(&self) -> u8 {
-        self.polynomial
-    }
-
-    pub fn set_polynomial(&mut self, value: u8) {
-        self.polynomial = value;
-    }
-
-    pub fn period_divider(&self) -> u16 {
-        self.period_divider
-    }
-
-    pub fn set_period_divider(&mut self, value: u16) {
-        self.period_divider = value;
-    }
-
-    pub fn lfsr(&self) -> u16 {
-        self.lfsr
-    }
-
-    pub fn set_lfsr(&mut self, value: u16) {
-        self.lfsr = value;
-    }
-
-    pub fn envelope(&mut self) -> &mut Envelope {
-        &mut self.envelope
-    }
-
-    pub fn envelope_readonly(&self) -> &Envelope {
-        &self.envelope
-    }
-
-    pub fn length(&mut self) -> &mut Length {
-        &mut self.length
     }
 }
 

@@ -1,5 +1,4 @@
-use retroboy::emulator::{self, initialize_screenless_emulator};
-use retroboy::cpu::{BusActivityEntry, BusActivityType};
+use retroboy::emulator::{Emulator, Registers, BusActivityEntry, BusActivityType};
 use serde::Deserialize;
 use std::fs;
 use std::io;
@@ -103,9 +102,9 @@ fn bus_activity_matches(
                 let expected_value = expected_cycle.1;
                 let expected_activity = &expected_cycle.2;
 
-                let actual_address = actual_cycle.address;
-                let actual_value = actual_cycle.value;
-                let actual_activity = &actual_cycle.activity_type;
+                let actual_address = actual_cycle.address();
+                let actual_value = actual_cycle.value();
+                let actual_activity = &actual_cycle.activity_type();
 
                 expected_address == actual_address &&
                 expected_value == actual_value &&
@@ -121,43 +120,49 @@ fn bus_activity_matches(
 }
 
 fn run_cpu_test(test: &JsonCpuTest) {
-    let mut emulator = initialize_screenless_emulator();
-
-    emulator.processor_test_mode = true;
-    
-    emulator.cpu.registers.a = test.initial.a;
-    emulator.cpu.registers.b = test.initial.b;
-    emulator.cpu.registers.c = test.initial.c;
-    emulator.cpu.registers.d = test.initial.d;
-    emulator.cpu.registers.e = test.initial.e;
-    emulator.cpu.registers.f = test.initial.f;
-    emulator.cpu.registers.h = test.initial.h;
-    emulator.cpu.registers.l = test.initial.l;
-    emulator.cpu.registers.program_counter = test.initial.pc;
-    emulator.cpu.registers.stack_pointer = test.initial.sp;
+    let mut emulator = Emulator::new(|_| {}, true);
 
     for entry in &test.initial.ram {
-        emulator.memory.processor_test_ram[entry.0 as usize] = entry.1;
+        emulator.set_processor_test_ram(entry.0, entry.1);
     }
 
-    emulator.cpu.registers.opcode = emulator.memory.processor_test_ram[(test.initial.pc - 1) as usize];
+    let opcode = emulator.processor_test_ram_byte(test.initial.pc - 1);
+    
+    let mut initial_register_state = Registers::default();
 
-    emulator::step(&mut emulator);
+    initial_register_state
+        .set_a(test.initial.a)
+        .set_b(test.initial.b)
+        .set_c(test.initial.c)
+        .set_d(test.initial.d)
+        .set_e(test.initial.e)
+        .set_f(test.initial.f)
+        .set_h(test.initial.h)
+        .set_l(test.initial.l)
+        .set_opcode(opcode)
+        .set_program_counter(test.initial.pc)
+        .set_stack_pointer(test.initial.sp);
 
-    let test_failed = emulator.cpu.registers.a != test.r#final.a ||
-        emulator.cpu.registers.b != test.r#final.b ||
-        emulator.cpu.registers.c != test.r#final.c ||
-        emulator.cpu.registers.d != test.r#final.d ||
-        emulator.cpu.registers.e != test.r#final.e ||
-        emulator.cpu.registers.f != test.r#final.f ||
-        emulator.cpu.registers.h != test.r#final.h ||
-        emulator.cpu.registers.l != test.r#final.l ||
-        emulator.cpu.registers.program_counter != test.r#final.pc ||
-        emulator.cpu.registers.stack_pointer != test.r#final.sp ||
-        !bus_activity_matches(&test.cycles, &emulator.cpu.opcode_bus_activity);
+    emulator.set_register_state(&initial_register_state);
+
+    emulator.step();
+
+    let next_register_state = emulator.register_state();
+
+    let test_failed = next_register_state.a() != test.r#final.a ||
+        next_register_state.b() != test.r#final.b ||
+        next_register_state.c() != test.r#final.c ||
+        next_register_state.d() != test.r#final.d ||
+        next_register_state.e() != test.r#final.e ||
+        next_register_state.f() != test.r#final.f ||
+        next_register_state.h() != test.r#final.h ||
+        next_register_state.l() != test.r#final.l ||
+        next_register_state.program_counter() != test.r#final.pc ||
+        next_register_state.stack_pointer() != test.r#final.sp ||
+        !bus_activity_matches(&test.cycles, emulator.opcode_bus_activity());
 
     if test_failed {
-        panic!("Test {} failed: CPU state: {:?}, Expected: {:?}", test.name, emulator.cpu.registers, test.r#final);
+        panic!("Test {} failed: CPU state: {:?}, Expected: {:?}", test.name, next_register_state, test.r#final);
     }
 }
 

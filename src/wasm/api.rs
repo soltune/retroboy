@@ -1,10 +1,7 @@
-use crate::cheats;
-use crate::emulator;
+use crate::address_bus::cheats;
 use crate::emulator::Emulator;
-use crate::emulator::Mode;
 use crate::emulator::CartridgeHeader;
 use crate::joypad::Key;
-use crate::save_state;
 use crate::wasm::emulator_settings::EmulatorSettings;
 use crate::wasm::rom_metadata::{RomMetadata, RomMetadataResult};
 use crate::wasm::save_state_result::SaveStateResult;
@@ -41,7 +38,7 @@ extern "C" {
 }
 
 fn initialize_web_emulator() -> Emulator {
-    emulator::initialize_emulator(canvas_render)
+    Emulator::new(canvas_render, false)
 }
 
 thread_local! {
@@ -49,14 +46,6 @@ thread_local! {
 }
 
 extern crate console_error_panic_hook;
-
-fn as_mode(mode_text: &str) -> Mode {
-    match mode_text {
-        "DMG" => emulator::Mode::DMG,
-        "CGB" => emulator::Mode::CGB,
-        _ => panic!("Unsupported mode: {}", mode_text)
-    }
-}
 
 fn as_rom_metadata(header: CartridgeHeader) -> RomMetadata {
     RomMetadata::new(header.title, header.has_battery)
@@ -69,13 +58,13 @@ pub fn initialize_emulator(rom_buffer: &[u8], settings: EmulatorSettings) -> Rom
 
         let mut emulator = emulator_cell.borrow_mut();
 
-        emulator::set_mode(&mut emulator, as_mode(settings.mode().as_str()));
+        emulator.set_cgb_mode(settings.mode().as_str() == "CGB");
 
-        emulator::set_sample_rate(&mut emulator, settings.audio_sample_rate());
+        emulator.set_sample_rate(settings.audio_sample_rate());
 
         let wasm_cartridge_effects= WasmCartridgeEffects {};
 
-        match emulator::load_rom(&mut emulator, rom_buffer, Box::new(wasm_cartridge_effects)) {
+        match emulator.load_rom(rom_buffer, Box::new(wasm_cartridge_effects)) {
             Ok(result) => {
                 log("Emulator initialized!");
                 RomMetadataResult::new(None, Some(as_rom_metadata(result)))
@@ -100,7 +89,7 @@ pub fn step_until_next_audio_buffer() {
     EMULATOR.with(|emulator_cell| {
         let mut emulator = emulator_cell.borrow_mut();
 
-        let audio_buffers = emulator::step_until_next_audio_buffer(&mut emulator);
+        let audio_buffers = emulator.step_until_next_audio_buffer();
         let left_samples_slice = audio_buffers.0;
         let right_samples_slice = audio_buffers.1;
 
@@ -136,8 +125,7 @@ pub fn press_key(key_code: &str) {
     as_maybe_key(key_code).map(|key| {
         EMULATOR.with(|emulator_cell| {
             let mut emulator = emulator_cell.borrow_mut();
-            let Emulator { joypad, interrupts, .. } = &mut *emulator;
-            joypad.handle_key_press(interrupts, &key);
+            emulator.handle_key_press(&key);
         })
     });
 }
@@ -148,7 +136,7 @@ pub fn release_key(key_code: &str) {
     as_maybe_key(key_code).map(|key| {
         EMULATOR.with(|emulator_cell| {
             let mut emulator = emulator_cell.borrow_mut();
-            emulator.joypad.handle_key_release(&key);
+            emulator.handle_key_release(&key);
         })
     });
 }
@@ -167,7 +155,7 @@ pub fn validate_gamegenie_code(cheat: &str) -> Option<String> {
 pub fn register_gameshark_cheat(cheat_id: &str, cheat: &str) -> Option<String> {
     EMULATOR.with(|emulator_cell| {
         let mut emulator = emulator_cell.borrow_mut();
-        cheats::register_gameshark_cheat(&mut emulator, cheat_id, cheat)
+        emulator.register_gameshark_cheat(cheat_id, cheat)
     })
 }
 
@@ -175,7 +163,7 @@ pub fn register_gameshark_cheat(cheat_id: &str, cheat: &str) -> Option<String> {
 pub fn register_gamegenie_cheat(cheat_id: &str, cheat: &str) -> Option<String> {
     EMULATOR.with(|emulator_cell| {
         let mut emulator = emulator_cell.borrow_mut();
-        cheats::register_gamegenie_cheat(&mut emulator, cheat_id, cheat)
+        emulator.register_gamegenie_cheat(cheat_id, cheat)
     })
 }
 
@@ -183,7 +171,7 @@ pub fn register_gamegenie_cheat(cheat_id: &str, cheat: &str) -> Option<String> {
 pub fn unregister_cheat(cheat_id: &str) {
     EMULATOR.with(|emulator_cell| {
         let mut emulator = emulator_cell.borrow_mut();
-        cheats::unregister_cheat(&mut emulator, cheat_id)
+        emulator.unregister_cheat(cheat_id);
     })
 }
 
@@ -191,7 +179,7 @@ pub fn unregister_cheat(cheat_id: &str) {
 pub fn encode_save_state() -> SaveStateResult {
     EMULATOR.with(|emulator_cell| {
         let emulator = emulator_cell.borrow();
-        match save_state::encode_save_state(&emulator) {
+        match emulator.encode_save_state() {
             Ok(state_bytes) => SaveStateResult::new(None, Some(state_bytes)),
             Err(e) => SaveStateResult::new(Some(e.to_string()), None)
         }
@@ -202,7 +190,7 @@ pub fn encode_save_state() -> SaveStateResult {
 pub fn apply_save_state(data: &[u8]) -> Option<String> {
     EMULATOR.with(|emulator_cell| {
         let mut emulator = emulator_cell.borrow_mut();
-        match save_state::apply_save_state(&mut emulator, data) {
+        match emulator.apply_save_state(data) {
             Ok(_) => None,
             Err(e) => Some(e.to_string())
         }

@@ -1,14 +1,15 @@
 use core::panic;
 use std::io;
 
-use crate::mmu::constants::*;
-use crate::mmu::effects::CartridgeEffects;
-use crate::mmu::huc1::{HUC1State, initialize_huc1_mapper};
-use crate::mmu::mbc1::{MBC1State, initialize_mbc1_mapper};
-use crate::mmu::mbc3::{MBC3State, initialize_mbc3_mapper};
-use crate::mmu::mbc5::{MBC5State, initialize_mbc5_mapper};
-use crate::mmu::mbc_rom_only::initialize_mbc_rom_only_mapper;
-use bincode::{Decode, Encode};
+use crate::address_bus::constants::*;
+use crate::address_bus::effects::CartridgeEffects;
+use crate::address_bus::huc1::HUC1CartridgeMapper;
+use crate::address_bus::mbc1::MBC1CartridgeMapper;
+use crate::address_bus::mbc3::MBC3CartridgeMapper;
+use crate::address_bus::mbc5::MBC5CartridgeMapper;
+use crate::address_bus::mbc_rom_only::MBCRomOnlyCartridgeMapper;
+use crate::serializable::Serializable;
+use std::fmt::Debug;
 
 #[derive(Debug, Clone)]
 pub struct CartridgeHeader {
@@ -21,29 +22,14 @@ pub struct CartridgeHeader {
 }
 
 #[derive(Debug)]
-pub struct Cartridge {
+pub(crate) struct Cartridge {
     pub rom: Vec<u8>,
     pub ram: Vec<u8>,
     pub header: CartridgeHeader,
     pub effects: Box<dyn CartridgeEffects>
 }
 
-#[derive(Clone, Encode, Decode)]
-pub enum MBCSnapshot {
-    MBC1(MBC1State),
-    MBC3(MBC3State),
-    MBC5(MBC5State),
-    HUC1(HUC1State),
-    RomOnly
-}
-
-#[derive(Clone, Encode, Decode)]
-pub struct CartridgeMapperSnapshot {
-    pub ram: Vec<u8>,
-    pub mbc: MBCSnapshot
-}
-
-pub trait CartridgeMapper: std::fmt::Debug {
+pub(crate) trait CartridgeMapper: Debug + Serializable {
     fn read_rom(&self, address: u16) -> u8;
     fn write_rom(&mut self, address: u16, value: u8);
     fn read_ram(&self, address: u16) -> u8;
@@ -53,9 +39,6 @@ pub trait CartridgeMapper: std::fmt::Debug {
     fn set_cartridge_ram(&mut self, ram: Vec<u8>);
     
     fn get_ram_bank(&self) -> u8;
-
-    fn get_snapshot(&self) -> CartridgeMapperSnapshot;
-    fn apply_snapshot(&mut self, snapshot: CartridgeMapperSnapshot);
 
     fn title(&self) -> String {
         self.get_cartridge().header.title.clone()
@@ -79,7 +62,7 @@ const SUPPORTED_CARTRIDGE_TYPES: [u8; 16] = [CART_TYPE_ROM_ONLY,
     CART_TYPE_MBC5_RUMBLE_RAM_BATTERY,
     CART_TYPE_HUC1_RAM_BATTERY];
 
-pub fn initialize_cartridge(effects: Box<dyn CartridgeEffects>) -> Cartridge {
+pub(super) fn initialize_cartridge(effects: Box<dyn CartridgeEffects>) -> Cartridge {
     Cartridge {
         rom: Vec::new(),
         ram: Vec::new(),
@@ -95,19 +78,19 @@ pub fn initialize_cartridge(effects: Box<dyn CartridgeEffects>) -> Cartridge {
     }
 }
 
-pub fn initialize_cartridge_mapper(effects: Box<dyn CartridgeEffects>) -> Box<dyn CartridgeMapper> {
-    Box::new(initialize_mbc_rom_only_mapper(initialize_cartridge(effects)))
+pub(super) fn initialize_cartridge_mapper(effects: Box<dyn CartridgeEffects>) -> Box<dyn CartridgeMapper> {
+    Box::new(MBCRomOnlyCartridgeMapper::new(initialize_cartridge(effects)))
 }
 
 fn cartridge_type_supported(type_code: u8) -> bool {
     SUPPORTED_CARTRIDGE_TYPES.contains(&type_code)
 }
 
-pub fn as_max_banks(rom_size_index: u8) -> u16 {
+pub(super) fn as_max_banks(rom_size_index: u8) -> u16 {
     (2 as u16).pow(rom_size_index as u32 + 1)
 }
 
-pub fn as_max_ram_banks(ram_size: u32) -> u8 {
+pub(super) fn as_max_ram_banks(ram_size: u32) -> u8 {
     match ram_size {
         0 => 0,
         0x800 => 1,
@@ -173,7 +156,7 @@ fn is_cgb_compatability_flag(index: usize, byte: u8) -> bool {
     index == CGB_COMPATABILITY_INDEX && (byte == 0xC0 || byte == 0x80)
 }
 
-pub fn convert_cartridge_type_to_text(type_code: u8) -> String {
+pub(super) fn convert_cartridge_type_to_text(type_code: u8) -> String {
     match type_code {
         0x00 => "ROM ONLY",
         0x01 => "MBC1",
@@ -209,21 +192,21 @@ pub fn convert_cartridge_type_to_text(type_code: u8) -> String {
 
 fn as_mapper(cartridge: Cartridge, type_code: u8) -> Box<dyn CartridgeMapper> {
     if is_mbc_rom_only(type_code) {
-        Box::new(initialize_mbc_rom_only_mapper(cartridge))
+        Box::new(MBCRomOnlyCartridgeMapper::new(cartridge))
     } else if is_huc1(type_code) {
-        Box::new(initialize_huc1_mapper(cartridge))
+        Box::new(HUC1CartridgeMapper::new(cartridge))
     } else if is_mbc1(type_code) {
-        Box::new(initialize_mbc1_mapper(cartridge))
+        Box::new(MBC1CartridgeMapper::new(cartridge))
     } else if is_mbc3(type_code) {
-        Box::new(initialize_mbc3_mapper(cartridge))
+        Box::new(MBC3CartridgeMapper::new(cartridge))
     } else if is_mbc5(type_code) {
-        Box::new(initialize_mbc5_mapper(cartridge))
+        Box::new(MBC5CartridgeMapper::new(cartridge))
     } else {
         panic!("Unsupported cartridge type: {}", type_code);
     }
 }
 
-pub fn load_rom_buffer(buffer: Vec<u8>, effects: Box<dyn CartridgeEffects>) -> io::Result<Box<dyn CartridgeMapper>> {
+pub(super) fn load_rom_buffer(buffer: Vec<u8>, effects: Box<dyn CartridgeEffects>) -> io::Result<Box<dyn CartridgeMapper>> {
     if buffer.len() > ENTRY_POINT_ADDRESS {
         let type_code = buffer[CARTRIDGE_TYPE_ADDRESS];
         let sgb_support = buffer[SGB_SUPPORT_ADDRESS] == 0x03;
@@ -283,15 +266,15 @@ pub fn load_rom_buffer(buffer: Vec<u8>, effects: Box<dyn CartridgeEffects>) -> i
 #[cfg(test)]
 pub mod test_utils {
     use super::*;
-    use crate::mmu::effects::empty_cartridge_effects;
-    use crate::mmu::test_utils::*;
+    use crate::address_bus::effects::empty_cartridge_effects;
+    use crate::address_bus::test_utils::*;
 
-    pub fn build_cartridge_mapper(cartridge_type: u8, rom_size_index: u8, ram_size_index: u8) -> Box<dyn CartridgeMapper> {
+    pub(crate) fn build_cartridge_mapper(cartridge_type: u8, rom_size_index: u8, ram_size_index: u8) -> Box<dyn CartridgeMapper> {
         let rom_buffer = build_rom(cartridge_type, rom_size_index, ram_size_index);
         load_rom_buffer(rom_buffer, empty_cartridge_effects()).unwrap()
     }
 
-    pub fn build_cartridge_mapper_with_effects(cartridge_type: u8, rom_size_index: u8, ram_size_index: u8, cartridge_effects: Box<dyn CartridgeEffects>) -> Box<dyn CartridgeMapper> {
+    pub(crate) fn build_cartridge_mapper_with_effects(cartridge_type: u8, rom_size_index: u8, ram_size_index: u8, cartridge_effects: Box<dyn CartridgeEffects>) -> Box<dyn CartridgeMapper> {
         let rom_buffer = build_rom(cartridge_type, rom_size_index, ram_size_index);
         load_rom_buffer(rom_buffer, cartridge_effects).unwrap()
     }

@@ -4,7 +4,7 @@ use crate::utils::is_bit_set;
 const TILES_PER_ROW: u8 = 32;
 const TILE_DATA_LENGTH: u8 = 16;
 
-pub struct TileAttributes {
+pub(super) struct TileAttributes {
     pub priority: bool,
     pub y_flip: bool,
     pub x_flip: bool,

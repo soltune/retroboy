@@ -6,10 +6,10 @@ use crate::gpu::Gpu;
 
 impl Gpu {
     pub(super) fn read_bg_color(&self, viewport_x: u8) -> BackgroundPixel {
-        let scx = self.registers.scx;
-        let scy = self.registers.scy;
-        let ly = self.registers.ly;
-        let lcdc = self.registers.lcdc;
+        let scx = self.scx;
+        let scy = self.scy;
+        let ly = self.ly;
+        let lcdc = self.lcdc;
 
         let x = scx.wrapping_add(viewport_x);
         let y = scy.wrapping_add(ly);
@@ -31,7 +31,7 @@ impl Gpu {
             let dmg_compatible = self.has_dmg_compatability();
             let palette_number = if dmg_compatible { 0 } else { attributes.palette_number };
             let color_id = calculate_color_id(bit_index, msb_byte, lsb_byte, attributes.x_flip);
-            let color = self.registers.palettes.as_cgb_bg_color_rgb(palette_number, color_id, dmg_compatible);
+            let color = self.palettes.as_cgb_bg_color_rgb(palette_number, color_id, dmg_compatible);
 
             BackgroundPixel { color, color_id, prioritize_bg: attributes.priority }
         }
@@ -39,7 +39,7 @@ impl Gpu {
             let (lsb_byte, msb_byte) = get_tile_line_bytes(&self.video_ram, tile_data_index, row_offset, false, false);
 
             let color_id = calculate_color_id(bit_index, msb_byte, lsb_byte, false);
-            let color = self.registers.palettes.as_dmg_bg_color_rgb(color_id);
+            let color = self.palettes.as_dmg_bg_color_rgb(color_id);
             
             BackgroundPixel { color, color_id, prioritize_bg: false }
         }

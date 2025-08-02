@@ -3,20 +3,30 @@ use crate::apu::wave::WaveChannel;
 use crate::apu::pulse::PulseChannel;
 use crate::apu::utils::{bounded_wrapping_add, as_dac_output};
 use crate::utils::{get_bit, get_t_cycle_increment, is_bit_set};
+use crate::serializable::Serializable;
 use utils::{calculate_left_stereo_sample, calculate_right_stereo_sample};
-use bincode::{Decode, Encode};
+use std::io::{Read, Write};
+use getset::{CopyGetters, Getters, MutGetters, Setters};
 
-#[derive(Clone, Debug, Encode, Decode)]
+#[derive(Debug, CopyGetters, Setters, Getters, MutGetters)]
 pub struct Apu {
+    #[getset(get_copy = "pub(super)", set = "pub(super)")]
     enabled: bool,
+    #[getset(get_copy = "pub(super)")]
     sound_panning: u8,
+    #[getset(get_copy = "pub(super)")]
     master_volume: u8,
+    #[getset(get = "pub(super)", get_mut = "pub(super)")]
     channel1: PulseChannel,
+    #[getset(get = "pub(super)", get_mut = "pub(super)")]
     channel2: PulseChannel,
+    #[getset(get = "pub(super)", get_mut = "pub(super)")]
     channel3: WaveChannel,
+    #[getset(get = "pub(super)", get_mut = "pub(super)")]
     channel4: NoiseChannel,
     divider_apu: u8,
     last_divider_time: u8,
+    #[getset(set = "pub(super)")]
     audio_buffer_clock: u8,
     channel_clock: u8,
     left_sample_queue: Vec<f32>,
@@ -26,7 +36,9 @@ pub struct Apu {
     summed_channel3_sample: f32,
     summed_channel4_sample: f32,
     enqueue_rate: u32,
+    #[getset(set = "pub(super)")]
     cgb_mode: bool,
+    #[getset(set = "pub(super)")]
     cgb_double_speed: bool
 }
 
@@ -61,7 +73,7 @@ fn in_length_period_first_half(current_divider_apu: u8) -> bool {
 }
 
 impl Apu {
-    pub fn new() -> Self {
+    pub(super) fn new() -> Self {
         Apu {
             enabled: false,
             sound_panning: 0,
@@ -86,7 +98,7 @@ impl Apu {
         }
     }
 
-    pub fn reset(&mut self) {
+    pub(super) fn reset(&mut self) {
         self.enabled = false;
         self.sound_panning = 0;
         self.master_volume = 0;
@@ -133,21 +145,21 @@ impl Apu {
         }
     }
 
-    pub fn audio_buffers_full(&self) -> bool {
+    pub(crate) fn audio_buffers_full(&self) -> bool {
         self.left_sample_queue.len() >= MAX_AUDIO_BUFFER_SIZE &&
             self.right_sample_queue.len() >= MAX_AUDIO_BUFFER_SIZE
     }
 
-    pub fn clear_audio_buffers(&mut self) {
+    pub(crate) fn clear_audio_buffers(&mut self) {
         self.left_sample_queue.clear();
         self.right_sample_queue.clear();
     }
 
-    pub fn get_left_sample_queue(&self) -> &[f32] {
+    pub(crate) fn get_left_sample_queue(&self) -> &[f32] {
         &self.left_sample_queue.as_slice()
     }
 
-    pub fn get_right_sample_queue(&self) -> &[f32] {
+    pub(crate) fn get_right_sample_queue(&self) -> &[f32] {
         &self.right_sample_queue.as_slice()
     }
 
@@ -163,7 +175,7 @@ impl Apu {
         self.summed_channel4_sample += channel4_output * weight;
     }
 
-    pub fn clear_summed_samples(&mut self) {
+    pub(super) fn clear_summed_samples(&mut self) {
         self.summed_channel1_sample = 0.0;
         self.summed_channel2_sample = 0.0;
         self.summed_channel3_sample = 0.0;
@@ -249,7 +261,7 @@ impl Apu {
         }
     }
 
-    pub fn step(&mut self, params: ApuParams) {
+    pub(super) fn step(&mut self, params: ApuParams) {
         let t_cycle_increment = get_t_cycle_increment(self.cgb_double_speed);
         self.channel_clock += t_cycle_increment;
 
@@ -271,14 +283,14 @@ impl Apu {
         self.last_divider_time = params.divider;
     }
 
-    pub fn set_sample_rate(&mut self, sample_rate: u32) {
+    pub(crate) fn set_sample_rate(&mut self, sample_rate: u32) {
         self.enqueue_rate = CPU_RATE / sample_rate;
     }
 
-    pub fn set_ch1_period_high(&mut self, new_period_high_value: u8) {
+    pub(super) fn set_ch1_period_high(&mut self, new_period_high_value: u8) {
         if self.enabled {
             let original_period_high_value = self.channel1.period().high();
-            self.channel1.period().set_high(new_period_high_value);
+            self.channel1.period_mut().set_high(new_period_high_value);
 
             let length_period_first_half = in_length_period_first_half(self.divider_apu);
 
@@ -299,10 +311,10 @@ impl Apu {
         }
     }
 
-    pub fn set_ch2_period_high(&mut self, new_period_high_value: u8) {
+    pub(super) fn set_ch2_period_high(&mut self, new_period_high_value: u8) {
         if self.enabled {
             let original_period_high_value = self.channel2.period().high();
-            self.channel2.period().set_high(new_period_high_value);
+            self.channel2.period_mut().set_high(new_period_high_value);
 
             let length_period_first_half = in_length_period_first_half(self.divider_apu);
 
@@ -323,10 +335,10 @@ impl Apu {
         }
     }
 
-    pub fn set_ch3_period_high(&mut self, new_period_high_value: u8) {
+    pub(super) fn set_ch3_period_high(&mut self, new_period_high_value: u8) {
         if self.enabled {
             let original_period_high_value = self.channel3.period().high();
-            self.channel3.period().set_high(new_period_high_value);
+            self.channel3.period_mut().set_high(new_period_high_value);
 
             let length_period_first_half = in_length_period_first_half(self.divider_apu);
 
@@ -347,7 +359,7 @@ impl Apu {
         }
     }
 
-    pub fn set_ch4_control(&mut self, new_control_value: u8) {
+    pub(super) fn set_ch4_control(&mut self, new_control_value: u8) {
         if self.enabled {
             let original_control_value = self.channel4.control();
             self.channel4.set_control(new_control_value);
@@ -371,10 +383,10 @@ impl Apu {
         }
     }
 
-    pub fn set_ch1_envelope_settings(&mut self, new_envelope_settings: u8) {
+    pub(super) fn set_ch1_envelope_settings(&mut self, new_envelope_settings: u8) {
         if self.enabled {
-            self.channel1.envelope().set_initial_settings(new_envelope_settings);
-            self.channel1.envelope().reset_settings();
+            self.channel1.envelope_mut().set_initial_settings(new_envelope_settings);
+            self.channel1.envelope_mut().reset_settings();
 
             let should_disable = self.channel1.envelope().should_disable_dac();
 
@@ -386,10 +398,10 @@ impl Apu {
         }
     }
 
-    pub fn set_ch2_envelope_settings(&mut self, new_envelope_settings: u8) {
+    pub(super) fn set_ch2_envelope_settings(&mut self, new_envelope_settings: u8) {
         if self.enabled {
-            self.channel2.envelope().set_initial_settings(new_envelope_settings);
-            self.channel2.envelope().reset_settings();
+            self.channel2.envelope_mut().set_initial_settings(new_envelope_settings);
+            self.channel2.envelope_mut().reset_settings();
 
             let should_disable = self.channel2.envelope().should_disable_dac();
         
@@ -401,7 +413,7 @@ impl Apu {
         }
     }
 
-    pub fn set_ch3_dac_enabled(&mut self, new_dac_enabled_register_value: u8) {
+    pub(super) fn set_ch3_dac_enabled(&mut self, new_dac_enabled_register_value: u8) {
         if self.enabled {
             let should_disable = !is_bit_set(new_dac_enabled_register_value, CH3_DAC_ENABLED_INDEX);
 
@@ -413,10 +425,10 @@ impl Apu {
         }
     }
 
-    pub fn set_ch4_envelope_settings(&mut self, new_envelope_settings: u8) {
+    pub(super) fn set_ch4_envelope_settings(&mut self, new_envelope_settings: u8) {
         if self.enabled {
-            self.channel4.envelope().set_initial_settings(new_envelope_settings);
-            self.channel4.envelope().reset_settings();
+            self.channel4.envelope_mut().set_initial_settings(new_envelope_settings);
+            self.channel4.envelope_mut().reset_settings();
 
             let should_disable = self.channel4.envelope().should_disable_dac();
         
@@ -428,7 +440,7 @@ impl Apu {
         }
     }
 
-    pub fn audio_master_control(&self) -> u8 {
+    pub(super) fn audio_master_control(&self) -> u8 {
         let apu_enabled = if self.enabled { 1 } else { 0 };
         let mask = 0b01110000;
         let ch4_enabled = if self.channel4.enabled() { 1 } else { 0 };
@@ -444,12 +456,12 @@ impl Apu {
         result
     }
 
-    pub fn get_wave_ram_byte(&self, localized_address: u8) -> u8 {
+    pub(super) fn get_wave_ram_byte(&self, localized_address: u8) -> u8 {
         let mut address = localized_address;
 
         if self.channel3.enabled() {
             address = self.channel3.wave_position() / 2;
-            if self.channel3.period_readonly().reloaded() || self.cgb_mode {
+            if self.channel3.period().reloaded() || self.cgb_mode {
                 self.channel3.read_from_wave_ram(address)
             }
             else {
@@ -461,7 +473,7 @@ impl Apu {
         }
     }
 
-    pub fn set_wave_ram_byte(&mut self, localized_address: u8, new_value: u8) {
+    pub(super) fn set_wave_ram_byte(&mut self, localized_address: u8, new_value: u8) {
         let mut address = localized_address;
 
         if self.channel3.enabled() {
@@ -475,7 +487,7 @@ impl Apu {
         }
     }
 
-    pub fn set_audio_master_control(&mut self, new_audio_master_control: u8) {
+    pub(super) fn set_audio_master_control(&mut self, new_audio_master_control: u8) {
         self.enabled = is_bit_set(new_audio_master_control, APU_ENABLED_INDEX);
 
         if !self.enabled {
@@ -483,16 +495,16 @@ impl Apu {
         }
     }
 
-    pub fn set_ch1_sweep_settings(&mut self, new_sweep_settings: u8) {
+    pub(super) fn set_ch1_sweep_settings(&mut self, new_sweep_settings: u8) {
         if self.enabled {
-            self.channel1.sweep().update_initial_settings(new_sweep_settings);
+            self.channel1.sweep_mut().update_initial_settings(new_sweep_settings);
             if self.channel1.sweep().should_disable_channel() {
                 self.channel1.set_enabled(false);
             }
         }
     }
 
-    pub fn set_ch1_length_settings(&mut self, new_length_settings: u8) {
+    pub(super) fn set_ch1_length_settings(&mut self, new_length_settings: u8) {
         if self.enabled || !self.cgb_mode {
             let new_initial_settings = if self.enabled {
                 new_length_settings
@@ -500,18 +512,18 @@ impl Apu {
             else {
                 new_length_settings & 0x3F
             };
-            self.channel1.length().set_initial_settings(new_initial_settings);
-            self.channel1.length().initialize_timer();
+            self.channel1.length_mut().set_initial_settings(new_initial_settings);
+            self.channel1.length_mut().initialize_timer();
         }
     }
 
-    pub fn set_ch1_period_low(&mut self, new_period_low: u8) {
+    pub(super) fn set_ch1_period_low(&mut self, new_period_low: u8) {
         if self.enabled {
-            self.channel1.period().set_low(new_period_low);
+            self.channel1.period_mut().set_low(new_period_low);
         }
     }
 
-    pub fn set_ch2_length_settings(&mut self, new_length_settings: u8) {
+    pub(super) fn set_ch2_length_settings(&mut self, new_length_settings: u8) {
         if self.enabled || !self.cgb_mode {
             let new_initial_settings = if self.enabled {
                 new_length_settings
@@ -519,119 +531,106 @@ impl Apu {
             else {
                 new_length_settings & 0x3F
             };
-            self.channel2.length().set_initial_settings(new_initial_settings);
-            self.channel2.length().initialize_timer();
+            self.channel2.length_mut().set_initial_settings(new_initial_settings);
+            self.channel2.length_mut().initialize_timer();
         }
     }
 
-    pub fn set_ch2_period_low(&mut self, new_period_low: u8) {
+    pub(super) fn set_ch2_period_low(&mut self, new_period_low: u8) {
         if self.enabled {
-            self.channel2.period().set_low(new_period_low);
+            self.channel2.period_mut().set_low(new_period_low);
         }
     }
 
-    pub fn set_ch3_length_settings(&mut self, new_length_settings: u8) {
+    pub(super) fn set_ch3_length_settings(&mut self, new_length_settings: u8) {
         if self.enabled || !self.cgb_mode {
-            self.channel3.length().set_initial_settings(new_length_settings);
-            self.channel3.length().initialize_timer();
+            self.channel3.length_mut().set_initial_settings(new_length_settings);
+            self.channel3.length_mut().initialize_timer();
         }
     }
 
-    pub fn set_ch3_period_low(&mut self, new_period_low: u8) {
+    pub(super) fn set_ch3_period_low(&mut self, new_period_low: u8) {
         if self.enabled {
-            self.channel3.period().set_low(new_period_low);
+            self.channel3.period_mut().set_low(new_period_low);
         }
     }
 
-    pub fn set_ch3_volume(&mut self, new_volume: u8) {
+    pub(super) fn set_ch3_volume(&mut self, new_volume: u8) {
         if self.enabled {
             self.channel3.set_volume(new_volume);
         }
     }
 
-    pub fn set_ch4_length_settings(&mut self, new_length_settings: u8) {
+    pub(super) fn set_ch4_length_settings(&mut self, new_length_settings: u8) {
         if self.enabled || !self.cgb_mode {
-            self.channel4.length().set_initial_settings(new_length_settings);
-            self.channel4.length().initialize_timer();
+            self.channel4.length_mut().set_initial_settings(new_length_settings);
+            self.channel4.length_mut().initialize_timer();
         }
     }
 
-    pub fn set_ch4_polynomial(&mut self, new_polynomial: u8) {
+    pub(super) fn set_ch4_polynomial(&mut self, new_polynomial: u8) {
         if self.enabled {
             self.channel4.set_polynomial(new_polynomial);
         }
     }
 
-    pub fn master_volume(&self) -> u8 {
-        self.master_volume
-    }
-
-    pub fn set_master_volume(&mut self, new_master_volume: u8) {
+    pub(super) fn set_master_volume(&mut self, new_master_volume: u8) {
         if self.enabled {
             self.master_volume = new_master_volume;
         }
     }
 
-    pub fn sound_panning(&self) -> u8 {
-        self.sound_panning
-    }
-
-    pub fn set_sound_panning(&mut self, new_sound_panning: u8) {
+    pub(super) fn set_sound_panning(&mut self, new_sound_panning: u8) {
         if self.enabled {
             self.sound_panning = new_sound_panning;
         }
     }
+}
 
-    pub fn set_audio_buffer_clock(&mut self, new_audio_buffer_clock: u8) {
-        self.audio_buffer_clock = new_audio_buffer_clock;
+impl Serializable for Apu {
+    fn serialize(&self, writer: &mut dyn Write)-> std::io::Result<()> {
+        self.enabled.serialize(writer)?;
+        self.sound_panning.serialize(writer)?;
+        self.master_volume.serialize(writer)?;
+        self.channel1.serialize(writer)?;
+        self.channel2.serialize(writer)?;
+        self.channel3.serialize(writer)?;
+        self.channel4.serialize(writer)?;
+        self.divider_apu.serialize(writer)?;
+        self.last_divider_time.serialize(writer)?;
+        self.audio_buffer_clock.serialize(writer)?;
+        self.channel_clock.serialize(writer)?;
+        self.enqueue_rate.serialize(writer)?;
+        self.cgb_mode.serialize(writer)?;
+        self.cgb_double_speed.serialize(writer)?;
+        Ok(())
     }
 
-    pub fn set_cgb_mode(&mut self, cgb_mode: bool) {
-        self.cgb_mode = cgb_mode;
-    }
+    fn deserialize(&mut self, reader: &mut dyn Read)-> std::io::Result<()> {
+        self.enabled.deserialize(reader)?;
+        self.sound_panning.deserialize(reader)?;
+        self.master_volume.deserialize(reader)?;
+        self.channel1.deserialize(reader)?;
+        self.channel2.deserialize(reader)?;
+        self.channel3.deserialize(reader)?;
+        self.channel4.deserialize(reader)?;
+        self.divider_apu.deserialize(reader)?;
+        self.last_divider_time.deserialize(reader)?;
+        self.audio_buffer_clock.deserialize(reader)?;
+        self.channel_clock.deserialize(reader)?;
+        self.enqueue_rate.deserialize(reader)?;
+        self.cgb_mode.deserialize(reader)?;
+        self.cgb_double_speed.deserialize(reader)?;
 
-    pub fn set_cgb_double_speed(&mut self, cgb_double_speed: bool) {
-        self.cgb_double_speed = cgb_double_speed;
-    }
+        self.summed_channel1_sample = 0.0;
+        self.summed_channel2_sample = 0.0;
+        self.summed_channel3_sample = 0.0;
+        self.summed_channel4_sample = 0.0;
 
-    pub fn enabled(&self) -> bool {
-        self.enabled
-    }
-
-    pub fn set_enabled(&mut self, enabled: bool) {
-        self.enabled = enabled;
-    }
-
-    pub fn channel1(&mut self) -> &mut PulseChannel {
-        &mut self.channel1
-    }
-
-    pub fn channel1_readonly(&self) -> &PulseChannel {
-        &self.channel1
-    }
-
-    pub fn channel2(&mut self) -> &mut PulseChannel {
-        &mut self.channel2
-    }
-
-    pub fn channel2_readonly(&self) -> &PulseChannel {
-        &self.channel2
-    }
-
-    pub fn channel3(&mut self) -> &mut WaveChannel {
-        &mut self.channel3
-    }
-
-    pub fn channel3_readonly(&self) -> &WaveChannel {
-        &self.channel3
-    }
-
-    pub fn channel4(&mut self) -> &mut NoiseChannel {
-        &mut self.channel4
-    }
-
-    pub fn channel4_readonly(&self) -> &NoiseChannel {
-        &self.channel4
+        self.left_sample_queue.clear();
+        self.right_sample_queue.clear();
+        
+        Ok(())
     }
 }
 
