@@ -119,7 +119,7 @@ impl AddressBus {
         }
     }
 
-    pub(super) fn read_byte(&mut self, address: u16) -> u8 {
+    pub(super) fn read_byte(&self, address: u16) -> u8 {
         if self.processor_test_mode {
             self.processor_test_ram[address as usize]
         }
@@ -133,12 +133,9 @@ impl AddressBus {
         }
     }
 
-    pub(super) fn unsafe_read_byte(&mut self, address: u16) -> u8 {
+    pub(super) fn unsafe_read_byte(&self, address: u16) -> u8 {
         let byte = match address & 0xF000 {
             0x0000 if address <= 0x00FE && self.in_bios => {
-                if address == 0x00FE {
-                    self.in_bios = false;
-                }
                 self.bios[address as usize]
             },
             0x0000 if address >= 0x0200 && address <= 0x08FF && self.cgb_mode && self.in_bios => {

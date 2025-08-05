@@ -52,6 +52,10 @@ impl Cpu {
         self.step_one_machine_cycle();
         let byte = self.address_bus.read_byte(address);
 
+        if address == 0x00FE && self.address_bus.in_bios() {
+            self.address_bus.set_in_bios(false);
+        }
+
         if self.address_bus.processor_test_mode() {
             self.record_bus_read(address, byte);
         }

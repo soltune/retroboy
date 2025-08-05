@@ -128,49 +128,49 @@ fn reads_from_bios() {
 
 #[test]
 fn reads_from_rom_in_bank_zero() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0x02), 0x01);
 }
 
 #[test]
 fn reads_from_rom_in_bank_zero_scenario_two() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0x20B1), 0xEE);
 }
 
 #[test]
 fn reads_from_rom_in_subsequent_bank() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0x5ACE), 0x55);
 }
 
 #[test]
 fn reads_from_video_ram() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0x8002), 0xAA);
 }
 
 #[test]
 fn disallow_access_to_external_ram_if_not_enabled() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xA001), 0xFF);
 }
 
 #[test]
 fn reads_from_working_ram() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xC002), 0x2B);
 }
 
 #[test]
 fn reads_from_working_ram_shadow() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xE002), 0x2B);
 }
 
 #[test]
 fn reads_from_working_ram_shadow_scenario_two() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xF5F0), 0x2B);
 }
 
@@ -187,111 +187,111 @@ fn reads_from_separate_working_ram_bank() {
 
 #[test]
 fn reads_from_object_attribute_memory() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFE7B), 0x45);
 }
 
 #[test]
 fn reads_empty_values_outside_of_object_attribute_memory() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFEEE), 0xFF);
 }
 
 #[test]
 fn reads_from_zero_page_ram() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFFA0), 0xBB);
 }
 
 #[test]
 fn reads_from_interrupts_enabled_register() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFFFF), 0x1F);
 }
 
 #[test]
 fn reads_from_interrupt_flags_register() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF0F), 0xA);
 }
 
 #[test]
 fn reads_from_timer_divider_register() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF04), 0x3A);
 }
 
 #[test]
 fn reads_from_timer_counter_register() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF05), 0x04);
 }
 
 #[test]
 fn reads_from_timer_modulo_register() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF06), 0x02);
 }
 
 #[test]
 fn reads_from_timer_control_register() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF07), 0x07);
 }
 
 #[test]
 fn reads_lcdc_register_from_gpu() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF40), 0x80);
 }
 
 #[test]
 fn reads_scroll_registers_from_gpu() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF42), 0x55);
     assert_eq!(address_bus.read_byte(0xFF43), 0xA1);
 }
 
 #[test]
 fn reads_window_position_registers_from_gpu() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF4A), 0xBB);
     assert_eq!(address_bus.read_byte(0xFF4B), 0xDD);
 }
 
 #[test]
 fn reads_palette_from_gpu() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF47), 0xC1);
 }
 
 #[test]
 fn reads_ly_from_gpu() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF44), 0x2B);
 }
 
 #[test]
 fn reads_lyc_from_gpu() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF45), 0xAB);
 }
 
 #[test]
 fn reads_stat_from_gpu() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF41), 0xD2);
 }
 
 #[test]
 fn reads_obp0_from_gpu() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF48), 0x1B);
 }
 
 #[test]
 fn reads_obp1_from_gpu() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF49), 0xE4);
 }
 
@@ -311,7 +311,7 @@ fn writes_obp1_value_to_gpu() {
 
 #[test]
 fn reads_joyp_register() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF00), 0xD4);
 }
 
@@ -351,7 +351,7 @@ fn writes_to_video_ram() {
 
 #[test]
 fn reads_from_audio_master_control() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF26), 0xF4);
 }
 
@@ -364,116 +364,116 @@ fn writes_to_audio_master_control() {
 
 #[test]
 fn reads_from_sound_panning() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF25), 0xF2);
 }
 
 #[test]
 fn reads_from_master_volume() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF24), 0xC1);
 }
 
 #[test]
 fn reads_from_ch1_sweep() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF10), 0xDD);
 }
 
 #[test]
 fn reads_from_ch1_length_and_duty() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF11), 0xBF);
 }
 
 #[test]
 fn reads_from_ch1_volume() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF12), 0xAA);
 }
 
 #[test]
 fn reads_from_ch1_period_low() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF13), 0xFF);
 }
 
 #[test]
 fn reads_from_ch1_period_high() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF14), 0xFF);
 }
 
 #[test]
 fn reads_from_ch2_length_and_duty() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF16), 0xFF);
 }
 
 #[test]
 fn reads_from_ch2_volume() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF17), 0xC1);
 }
 
 #[test]
 fn reads_from_ch2_period_low() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF18), 0xFF);
 }
 
 #[test]
 fn reads_from_ch2_period_high() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF19), 0xBF);
 }
 
 #[test]
 fn reads_from_ch3_dac_enabled() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF1A), 0xFF);
 }
 
 #[test]
 fn reads_from_ch3_output() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF1C), 0xFF);
 }
 
 #[test]
 fn reads_from_ch3_period_high() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF1E), 0xFF);
 }
 
 #[test]
 fn reads_from_wave_pattern_ram() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF30), 0xB1);
     assert_eq!(address_bus.read_byte(0xFF31), 0xB1);
 }
 
 #[test]
 fn reads_from_ch4_length() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF20), 0xFF);
 }
 
 #[test]
 fn reads_from_ch4_envelope() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF21), 0xD2);
 }
 
 #[test]
 fn reads_from_ch4_polynomial() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF22), 0xCE);
 }
 
 #[test]
 fn reads_from_ch4_control() {
-    let mut address_bus = setup_test_address_bus();
+    let address_bus = setup_test_address_bus();
     assert_eq!(address_bus.read_byte(0xFF23), 0xFF);
 }
 
