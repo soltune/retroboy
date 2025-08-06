@@ -54,7 +54,7 @@ impl AddressBus {
         let offset = self.dma.offset() as u16;
         let address = self.dma.source_address() + offset;
         let byte_to_transfer = self.read_byte(address);
-        self.unsafe_write_byte(0xFE00 + offset, byte_to_transfer);
+        self.gpu.set_object_attribute_memory_byte(offset, byte_to_transfer);
     }
 
     pub(super) fn dma_step(&mut self) {

@@ -123,195 +123,183 @@ impl AddressBus {
         if self.processor_test_mode {
             self.processor_test_ram[address as usize]
         }
-        else {
-            if self.address_accessible(address) {
-                self.unsafe_read_byte(address)
-            }
-            else {
-                0xFF
-            }
+        else if !self.address_accessible(address) {
+            0xFF
         }
-    }
-
-    pub(super) fn unsafe_read_byte(&self, address: u16) -> u8 {
-        let byte = match address & 0xF000 {
-            0x0000 if address <= 0x00FE && self.in_bios => {
-                self.bios[address as usize]
-            },
-            0x0000 if address >= 0x0200 && address <= 0x08FF && self.cgb_mode && self.in_bios => {
-                self.bios[address as usize]
-            },
-            0x0000..=0x7FFF =>
-                self.cartridge_mapper.read_rom(address),
-            0x8000..=0x9FFF =>
-                self.gpu.get_video_ram_byte(address & 0x1FFF),
-            0xA000..=0xBFFF =>
-                self.cartridge_mapper.read_ram(address & 0x1FFF),
-            0xC000..=0xEFFF => {
-                let index = self.calculate_working_ram_index(address);
-                self.working_ram[index]
-            }
-            0xF000 => match address & 0x0F00 {
-                0x000..=0xD00 => {
+        else {
+            let byte = match address & 0xF000 {
+                0x0000 if address <= 0x00FE && self.in_bios => {
+                    self.bios[address as usize]
+                },
+                0x0000 if address >= 0x0200 && address <= 0x08FF && self.cgb_mode && self.in_bios => {
+                    self.bios[address as usize]
+                },
+                0x0000..=0x7FFF =>
+                    self.cartridge_mapper.read_rom(address),
+                0x8000..=0x9FFF =>
+                    self.gpu.get_video_ram_byte(address & 0x1FFF),
+                0xA000..=0xBFFF =>
+                    self.cartridge_mapper.read_ram(address & 0x1FFF),
+                0xC000..=0xEFFF => {
                     let index = self.calculate_working_ram_index(address);
                     self.working_ram[index]
-                },
-                0xE00 if address < 0xFEA0 => self.gpu.get_object_attribute_memory_byte(address & 0xFF),
-                0xF00 if address == 0xFFFF => self.interrupts.enabled(),
-                0xF00 if address >= 0xFF80 => self.zero_page_ram[(address & 0x7F) as usize],
-                _ => match address & 0xFF {
-                    0x00 => self.joypad.read_byte(),
-                    0x01 => self.serial.data(),
-                    0x02 => self.serial.control(),
-                    0x10 => self.apu.channel1().sweep().initial_settings() | 0b10000000,
-                    0x11 => self.apu.channel1().length().initial_settings() | 0b00111111,
-                    0x12 => self.apu.channel1().envelope().initial_settings(),
-                    0x14 => self.apu.channel1().period().high() | 0b10111111,
-                    0x16 => self.apu.channel2().length().initial_settings() | 0b00111111,
-                    0x17 => self.apu.channel2().envelope().initial_settings(),
-                    0x19 => self.apu.channel2().period().high() | 0b10111111,
-                    0x1A => if self.apu.channel3().dac_enabled() { 0b11111111 } else { 0b01111111 },
-                    0x1C => self.apu.channel3().volume() | 0b10011111,
-                    0x1E => self.apu.channel3().period().high() | 0b10111111,
-                    0x21 => self.apu.channel4().envelope().initial_settings(),
-                    0x22 => self.apu.channel4().polynomial(),
-                    0x23 => self.apu.channel4().control() | 0b10111111,
-                    0x24 => self.apu.master_volume(),
-                    0x25 => self.apu.sound_panning(),
-                    0x26 => self.apu.audio_master_control(),
-                    0x30..=0x3F => self.apu.get_wave_ram_byte((address & 0xF) as u8),
-                    0x40 => self.gpu.lcdc(),
-                    0x41 => self.gpu.stat(),
-                    0x42 => self.gpu.scy(),
-                    0x43 => self.gpu.scx(),
-                    0x44 => self.gpu.ly(),
-                    0x45 => self.gpu.lyc(),
-                    0x46 => self.dma.source(),
-                    0x47 => self.gpu.palettes().bgp(),
-                    0x48 => self.gpu.palettes().obp0(),
-                    0x49 => self.gpu.palettes().obp1(),
-                    0x4A => self.gpu.wy(),
-                    0x4B => self.gpu.wx(),
-                    0x4C => self.gpu.key0(),
-                    0x4D => self.speed_switch.key1(),
-                    0x4F => self.gpu.cgb_vbk(),
-                    0x55 => self.hdma.hdma5(),
-                    0x68 => self.gpu.palettes().cgb_bcps(),
-                    0x69 => self.gpu.palettes().cgb_bcpd(),
-                    0x6A => self.gpu.palettes().cgb_ocps(),
-                    0x6B => self.gpu.palettes().cgb_ocpd(),
-                    0x6C => self.gpu.cgb_opri(),
-                    0x70 => if self.cgb_mode { self.svbk } else { 0xFF },
-                    0x0F => self.interrupt_flags(),
-                    0x04 => self.timers.divider(),
-                    0x05 => self.timers.counter(),
-                    0x06 => self.timers.modulo(),
-                    0x07 => self.timers.control(),
-                    _ => 0xFF
                 }
-            },
-            _ => 0x00,
-        };
-        self.apply_cheat_if_needed(address, byte)
+                0xF000 => match address & 0x0F00 {
+                    0x000..=0xD00 => {
+                        let index = self.calculate_working_ram_index(address);
+                        self.working_ram[index]
+                    },
+                    0xE00 if address < 0xFEA0 => self.gpu.get_object_attribute_memory_byte(address & 0xFF),
+                    0xF00 if address == 0xFFFF => self.interrupts.enabled(),
+                    0xF00 if address >= 0xFF80 => self.zero_page_ram[(address & 0x7F) as usize],
+                    _ => match address & 0xFF {
+                        0x00 => self.joypad.read_byte(),
+                        0x01 => self.serial.data(),
+                        0x02 => self.serial.control(),
+                        0x10 => self.apu.channel1().sweep().initial_settings() | 0b10000000,
+                        0x11 => self.apu.channel1().length().initial_settings() | 0b00111111,
+                        0x12 => self.apu.channel1().envelope().initial_settings(),
+                        0x14 => self.apu.channel1().period().high() | 0b10111111,
+                        0x16 => self.apu.channel2().length().initial_settings() | 0b00111111,
+                        0x17 => self.apu.channel2().envelope().initial_settings(),
+                        0x19 => self.apu.channel2().period().high() | 0b10111111,
+                        0x1A => if self.apu.channel3().dac_enabled() { 0b11111111 } else { 0b01111111 },
+                        0x1C => self.apu.channel3().volume() | 0b10011111,
+                        0x1E => self.apu.channel3().period().high() | 0b10111111,
+                        0x21 => self.apu.channel4().envelope().initial_settings(),
+                        0x22 => self.apu.channel4().polynomial(),
+                        0x23 => self.apu.channel4().control() | 0b10111111,
+                        0x24 => self.apu.master_volume(),
+                        0x25 => self.apu.sound_panning(),
+                        0x26 => self.apu.audio_master_control(),
+                        0x30..=0x3F => self.apu.get_wave_ram_byte((address & 0xF) as u8),
+                        0x40 => self.gpu.lcdc(),
+                        0x41 => self.gpu.stat(),
+                        0x42 => self.gpu.scy(),
+                        0x43 => self.gpu.scx(),
+                        0x44 => self.gpu.ly(),
+                        0x45 => self.gpu.lyc(),
+                        0x46 => self.dma.source(),
+                        0x47 => self.gpu.palettes().bgp(),
+                        0x48 => self.gpu.palettes().obp0(),
+                        0x49 => self.gpu.palettes().obp1(),
+                        0x4A => self.gpu.wy(),
+                        0x4B => self.gpu.wx(),
+                        0x4C => self.gpu.key0(),
+                        0x4D => self.speed_switch.key1(),
+                        0x4F => self.gpu.cgb_vbk(),
+                        0x55 => self.hdma.hdma5(),
+                        0x68 => self.gpu.palettes().cgb_bcps(),
+                        0x69 => self.gpu.palettes().cgb_bcpd(),
+                        0x6A => self.gpu.palettes().cgb_ocps(),
+                        0x6B => self.gpu.palettes().cgb_ocpd(),
+                        0x6C => self.gpu.cgb_opri(),
+                        0x70 => if self.cgb_mode { self.svbk } else { 0xFF },
+                        0x0F => self.interrupt_flags(),
+                        0x04 => self.timers.divider(),
+                        0x05 => self.timers.counter(),
+                        0x06 => self.timers.modulo(),
+                        0x07 => self.timers.control(),
+                        _ => 0xFF
+                    }
+                },
+                _ => 0x00,
+            };
+            self.apply_cheat_if_needed(address, byte)
+        }
     }
 
     pub(super) fn write_byte(&mut self, address: u16, value: u8) {
         if self.processor_test_mode {
             self.processor_test_ram[address as usize] = value;
         }
-        else {
-            if self.address_accessible(address) {
-                self.unsafe_write_byte(address, value);
-            } 
-        }
-    }
-
-    pub(super) fn unsafe_write_byte(&mut self, address: u16, value: u8) {
-        let _ = match address & 0xF000 {
-            0x0000..=0x7FFF =>
-                self.cartridge_mapper.write_rom(address, value),
-            0x8000..=0x9FFF =>
-                self.gpu.set_video_ram_byte(address & 0x1FFF, value),
-            0xA000..=0xBFFF =>
-                self.cartridge_mapper.write_ram(address & 0x1FFF, value),
-            0xC000..=0xEFFF => {
-                let index = self.calculate_working_ram_index(address);
-                self.working_ram[index] = value;
-            },
-            0xF000 => match address & 0x0F00 {
-                0x000..=0xD00 => {
+        else if self.address_accessible(address) {
+            let _ = match address & 0xF000 {
+                0x0000..=0x7FFF =>
+                    self.cartridge_mapper.write_rom(address, value),
+                0x8000..=0x9FFF =>
+                    self.gpu.set_video_ram_byte(address & 0x1FFF, value),
+                0xA000..=0xBFFF =>
+                    self.cartridge_mapper.write_ram(address & 0x1FFF, value),
+                0xC000..=0xEFFF => {
                     let index = self.calculate_working_ram_index(address);
                     self.working_ram[index] = value;
                 },
-                0xE00 if address < 0xFEA0 => self.gpu.set_object_attribute_memory_byte(address & 0xFF, value),
-                0xF00 if address == 0xFFFF => { self.interrupts.set_enabled(value); },
-                0xF00 if address >= 0xFF80 => self.zero_page_ram[(address & 0x7F) as usize] = value,
-                _ => match address & 0xFF {
-                    0x00 => self.joypad.write_byte(value),
-                    0x01 => { self.serial.set_data(value); },
-                    0x02 => self.serial.set_control(value),
-                    0x10 => self.apu.set_ch1_sweep_settings(value),
-                    0x11 => self.apu.set_ch1_length_settings(value),
-                    0x12 => self.apu.set_ch1_envelope_settings(value),
-                    0x13 => self.apu.set_ch1_period_low(value),
-                    0x14 => self.apu.set_ch1_period_high(value),
-                    0x16 => self.apu.set_ch2_length_settings(value),
-                    0x17 => self.apu.set_ch2_envelope_settings(value),
-                    0x18 => self.apu.set_ch2_period_low(value),
-                    0x19 => self.apu.set_ch2_period_high(value),
-                    0x1A => self.apu.set_ch3_dac_enabled(value),
-                    0x1B => self.apu.set_ch3_length_settings(value),
-                    0x1C => self.apu.set_ch3_volume(value),
-                    0x1D => self.apu.set_ch3_period_low(value),
-                    0x1E => self.apu.set_ch3_period_high(value),
-                    0x20 => self.apu.set_ch4_length_settings(value),
-                    0x21 => self.apu.set_ch4_envelope_settings(value),
-                    0x22 => self.apu.set_ch4_polynomial(value),
-                    0x23 => self.apu.set_ch4_control(value),
-                    0x24 => self.apu.set_master_volume(value),
-                    0x25 => self.apu.set_sound_panning(value),
-                    0x26 => self.apu.set_audio_master_control(value),
-                    0x30..=0x3F => self.apu.set_wave_ram_byte((address & 0xF) as u8, value),
-                    0x40 => self.gpu.set_lcdc(value),
-                    0x41 => { self.gpu.set_stat(value); },
-                    0x42 => { self.gpu.set_scy(value); },
-                    0x43 => { self.gpu.set_scx(value); },
-                    0x44 => { self.gpu.set_ly(value); },
-                    0x45 => { self.gpu.set_lyc(value); },
-                    0x46 => self.dma.start_dma(value),
-                    0x47 => { self.gpu.palettes_mut().set_bgp(value); },
-                    0x48 => { self.gpu.palettes_mut().set_obp0(value); },
-                    0x49 => { self.gpu.palettes_mut().set_obp1(value); },
-                    0x4C => { self.gpu.set_key0(value); },
-                    0x4D => self.speed_switch.set_key1(value),
-                    0x51 => self.hdma.set_hdma1(value),
-                    0x52 => self.hdma.set_hdma2(value),
-                    0x53 => self.hdma.set_hdma3(value),
-                    0x54 => self.hdma.set_hdma4(value),
-                    0x55 => self.hdma.set_hdma5(value),
-                    0x4A => { self.gpu.set_wy(value); },
-                    0x4B => { self.gpu.set_wx(value); },
-                    0x4F => self.gpu.set_cgb_vbk(value),
-                    0x68 => { self.gpu.palettes_mut().set_cgb_bcps(value); },
-                    0x69 => self.gpu.palettes_mut().set_cgb_bcpd(value),
-                    0x6A => { self.gpu.palettes_mut().set_cgb_ocps(value); },
-                    0x6B => self.gpu.palettes_mut().set_cgb_ocpd(value),
-                    0x6C => self.gpu.set_cgb_opri(value),
-                    0x70 => {
-                        if self.cgb_mode {
-                            self.svbk = value;
-                        }
+                0xF000 => match address & 0x0F00 {
+                    0x000..=0xD00 => {
+                        let index = self.calculate_working_ram_index(address);
+                        self.working_ram[index] = value;
                     },
-                    0x0F => self.set_interrupt_flags(value),
-                    0x04 => self.timers.set_divider(value),
-                    0x05 => { self.timers.set_counter(value); },
-                    0x06 => { self.timers.set_modulo(value); },
-                    0x07 => { self.timers.set_control(value); },
-                    _ => ()
-                }
-            },
-            _ => (),
-        };
+                    0xE00 if address < 0xFEA0 => self.gpu.set_object_attribute_memory_byte(address & 0xFF, value),
+                    0xF00 if address == 0xFFFF => { self.interrupts.set_enabled(value); },
+                    0xF00 if address >= 0xFF80 => self.zero_page_ram[(address & 0x7F) as usize] = value,
+                    _ => match address & 0xFF {
+                        0x00 => self.joypad.write_byte(value),
+                        0x01 => { self.serial.set_data(value); },
+                        0x02 => self.serial.set_control(value),
+                        0x10 => self.apu.set_ch1_sweep_settings(value),
+                        0x11 => self.apu.set_ch1_length_settings(value),
+                        0x12 => self.apu.set_ch1_envelope_settings(value),
+                        0x13 => self.apu.set_ch1_period_low(value),
+                        0x14 => self.apu.set_ch1_period_high(value),
+                        0x16 => self.apu.set_ch2_length_settings(value),
+                        0x17 => self.apu.set_ch2_envelope_settings(value),
+                        0x18 => self.apu.set_ch2_period_low(value),
+                        0x19 => self.apu.set_ch2_period_high(value),
+                        0x1A => self.apu.set_ch3_dac_enabled(value),
+                        0x1B => self.apu.set_ch3_length_settings(value),
+                        0x1C => self.apu.set_ch3_volume(value),
+                        0x1D => self.apu.set_ch3_period_low(value),
+                        0x1E => self.apu.set_ch3_period_high(value),
+                        0x20 => self.apu.set_ch4_length_settings(value),
+                        0x21 => self.apu.set_ch4_envelope_settings(value),
+                        0x22 => self.apu.set_ch4_polynomial(value),
+                        0x23 => self.apu.set_ch4_control(value),
+                        0x24 => self.apu.set_master_volume(value),
+                        0x25 => self.apu.set_sound_panning(value),
+                        0x26 => self.apu.set_audio_master_control(value),
+                        0x30..=0x3F => self.apu.set_wave_ram_byte((address & 0xF) as u8, value),
+                        0x40 => self.gpu.set_lcdc(value),
+                        0x41 => { self.gpu.set_stat(value); },
+                        0x42 => { self.gpu.set_scy(value); },
+                        0x43 => { self.gpu.set_scx(value); },
+                        0x44 => { self.gpu.set_ly(value); },
+                        0x45 => { self.gpu.set_lyc(value); },
+                        0x46 => self.dma.start_dma(value),
+                        0x47 => { self.gpu.palettes_mut().set_bgp(value); },
+                        0x48 => { self.gpu.palettes_mut().set_obp0(value); },
+                        0x49 => { self.gpu.palettes_mut().set_obp1(value); },
+                        0x4C => { self.gpu.set_key0(value); },
+                        0x4D => self.speed_switch.set_key1(value),
+                        0x51 => self.hdma.set_hdma1(value),
+                        0x52 => self.hdma.set_hdma2(value),
+                        0x53 => self.hdma.set_hdma3(value),
+                        0x54 => self.hdma.set_hdma4(value),
+                        0x55 => self.hdma.set_hdma5(value),
+                        0x4A => { self.gpu.set_wy(value); },
+                        0x4B => { self.gpu.set_wx(value); },
+                        0x4F => self.gpu.set_cgb_vbk(value),
+                        0x68 => { self.gpu.palettes_mut().set_cgb_bcps(value); },
+                        0x69 => self.gpu.palettes_mut().set_cgb_bcpd(value),
+                        0x6A => { self.gpu.palettes_mut().set_cgb_ocps(value); },
+                        0x6B => self.gpu.palettes_mut().set_cgb_ocpd(value),
+                        0x6C => self.gpu.set_cgb_opri(value),
+                        0x70 => {
+                            if self.cgb_mode {
+                                self.svbk = value;
+                            }
+                        },
+                        0x0F => self.set_interrupt_flags(value),
+                        0x04 => self.timers.set_divider(value),
+                        0x05 => { self.timers.set_counter(value); },
+                        0x06 => { self.timers.set_modulo(value); },
+                        0x07 => { self.timers.set_control(value); },
+                        _ => ()
+                    }
+                },
+                _ => (),
+            };
+        }
     }
 
     pub(crate) fn load_rom_buffer(&mut self, buffer: Vec<u8>, cartridge_effects: Box<dyn CartridgeEffects>) -> io::Result<CartridgeHeader> {
