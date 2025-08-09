@@ -1,4 +1,5 @@
 use crate::utils;
+use crate::address_bus::MemoryMapped;
 use crate::cpu::{BusActivityEntry, BusActivityType, Register, RegisterPair, Cpu};
 use crate::utils::get_t_cycle_increment;
 

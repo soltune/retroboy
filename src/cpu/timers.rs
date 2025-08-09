@@ -1,3 +1,4 @@
+use crate::address_bus::MemoryMapped;
 use crate::serializable::Serializable;
 use getset::{CopyGetters, Setters};
 use serializable_derive::Serializable;
@@ -92,6 +93,28 @@ impl TimerRegisters {
         self.divider = value;
         self.divider_clock = 0;
         self.m_cycles_clock = 0;
+    }
+}
+
+impl MemoryMapped for TimerRegisters {
+    fn read_byte(&self, address: u16) -> u8 {
+        match address {
+            0xFF04 => self.divider,
+            0xFF05 => self.counter,
+            0xFF06 => self.modulo,
+            0xFF07 => self.control,
+            _ => panic!("Invalid Timer address: 0x{:04X}", address)
+        }
+    }
+
+    fn write_byte(&mut self, address: u16, value: u8) {
+        match address {
+            0xFF04 => self.set_divider(value),
+            0xFF05 => { self.counter = value; },
+            0xFF06 => { self.modulo = value; },
+            0xFF07 => { self.control = value; },
+            _ => panic!("Invalid Timer address: 0x{:04X}", address)
+        }
     }
 }
 

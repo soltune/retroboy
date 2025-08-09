@@ -206,6 +206,7 @@ impl AddressBus {
 
 #[cfg(test)]
 mod tests {
+    use crate::address_bus::MemoryMapped;
     use crate::address_bus::constants::*;
     use crate::address_bus::test_utils::*;
     use crate::address_bus::effects::empty_cartridge_effects;

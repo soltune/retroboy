@@ -1,4 +1,4 @@
-use crate::address_bus::AddressBus;
+use crate::address_bus::{AddressBus, MemoryMapped};
 use crate::serializable::Serializable;
 use getset::{CopyGetters, Setters};
 use serializable_derive::Serializable;

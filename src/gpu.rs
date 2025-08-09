@@ -1,4 +1,5 @@
 use crate::address_bus::hdma::HDMAState;
+use crate::address_bus::MemoryMapped;
 use crate::gpu::palettes::Palettes;
 use crate::gpu::constants::{GB_SCREEN_HEIGHT, GB_SCREEN_WIDTH, BYTES_PER_COLOR};
 use crate::gpu::utils::{get_lcd_enabled_mode, get_window_enabled_mode};
@@ -11,40 +12,62 @@ use std::io::{Read, Write};
 #[derive(Debug, CopyGetters, Getters, MutGetters, Setters)]
 pub struct Gpu {
     mode: u8,
+
     mode_clock: u16,
+    
     lcdc: u8,
+    
     #[getset(get_copy = "pub(super)", set = "pub(super)")]
     scy: u8,
+    
     #[getset(get_copy = "pub(super)", set = "pub(super)")]
     scx: u8,
+    
     #[getset(get_copy = "pub(super)", set = "pub(super)")]
     wx: u8,
+    
     #[getset(get_copy = "pub(super)", set = "pub(super)")]
     wy: u8,
+    
     #[getset(get_copy = "pub(super)", set = "pub(super)")]
     wly: u8,
+    
     #[getset(get_copy = "pub(super)", set = "pub(super)")]
     ly: u8,
+    
     #[getset(get_copy = "pub(super)", set = "pub(super)")]
     lyc: u8,
+    
     #[getset(get_copy = "pub(super)", set = "pub(super)")]
     stat: u8,
+    
     #[getset(get = "pub(super)", get_mut = "pub(super)")]
     palettes: Palettes,
+    
     cgb_vbk: u8,
+    
     cgb_opri: u8,
+    
     #[getset(get_copy = "pub(super)", set = "pub(super)")]
     key0: u8,
+    
     frame_buffer: Vec<u8>,
+    
     video_ram: [u8; 0x4000],
+    
     object_attribute_memory: [u8; 0xa0],
+    
     #[getset(set = "pub(super)")]
     cgb_mode: bool,
+    
     #[getset(set = "pub(super)")]
     cgb_double_speed: bool,
+    
     renderer: fn(&[u8]),
+    
     #[getset(get_copy = "pub(super)", set = "pub(super)")]
     stat_interrupt: bool,
+    
     #[getset(get_copy = "pub(super)", set = "pub(super)")]
     vblank_interrupt: bool
 }
@@ -235,36 +258,34 @@ impl Gpu {
         self.object_attribute_memory[index as usize] = value;
     }
 
-    pub(super) fn cgb_vbk(&self) -> u8 {
+    fn cgb_vbk(&self) -> u8 {
         if self.cgb_mode {
             self.cgb_vbk | 0b11111110
         } else {
             0xFF
         }
     }
-    pub(super) fn set_cgb_vbk(&mut self, value: u8) {
+    
+    fn set_cgb_vbk(&mut self, value: u8) {
         if self.cgb_mode {
             self.cgb_vbk = value;
         }
     }
 
-    pub(super) fn cgb_opri(&self) -> u8 {
+    fn cgb_opri(&self) -> u8 {
         if self.cgb_mode {
             self.cgb_opri & 0b1
         } else {
             0xFF
         }
     }
-    pub(super) fn set_cgb_opri(&mut self, value: u8) {
+    
+    fn set_cgb_opri(&mut self, value: u8) {
         if self.cgb_mode {
             self.cgb_opri = value & 0b1;
         }
     }
 
-    pub(super) fn lcdc(&self) -> u8 {
-        self.lcdc
-    }
-    
     pub(super) fn set_lcdc(&mut self, value: u8) {
         self.lcdc = value;
         let lcd_enabled = get_lcd_enabled_mode(value);
@@ -285,6 +306,60 @@ impl Gpu {
     #[cfg(test)]
     pub(super) fn set_mode(&mut self, value: u8) {
         self.mode = value;
+    }
+}
+
+impl MemoryMapped for Gpu {
+    fn read_byte(&self, address: u16) -> u8 {
+        match address {
+            0x8000..=0x9FFF => self.get_video_ram_byte(address & 0x1FFF),
+            0xFE00..=0xFE9F => self.get_object_attribute_memory_byte(address & 0xFF),
+            0xFF40 => self.lcdc,
+            0xFF41 => self.stat,
+            0xFF42 => self.scy,
+            0xFF43 => self.scx,
+            0xFF44 => self.ly,
+            0xFF45 => self.lyc,
+            0xFF47 => self.palettes.bgp(),
+            0xFF48 => self.palettes.obp0(),
+            0xFF49 => self.palettes.obp1(),
+            0xFF4A => self.wy,
+            0xFF4B => self.wx,
+            0xFF4C => self.key0,
+            0xFF4F => self.cgb_vbk(),
+            0xFF68 => self.palettes.cgb_bcps(),
+            0xFF69 => self.palettes.cgb_bcpd(),
+            0xFF6A => self.palettes.cgb_ocps(),
+            0xFF6B => self.palettes.cgb_ocpd(),
+            0xFF6C => self.cgb_opri(),
+            _ => panic!("Invalid GPU address: 0x{:04X}", address)
+        }
+    }
+
+    fn write_byte(&mut self, address: u16, value: u8) {
+        match address {
+            0x8000..=0x9FFF => self.set_video_ram_byte(address & 0x1FFF, value),
+            0xFE00..=0xFE9F => self.set_object_attribute_memory_byte(address & 0xFF, value),
+            0xFF40 => { self.set_lcdc(value); },
+            0xFF41 => { self.stat = value; },
+            0xFF42 => { self.scy = value; },
+            0xFF43 => { self.scx = value; },
+            0xFF44 => { self.ly = value; },
+            0xFF45 => { self.lyc = value; },
+            0xFF47 => { self.palettes.set_bgp(value); },
+            0xFF48 => { self.palettes.set_obp0(value); },
+            0xFF49 => { self.palettes.set_obp1(value); },
+            0xFF4A => { self.wy = value; },
+            0xFF4B => { self.wx = value; },
+            0xFF4C => { self.key0 = value; },
+            0xFF4F => self.set_cgb_vbk(value),
+            0xFF68 => { self.palettes.set_cgb_bcps(value); },
+            0xFF69 => self.palettes.set_cgb_bcpd(value),
+            0xFF6A => { self.palettes.set_cgb_ocps(value); },
+            0xFF6B => self.palettes.set_cgb_ocpd(value),
+            0xFF6C => self.set_cgb_opri(value),
+            _ => panic!("Invalid GPU address: 0x{:04X}", address)
+        }
     }
 }
 

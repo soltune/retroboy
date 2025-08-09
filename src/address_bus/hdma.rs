@@ -1,4 +1,4 @@
-use crate::address_bus::AddressBus;
+use crate::address_bus::{AddressBus, MemoryMapped};
 use crate::utils::is_bit_set;
 use crate::serializable::Serializable;
 use getset::{CopyGetters, Getters, Setters};
@@ -54,31 +54,31 @@ impl HDMAState {
         }
     }
 
-    pub(super) fn set_hdma1(&mut self, value: u8) {
+    fn set_hdma1(&mut self, value: u8) {
         if self.cgb_mode {
             self.hdma1 = value;
         }
     }
 
-    pub(super) fn set_hdma2(&mut self, value: u8) {
+    fn set_hdma2(&mut self, value: u8) {
         if self.cgb_mode {
             self.hdma2 = value;
         }
     }
 
-    pub(super) fn set_hdma3(&mut self, value: u8) {
+    fn set_hdma3(&mut self, value: u8) {
         if self.cgb_mode {
             self.hdma3 = value;
         }
     }
 
-    pub(super) fn set_hdma4(&mut self, value: u8) {
+    fn set_hdma4(&mut self, value: u8) {
         if self.cgb_mode {
             self.hdma4 = value;
         }
     }
 
-    pub(super) fn set_hdma5(&mut self, value: u8) {
+    fn set_hdma5(&mut self, value: u8) {
         if self.cgb_mode {
             if self.in_progress && !is_bit_set(value, VRAM_TRANSFER_INDEX) {
                 self.in_progress = false;
@@ -97,7 +97,7 @@ impl HDMAState {
         }
     }
 
-    pub(super) fn hdma5(&self) -> u8 {
+    fn hdma5(&self) -> u8 {
         if self.cgb_mode {
             if self.in_progress {
                 self.transfer_length & 0b01111111
@@ -178,6 +178,26 @@ impl AddressBus {
                     self.hdma_transfer_block(source, destination);
                 }
             }
+        }
+    }
+}
+
+impl MemoryMapped for HDMAState {
+    fn read_byte(&self, address: u16) -> u8 {
+        match address {
+            0xFF55 => self.hdma5(),
+            _ => panic!("Invalid HDMA address: 0x{:04X}", address)
+        }
+    }
+
+    fn write_byte(&mut self, address: u16, value: u8) {
+        match address {
+            0xFF51 => self.set_hdma1(value),
+            0xFF52 => self.set_hdma2(value),
+            0xFF53 => self.set_hdma3(value),
+            0xFF54 => self.set_hdma4(value),
+            0xFF55 => self.set_hdma5(value),
+            _ => panic!("Invalid HDMA address: 0x{:04X}", address)
         }
     }
 }

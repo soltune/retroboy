@@ -1,5 +1,6 @@
 use crate::utils::is_bit_set;
 use crate::serializable::Serializable;
+use crate::address_bus::MemoryMapped;
 use getset::{CopyGetters, Setters};
 use serializable_derive::Serializable;
 
@@ -88,7 +89,7 @@ impl Serial {
         }
     }
 
-    pub(super) fn control(&self) -> u8 {
+    fn control(&self) -> u8 {
         let transfer_enabled_bit = if self.transfer_enabled { 1 } else { 0 };
         let high_speed_clock_bit = if self.is_high_speed_clock { 1 } else { 0 };
         let master_bit = if self.is_master { 1 } else { 0 };
@@ -97,12 +98,30 @@ impl Serial {
             | master_bit
     }
 
-    pub(super) fn set_control(&mut self, value: u8) {
+    fn set_control(&mut self, value: u8) {
         self.transfer_enabled = is_bit_set(value, 7);
         if self.cgb_mode {
             self.is_high_speed_clock = is_bit_set(value, 1);
         }
         self.is_master = is_bit_set(value, 0);
+    }
+}
+
+impl MemoryMapped for Serial {
+    fn read_byte(&self, address: u16) -> u8 {
+        match address {
+            0xFF01 => self.data,
+            0xFF02 => self.control(),
+            _ => panic!("Invalid Serial address: 0x{:04X}", address)
+        }
+    }
+
+    fn write_byte(&mut self, address: u16, value: u8) {
+        match address {
+            0xFF01 => { self.data = value; },
+            0xFF02 => self.set_control(value),
+            _ => panic!("Invalid Serial address: 0x{:04X}", address)
+        }
     }
 }
 
