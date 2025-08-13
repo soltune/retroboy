@@ -1,5 +1,5 @@
-use crate::emulator::{initialize_screenless_emulator, Mode};
-use crate::gpu::colors::{Color, Palettes, BLACK, DARK_GRAY, LIGHT_GRAY, WHITE};
+use crate::gpu::Gpu;
+use crate::gpu::palettes::{Color, Palettes, BLACK, DARK_GRAY, LIGHT_GRAY, WHITE};
 use crate::gpu::sprites::Sprite;
 use crate::utils::set_bit;
 use super::*;
@@ -12,34 +12,34 @@ const WINDOW_TILE: [u8; 16] = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0
 const RED: Color = [0xFF, 0x0, 0x0, 0xFF];
 const BLUE: Color = [0x0, 0x0, 0xFF, 0xFF];
 
-fn write_tile_to_memory(emulator: &mut Emulator, base_index: u16, index: u16, tile_bytes: [u8; 16]) {
+fn write_tile_to_memory(gpu: &mut Gpu, base_index: u16, index: u16, tile_bytes: [u8; 16]) {
     let offset = index * 16;
     for (tile_byte_index, tile_byte) in tile_bytes.iter().enumerate() {
-        emulator.gpu.video_ram[(base_index + offset + tile_byte_index as u16) as usize] = *tile_byte;
+        gpu.video_ram[(base_index + offset + tile_byte_index as u16) as usize] = *tile_byte;
     }
 }
 
-fn write_tile_to_bg_memory(emulator: &mut Emulator, index: u16, tile_bytes: [u8; 16]) {
-    write_tile_to_memory(emulator, 0x1000, index, tile_bytes)
+fn write_tile_to_bg_memory(gpu: &mut Gpu, index: u16, tile_bytes: [u8; 16]) {
+    write_tile_to_memory(gpu, 0x1000, index, tile_bytes)
 }
 
-fn write_tile_to_bg_memory_in_bank_one(emulator: &mut Emulator, index: u16, tile_bytes: [u8; 16]) {
-    write_tile_to_memory(emulator, 0x3000, index, tile_bytes)
+fn write_tile_to_bg_memory_in_bank_one(gpu: &mut Gpu, index: u16, tile_bytes: [u8; 16]) {
+    write_tile_to_memory(gpu, 0x3000, index, tile_bytes)
 }
 
-fn write_tile_to_obj_memory(emulator: &mut Emulator, index: u16, tile_bytes: [u8; 16]) {
-    write_tile_to_memory(emulator, 0x0000, index, tile_bytes)
+fn write_tile_to_obj_memory(gpu: &mut Gpu, index: u16, tile_bytes: [u8; 16]) {
+    write_tile_to_memory(gpu, 0x0000, index, tile_bytes)
 }
 
-fn write_tile_attributes(emulator: &mut Emulator, index: u16, attributes: u8) {
-    emulator.gpu.video_ram[(0x3800 + index) as usize] = attributes;
+fn write_tile_attributes(gpu: &mut Gpu, index: u16, attributes: u8) {
+    gpu.video_ram[(0x3800 + index) as usize] = attributes;
 }
 
-fn write_sprite_to_oam(emulator: &mut Emulator, sprite: Sprite) {
+fn write_sprite_to_oam(gpu: &mut Gpu, sprite: Sprite) {
     let oam_index = sprite.oam_index;
-    emulator.gpu.object_attribute_memory[oam_index as usize] = (sprite.y_pos + 16) as u8;
-    emulator.gpu.object_attribute_memory[(oam_index + 1) as usize] = (sprite.x_pos + 8) as u8;
-    emulator.gpu.object_attribute_memory[(oam_index + 2) as usize] = sprite.tile_index;
+    gpu.object_attribute_memory[oam_index as usize] = (sprite.y_pos + 16) as u8;
+    gpu.object_attribute_memory[(oam_index + 1) as usize] = (sprite.x_pos + 8) as u8;
+    gpu.object_attribute_memory[(oam_index + 2) as usize] = sprite.tile_index;
 
     let mut attributes = 0;
     if sprite.priority { attributes = set_bit(attributes, 7); }
@@ -48,11 +48,11 @@ fn write_sprite_to_oam(emulator: &mut Emulator, sprite: Sprite) {
     if sprite.dmg_palette == 1 { attributes = set_bit(attributes, 4); }
     if sprite.cgb_from_bank_one { attributes = set_bit(attributes, 3); }
     attributes |= sprite.cgb_palette;
-    emulator.gpu.object_attribute_memory[(oam_index + 3) as usize] = attributes;
+    gpu.object_attribute_memory[(oam_index + 3) as usize] = attributes;
 }
 
-fn write_window_tile_index_to_memory(emulator: &mut Emulator, position_index: u16, tile_index: u8) {
-    emulator.gpu.video_ram[(0x1C00 + position_index) as usize] = tile_index;
+fn write_window_tile_index_to_memory(gpu: &mut Gpu, position_index: u16, tile_index: u8) {
+    gpu.video_ram[(0x1C00 + position_index) as usize] = tile_index;
 }
 
 fn initialize_monochrome_palettes(palettes: &mut Palettes) {
@@ -61,22 +61,22 @@ fn initialize_monochrome_palettes(palettes: &mut Palettes) {
     // Dark Gray: color id 1
     // Light Gray: color id 2
     // White: color id 3 
-    palettes.bgp = 0b00011011;
-    palettes.obp0 = 0b00011011;
+    palettes.set_bgp(0b00011011);
+    palettes.set_obp0(0b00011011);
 }
 
 fn initialize_color_palettes(palettes: &mut Palettes) {
     // Red
-    palettes.cgb_bcpd[8] = 0b00011111;
-    palettes.cgb_bcpd[9] = 0;
+    palettes.set_cgb_bcpd_by_index(8, 0b00011111);
+    palettes.set_cgb_bcpd_by_index(9, 0);
 
     // Green
-    palettes.cgb_bcpd[10] = 0b11100000;
-    palettes.cgb_bcpd[11] = 0b00000011;
+    palettes.set_cgb_bcpd_by_index(10, 0b11100000);
+    palettes.set_cgb_bcpd_by_index(11, 0b00000011);
 
     // Blue
-    palettes.cgb_bcpd[12] = 0;
-    palettes.cgb_bcpd[13] = 0b01111100;
+    palettes.set_cgb_bcpd_by_index(12, 0);
+    palettes.set_cgb_bcpd_by_index(13, 0b01111100);
 }
 
 struct FrameBufferAssertion<'a> {
@@ -119,26 +119,20 @@ fn assert_that(frame_buffer: &Vec<u8>) -> FrameBufferAssertion {
     FrameBufferAssertion::new(frame_buffer)
 }
 
-fn initialize_test_emulator() -> Emulator {
-    let mut emulator = initialize_screenless_emulator();
-    emulator.memory.in_bios = false;
-    emulator
-}
-
 #[test]
 fn should_render_tile_line() {
-    let mut emulator = initialize_test_emulator();
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut emulator.gpu.registers.palettes);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
-    write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
-    
-    emulator.gpu.registers.ly = 0;
-    emulator.gpu.registers.lcdc = 0b10000011;
-    
-    write_scanline(&mut emulator);
+    write_tile_to_bg_memory(&mut gpu, 0, SAMPLE_TILE_A);
 
-    let frame_buffer = &emulator.gpu.frame_buffer;
+    gpu.ly = 0;
+    gpu.lcdc = 0b10000011;
+
+    gpu.write_scanline();
+
+    let frame_buffer = &gpu.frame_buffer;
 
     assert_that(frame_buffer)
         .at_starting_coordinates((0, 0))
@@ -147,20 +141,20 @@ fn should_render_tile_line() {
 
 #[test]
 fn should_render_multiple_tile_lines() {
-    let mut emulator = initialize_test_emulator();
-    
-    initialize_monochrome_palettes(&mut emulator.gpu.registers.palettes);
+    let mut gpu = Gpu::new(|_| {});
 
-    write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
-    emulator.gpu.registers.lcdc = 0b10000011;
+    write_tile_to_bg_memory(&mut gpu, 0, SAMPLE_TILE_A);
+
+    gpu.lcdc = 0b10000011;
 
     for _ in 0..3 {
-        write_scanline(&mut emulator);
-        emulator.gpu.registers.ly += 1;
+        gpu.write_scanline();
+        gpu.ly += 1;
     }
 
-    let frame_buffer = &emulator.gpu.frame_buffer;
+    let frame_buffer = &gpu.frame_buffer;
 
     assert_that(frame_buffer)
         .at_starting_coordinates((0, 0))
@@ -177,24 +171,24 @@ fn should_render_multiple_tile_lines() {
 
 #[test]
 fn should_render_multiple_tile_lines_in_color_mode() {
-    let mut emulator = initialize_test_emulator();
+    let mut gpu = Gpu::new(|_| {});
     
-    emulator.mode = Mode::CGB;
+    gpu.cgb_mode = true;
 
-    initialize_color_palettes(&mut emulator.gpu.registers.palettes);
-    
-    write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
+    initialize_color_palettes(&mut gpu.palettes);
 
-    write_tile_attributes(&mut emulator, 0, 0b00000001);
+    write_tile_to_bg_memory(&mut gpu, 0, SAMPLE_TILE_A);
 
-    emulator.gpu.registers.lcdc = 0b10000011;
+    write_tile_attributes(&mut gpu, 0, 0b00000001);
+
+    gpu.lcdc = 0b10000011;
 
     for _ in 0..8 {
-        write_scanline(&mut emulator);
-        emulator.gpu.registers.ly += 1;
+        gpu.write_scanline();
+        gpu.ly += 1;
     }
 
-    let frame_buffer = &emulator.gpu.frame_buffer;
+    let frame_buffer = &gpu.frame_buffer;
 
     assert_that(frame_buffer)
         .at_starting_coordinates((0, 0))
@@ -215,24 +209,24 @@ fn should_render_multiple_tile_lines_in_color_mode() {
 
 #[test]
 fn should_render_multiple_tile_lines_in_color_mode_from_bank_one() {
-    let mut emulator = initialize_test_emulator();
-    
-    emulator.mode = Mode::CGB;
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_color_palettes(&mut emulator.gpu.registers.palettes);
-    
-    write_tile_to_bg_memory_in_bank_one(&mut emulator, 0, SAMPLE_TILE_A);
+    gpu.cgb_mode = true;
 
-    write_tile_attributes(&mut emulator, 0, 0b00001001);
+    initialize_color_palettes(&mut gpu.palettes);
 
-    emulator.gpu.registers.lcdc = 0b10000011;
+    write_tile_to_bg_memory_in_bank_one(&mut gpu, 0, SAMPLE_TILE_A);
+
+    write_tile_attributes(&mut gpu, 0, 0b00001001);
+
+    gpu.lcdc = 0b10000011;
 
     for _ in 0..8 {
-        write_scanline(&mut emulator);
-        emulator.gpu.registers.ly += 1;
+        gpu.write_scanline();
+        gpu.ly += 1;
     }
 
-    let frame_buffer = &emulator.gpu.frame_buffer;
+    let frame_buffer = &gpu.frame_buffer;
 
     assert_that(frame_buffer)
         .at_starting_coordinates((0, 0))
@@ -253,24 +247,24 @@ fn should_render_multiple_tile_lines_in_color_mode_from_bank_one() {
 
 #[test]
 fn should_flip_background_tile_on_y_axis() {
-    let mut emulator = initialize_test_emulator();
-    
-    emulator.mode = Mode::CGB;
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_color_palettes(&mut emulator.gpu.registers.palettes);
-    
-    write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
+    gpu.cgb_mode = true;
 
-    write_tile_attributes(&mut emulator, 0, 0b01000001);
+    initialize_color_palettes(&mut gpu.palettes);
 
-    emulator.gpu.registers.lcdc = 0b10000011;
+    write_tile_to_bg_memory(&mut gpu, 0, SAMPLE_TILE_A);
+
+    write_tile_attributes(&mut gpu, 0, 0b01000001);
+
+    gpu.lcdc = 0b10000011;
 
     for _ in 0..8 {
-        write_scanline(&mut emulator);
-        emulator.gpu.registers.ly += 1;
+        gpu.write_scanline();
+        gpu.ly += 1;
     }
 
-    let frame_buffer = &emulator.gpu.frame_buffer;
+    let frame_buffer = &gpu.frame_buffer;
 
     assert_that(frame_buffer)
         .at_starting_coordinates((0, 0))
@@ -291,24 +285,24 @@ fn should_flip_background_tile_on_y_axis() {
 
 #[test]
 fn should_flip_background_tile_on_x_axis() {
-    let mut emulator = initialize_test_emulator();
-    
-    emulator.mode = Mode::CGB;
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_color_palettes(&mut emulator.gpu.registers.palettes);
-    
-    write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
+    gpu.cgb_mode = true;
 
-    write_tile_attributes(&mut emulator, 0, 0b00100001);
+    initialize_color_palettes(&mut gpu.palettes);
 
-    emulator.gpu.registers.lcdc = 0b10000011;
+    write_tile_to_bg_memory(&mut gpu, 0, SAMPLE_TILE_A);
+
+    write_tile_attributes(&mut gpu, 0, 0b00100001);
+
+    gpu.lcdc = 0b10000011;
 
     for _ in 0..8 {
-        write_scanline(&mut emulator);
-        emulator.gpu.registers.ly += 1;
+        gpu.write_scanline();
+        gpu.ly += 1;
     }
 
-    let frame_buffer = &emulator.gpu.frame_buffer;
+    let frame_buffer = &gpu.frame_buffer;
 
     assert_that(frame_buffer)
         .at_starting_coordinates((0, 7))
@@ -317,24 +311,24 @@ fn should_flip_background_tile_on_x_axis() {
 
 #[test]
 fn should_overlay_window_over_multiple_tile_lines() {
-    let mut emulator = initialize_test_emulator();
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut emulator.gpu.registers.palettes);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
-    write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
-    write_tile_to_bg_memory(&mut emulator, 1, WINDOW_TILE);
-    write_window_tile_index_to_memory(&mut emulator, 0, 1);
+    write_tile_to_bg_memory(&mut gpu, 0, SAMPLE_TILE_A);
+    write_tile_to_bg_memory(&mut gpu, 1, WINDOW_TILE);
+    write_window_tile_index_to_memory(&mut gpu, 0, 1);
 
-    emulator.gpu.registers.wy = 1;
-    emulator.gpu.registers.wx = 8;
-    emulator.gpu.registers.lcdc = 0b11100011;
+    gpu.wy = 1;
+    gpu.wx = 8;
+    gpu.lcdc = 0b11100011;
 
     for _ in 0..3 {
-        write_scanline(&mut emulator);
-        emulator.gpu.registers.ly += 1;
+        gpu.write_scanline();
+        gpu.ly += 1;
     }
 
-    let frame_buffer = &emulator.gpu.frame_buffer;
+    let frame_buffer = &gpu.frame_buffer;
 
     assert_that(frame_buffer)
         .at_starting_coordinates((0, 0))
@@ -351,21 +345,21 @@ fn should_overlay_window_over_multiple_tile_lines() {
 
 #[test]
 fn should_render_tile_line_in_middle_of_frame() {
-    let mut emulator = initialize_test_emulator();
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut emulator.gpu.registers.palettes);
-    
-    write_tile_to_bg_memory(&mut emulator, 1, SAMPLE_TILE_A);
-    
-    emulator.gpu.video_ram[0x1A10] = 0x1;
-    emulator.gpu.registers.ly = 3;
-    emulator.gpu.registers.scy = 0x80;
-    emulator.gpu.registers.scx = 0x80;
-    emulator.gpu.registers.lcdc = 0b10000011;
-    
-    write_scanline(&mut emulator);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
-    let frame_buffer = &emulator.gpu.frame_buffer;
+    write_tile_to_bg_memory(&mut gpu, 1, SAMPLE_TILE_A);
+
+    gpu.video_ram[0x1A10] = 0x1;
+    gpu.ly = 3;
+    gpu.scy = 0x80;
+    gpu.scx = 0x80;
+    gpu.lcdc = 0b10000011;
+    
+    gpu.write_scanline();
+
+    let frame_buffer = &gpu.frame_buffer;
 
     assert_that(frame_buffer)
         .at_starting_coordinates((0, 3))
@@ -374,21 +368,21 @@ fn should_render_tile_line_in_middle_of_frame() {
 
 #[test]
 fn should_render_tile_line_properly_with_greater_scroll_x_value() {
-    let mut emulator = initialize_test_emulator();
-    
-    initialize_monochrome_palettes(&mut emulator.gpu.registers.palettes);
+    let mut gpu = Gpu::new(|_| {});
 
-    write_tile_to_bg_memory(&mut emulator, 1, SAMPLE_TILE_A);
-    
-    emulator.gpu.video_ram[0x1A10] = 0x1;
-    emulator.gpu.registers.ly = 3;
-    emulator.gpu.registers.scy = 0x80;
-    emulator.gpu.registers.scx = 0x82;
-    emulator.gpu.registers.lcdc = 0b10000011;
-    
-    write_scanline(&mut emulator);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
-    let frame_buffer = &emulator.gpu.frame_buffer;
+    write_tile_to_bg_memory(&mut gpu, 1, SAMPLE_TILE_A);
+
+    gpu.video_ram[0x1A10] = 0x1;
+    gpu.ly = 3;
+    gpu.scy = 0x80;
+    gpu.scx = 0x82;
+    gpu.lcdc = 0b10000011;
+
+    gpu.write_scanline();
+
+    let frame_buffer = &gpu.frame_buffer;
 
     assert_that(frame_buffer)
         .at_starting_coordinates((0, 3))
@@ -397,20 +391,20 @@ fn should_render_tile_line_properly_with_greater_scroll_x_value() {
 
 #[test]
 fn should_wrap_around_when_rendering_past_max_tile_map_x_value() {
-    let mut emulator = initialize_test_emulator();
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut emulator.gpu.registers.palettes);
-    
-    write_tile_to_bg_memory(&mut emulator, 1, SAMPLE_TILE_A);
-    
-    emulator.gpu.video_ram[0x1800] = 0x1;
-    emulator.gpu.registers.ly = 0;
-    emulator.gpu.registers.scx = 0xFE;
-    emulator.gpu.registers.lcdc = 0b10000011;
-    
-    write_scanline(&mut emulator);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
-    let frame_buffer = &emulator.gpu.frame_buffer;
+    write_tile_to_bg_memory(&mut gpu, 1, SAMPLE_TILE_A);
+
+    gpu.video_ram[0x1800] = 0x1;
+    gpu.ly = 0;
+    gpu.scx = 0xFE;
+    gpu.lcdc = 0b10000011;
+
+    gpu.write_scanline();
+
+    let frame_buffer = &gpu.frame_buffer;
 
     assert_that(frame_buffer)
         .at_starting_coordinates((0, 0))
@@ -419,20 +413,20 @@ fn should_wrap_around_when_rendering_past_max_tile_map_x_value() {
 
 #[test]
 fn should_wrap_around_when_rendering_past_max_tile_map_y_value() {
-    let mut emulator = initialize_test_emulator();
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut emulator.gpu.registers.palettes);
-    
-    write_tile_to_bg_memory(&mut emulator, 1, SAMPLE_TILE_A);
-    
-    emulator.gpu.video_ram[0x1800] = 0x1;
-    emulator.gpu.registers.ly = 2;
-    emulator.gpu.registers.scy = 0xFE;
-    emulator.gpu.registers.lcdc = 0b10000011;
-    
-    write_scanline(&mut emulator);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
-    let frame_buffer = &emulator.gpu.frame_buffer;
+    write_tile_to_bg_memory(&mut gpu, 1, SAMPLE_TILE_A);
+
+    gpu.video_ram[0x1800] = 0x1;
+    gpu.ly = 2;
+    gpu.scy = 0xFE;
+    gpu.lcdc = 0b10000011;
+
+    gpu.write_scanline();
+
+    let frame_buffer = &gpu.frame_buffer;
 
     assert_that(frame_buffer)
         .at_starting_coordinates((0, 2))
@@ -441,14 +435,14 @@ fn should_wrap_around_when_rendering_past_max_tile_map_y_value() {
 
 #[test]
 fn should_render_tile_line_with_sprite() {
-    let mut emulator = initialize_test_emulator();
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut emulator.gpu.registers.palettes);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
-    write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
-    write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
+    write_tile_to_bg_memory(&mut gpu, 0, SAMPLE_TILE_A);
+    write_tile_to_obj_memory(&mut gpu, 1, SAMPLE_TILE_B);
 
-    write_sprite_to_oam(&mut emulator, Sprite {
+    write_sprite_to_oam(&mut gpu, Sprite {
         y_pos: 0,
         x_pos: 2,
         tile_index: 1,
@@ -461,12 +455,12 @@ fn should_render_tile_line_with_sprite() {
         cgb_palette: 0
     });
 
-    emulator.gpu.registers.ly = 0;
-    emulator.gpu.registers.lcdc = 0b10000011;
+    gpu.ly = 0;
+    gpu.lcdc = 0b10000011;
 
-    write_scanline(&mut emulator);
+    gpu.write_scanline();
 
-    let frame_buffer: &Vec<u8> = &emulator.gpu.frame_buffer;
+    let frame_buffer: &Vec<u8> = &gpu.frame_buffer;
 
     assert_that(frame_buffer)
         .at_starting_coordinates((0, 0))
@@ -475,14 +469,14 @@ fn should_render_tile_line_with_sprite() {
 
 #[test]
 fn should_render_sprite_with_white_background_if_background_and_window_enabled_is_cleared() {
-    let mut emulator = initialize_test_emulator();
+     let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut emulator.gpu.registers.palettes);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
-    write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
-    write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
+    write_tile_to_bg_memory(&mut gpu, 0, SAMPLE_TILE_A);
+    write_tile_to_obj_memory(&mut gpu, 1, SAMPLE_TILE_B);
 
-    write_sprite_to_oam(&mut emulator, Sprite {
+    write_sprite_to_oam(&mut gpu, Sprite {
         y_pos: 0,
         x_pos: 2,
         tile_index: 1,
@@ -495,12 +489,12 @@ fn should_render_sprite_with_white_background_if_background_and_window_enabled_i
         cgb_palette: 0
     });
 
-    emulator.gpu.registers.ly = 0;
-    emulator.gpu.registers.lcdc = 0b10000010;
+    gpu.ly = 0;
+    gpu.lcdc = 0b10000010;
 
-    write_scanline(&mut emulator);
+    gpu.write_scanline();
 
-    let frame_buffer = &emulator.gpu.frame_buffer;
+    let frame_buffer = &gpu.frame_buffer;
 
     assert_that(frame_buffer)
         .at_starting_coordinates((0, 0))
@@ -509,14 +503,14 @@ fn should_render_sprite_with_white_background_if_background_and_window_enabled_i
 
 #[test]
 fn should_render_tile_line_with_sprite_having_negative_y_pos() {
-    let mut emulator = initialize_test_emulator();
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut emulator.gpu.registers.palettes);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
-    write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
-    write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
+    write_tile_to_bg_memory(&mut gpu, 0, SAMPLE_TILE_A);
+    write_tile_to_obj_memory(&mut gpu, 1, SAMPLE_TILE_B);
 
-    write_sprite_to_oam(&mut emulator, Sprite {
+    write_sprite_to_oam(&mut gpu, Sprite {
         y_pos: -2,
         x_pos: 2,
         tile_index: 1,
@@ -529,12 +523,12 @@ fn should_render_tile_line_with_sprite_having_negative_y_pos() {
         cgb_palette: 0
     });
 
-    emulator.gpu.registers.ly = 0;
-    emulator.gpu.registers.lcdc = 0b10000011;
+    gpu.ly = 0;
+    gpu.lcdc = 0b10000011;
 
-    write_scanline(&mut emulator);
+    gpu.write_scanline();
 
-    let frame_buffer = &emulator.gpu.frame_buffer;
+    let frame_buffer = &gpu.frame_buffer;
 
     assert_that(frame_buffer)
         .at_starting_coordinates((0, 0))
@@ -543,14 +537,14 @@ fn should_render_tile_line_with_sprite_having_negative_y_pos() {
 
 #[test]
 fn should_flip_sprite_on_x_axis() {
-    let mut emulator = initialize_test_emulator();
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut emulator.gpu.registers.palettes);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
-    write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
-    write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
+    write_tile_to_bg_memory(&mut gpu, 0, SAMPLE_TILE_A);
+    write_tile_to_obj_memory(&mut gpu, 1, SAMPLE_TILE_B);
 
-    write_sprite_to_oam(&mut emulator, Sprite {
+    write_sprite_to_oam(&mut gpu, Sprite {
         y_pos: -2,
         x_pos: 2,
         tile_index: 1,
@@ -563,12 +557,12 @@ fn should_flip_sprite_on_x_axis() {
         cgb_palette: 0
     });
 
-    emulator.gpu.registers.ly = 0;
-    emulator.gpu.registers.lcdc = 0b10000011;
+    gpu.ly = 0;
+    gpu.lcdc = 0b10000011;
 
-    write_scanline(&mut emulator);
+    gpu.write_scanline();
 
-    let frame_buffer = &emulator.gpu.frame_buffer;
+    let frame_buffer = &gpu.frame_buffer;
 
     assert_that(frame_buffer)
         .at_starting_coordinates((0, 0))
@@ -577,14 +571,14 @@ fn should_flip_sprite_on_x_axis() {
 
 #[test]
 fn should_flip_sprite_on_y_axis() {
-    let mut emulator = initialize_test_emulator();
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut emulator.gpu.registers.palettes);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
-    write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
-    write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
+    write_tile_to_bg_memory(&mut gpu, 0, SAMPLE_TILE_A);
+    write_tile_to_obj_memory(&mut gpu, 1, SAMPLE_TILE_B);
 
-    write_sprite_to_oam(&mut emulator, Sprite {
+    write_sprite_to_oam(&mut gpu, Sprite {
         y_pos: -2,
         x_pos: 2,
         tile_index: 1,
@@ -597,12 +591,12 @@ fn should_flip_sprite_on_y_axis() {
         cgb_palette: 0
     });
     
-    emulator.gpu.registers.ly = 0;
-    emulator.gpu.registers.lcdc = 0b10000011;
+    gpu.ly = 0;
+    gpu.lcdc = 0b10000011;
 
-    write_scanline(&mut emulator);
+    gpu.write_scanline();
 
-    let frame_buffer = &emulator.gpu.frame_buffer;
+    let frame_buffer = &gpu.frame_buffer;
 
     assert_that(frame_buffer)
         .at_starting_coordinates((0, 0))
@@ -611,15 +605,15 @@ fn should_flip_sprite_on_y_axis() {
 
 #[test]
 fn should_render_eight_by_sixteen_sprite() {
-    let mut emulator = initialize_test_emulator();
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut emulator.gpu.registers.palettes);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
-    write_tile_to_bg_memory(&mut emulator, 0, BLACK_TILE);
-    write_tile_to_obj_memory(&mut emulator, 2, SAMPLE_TILE_A);
-    write_tile_to_obj_memory(&mut emulator, 3, SAMPLE_TILE_B);
+    write_tile_to_bg_memory(&mut gpu, 0, BLACK_TILE);
+    write_tile_to_obj_memory(&mut gpu, 2, SAMPLE_TILE_A);
+    write_tile_to_obj_memory(&mut gpu, 3, SAMPLE_TILE_B);
 
-    write_sprite_to_oam(&mut emulator, Sprite {
+    write_sprite_to_oam(&mut gpu, Sprite {
         y_pos: 0,
         x_pos: 2,
         tile_index: 3,
@@ -632,15 +626,15 @@ fn should_render_eight_by_sixteen_sprite() {
         cgb_palette: 0
     });
 
-    emulator.gpu.registers.ly = 0;
-    emulator.gpu.registers.lcdc = 0b10000111;
+    gpu.ly = 0;
+    gpu.lcdc = 0b10000111;
 
     for _ in 0..9 {
-        write_scanline(&mut emulator);
-        emulator.gpu.registers.ly += 1;
+        gpu.write_scanline();
+        gpu.ly += 1;
     }
 
-    let frame_buffer = &emulator.gpu.frame_buffer;
+    let frame_buffer = &gpu.frame_buffer;
 
     assert_that(frame_buffer)
         .at_starting_coordinates((0, 0))
@@ -653,14 +647,14 @@ fn should_render_eight_by_sixteen_sprite() {
 
 #[test]
 fn should_prioritize_non_color_id_zero_background_colors_when_sprite_priority_flag_set_to_true() {
-    let mut emulator = initialize_test_emulator();
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut emulator.gpu.registers.palettes);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
-    write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
-    write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
-    
-    write_sprite_to_oam(&mut emulator, Sprite {
+    write_tile_to_bg_memory(&mut gpu, 0, SAMPLE_TILE_A);
+    write_tile_to_obj_memory(&mut gpu, 1, SAMPLE_TILE_B);
+
+    write_sprite_to_oam(&mut gpu, Sprite {
         y_pos: 0,
         x_pos: 2,
         tile_index: 1,
@@ -673,12 +667,12 @@ fn should_prioritize_non_color_id_zero_background_colors_when_sprite_priority_fl
         cgb_palette: 0
     });
 
-    emulator.gpu.registers.ly = 0;
-    emulator.gpu.registers.lcdc = 0b10000011;
+    gpu.ly = 0;
+    gpu.lcdc = 0b10000011;
 
-    write_scanline(&mut emulator);
+    gpu.write_scanline();
 
-    let frame_buffer = &emulator.gpu.frame_buffer;
+    let frame_buffer = &gpu.frame_buffer;
 
     assert_that(frame_buffer)
         .at_starting_coordinates((0, 0))
@@ -687,14 +681,14 @@ fn should_prioritize_non_color_id_zero_background_colors_when_sprite_priority_fl
 
 #[test]
 fn should_prioritize_background_colors_when_lcdc_bit_1_is_off() {
-    let mut emulator = initialize_test_emulator();
+    let mut gpu = Gpu::new(|_| {});
 
-    initialize_monochrome_palettes(&mut emulator.gpu.registers.palettes);
+    initialize_monochrome_palettes(&mut gpu.palettes);
 
-    write_tile_to_bg_memory(&mut emulator, 0, SAMPLE_TILE_A);
-    write_tile_to_obj_memory(&mut emulator, 1, SAMPLE_TILE_B);
+    write_tile_to_bg_memory(&mut gpu, 0, SAMPLE_TILE_A);
+    write_tile_to_obj_memory(&mut gpu, 1, SAMPLE_TILE_B);
 
-    write_sprite_to_oam(&mut emulator, Sprite {
+    write_sprite_to_oam(&mut gpu, Sprite {
         y_pos: 0,
         x_pos: 2,
         tile_index: 1,
@@ -707,12 +701,12 @@ fn should_prioritize_background_colors_when_lcdc_bit_1_is_off() {
         cgb_palette: 0
     });
     
-    emulator.gpu.registers.ly = 0;
-    emulator.gpu.registers.lcdc = 0b10000001;
+    gpu.ly = 0;
+    gpu.lcdc = 0b10000001;
 
-    write_scanline(&mut emulator);
+    gpu.write_scanline();
 
-    let frame_buffer = &emulator.gpu.frame_buffer;
+    let frame_buffer = &gpu.frame_buffer;
 
     assert_that(frame_buffer)
         .at_starting_coordinates((0, 0))

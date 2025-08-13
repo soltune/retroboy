@@ -1,24 +1,16 @@
+use crate::address_bus::AddressBus;
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind, Result};
 
-use crate::emulator::Emulator;
-use crate::mmu;
-
-pub struct Cheat {
+pub(super) struct Cheat {
     pub address: u16,
     pub new_data: u8,
     pub maybe_old_data: Option<u8>,
     pub maybe_bank: Option<u8>,
 }
 
-pub struct CheatState {
-    pub registered: HashMap<String, Cheat>,
-}
-
-pub fn initialize_cheats() -> CheatState {
-    CheatState {
-        registered: HashMap::new(),
-    }
+pub(crate) struct CheatState {
+    registered: HashMap<String, Cheat>,
 }
 
 fn parse_hex_byte(slice: &str, field: &str) -> Result<u8> {
@@ -37,7 +29,7 @@ fn parse_hex_word(slice: &str, field: &str) -> Result<u16> {
                 format!("Invalid {} word: {}", field, slice)))
 }
 
-pub fn parse_gameshark_code(gameshark_code: &str) -> Result<Cheat> {
+pub(super) fn parse_gameshark_code(gameshark_code: &str) -> Result<Cheat> {
     if gameshark_code.len() != 8 {
         Err(Error::new(
             ErrorKind::InvalidInput, 
@@ -67,7 +59,7 @@ pub fn parse_gameshark_code(gameshark_code: &str) -> Result<Cheat> {
     }
 }
 
-pub fn parse_gamegenie_code(gamegenie_code: &str) -> Result<Cheat> {
+pub(super) fn parse_gamegenie_code(gamegenie_code: &str) -> Result<Cheat> {
     if gamegenie_code.len() != 11 && gamegenie_code.len() != 7 {
         Err(Error::new(
             ErrorKind::InvalidInput, 
@@ -112,99 +104,112 @@ pub fn parse_gamegenie_code(gamegenie_code: &str) -> Result<Cheat> {
     }
 }
 
+pub(crate) fn validate_gameshark_code(cheat_code: &str) -> Option<String> {
+    match parse_gameshark_code(cheat_code) {
+        Ok(_) => None,
+        Err(error) => Some(error.to_string())
+    }
+}
+
+pub(crate) fn validate_gamegenie_code(cheat_code: &str) -> Option<String> {
+    match parse_gamegenie_code(cheat_code) {
+        Ok(_) => None,
+        Err(error) => Some(error.to_string())
+    }
+}
+
 const CHEAT_LIMIT: usize = 10;
 
-pub fn register_cheat(emulator: &mut Emulator, cheat_id: &str, cheat: Cheat) -> Option<String> {
-    if emulator.cheats.registered.len() >= CHEAT_LIMIT {
-        Some(format!("You cannot register more than {CHEAT_LIMIT} cheats at a time."))
-    }
-    else {
-        emulator.cheats.registered.insert(cheat_id.to_string(), cheat); 
-        None
-    }
-}
-
-pub fn unregister_cheat(emulator: &mut Emulator, cheat_id: &str) {
-    emulator.cheats.registered.remove(cheat_id);
-}
-
-pub fn validate_gameshark_code(cheat_code: &str) -> Option<String> {
-    match parse_gameshark_code(cheat_code) {
-        Ok(_) => None,
-        Err(error) => Some(error.to_string())
-    }
-}
-
-pub fn validate_gamegenie_code(cheat_code: &str) -> Option<String> {
-    match parse_gamegenie_code(cheat_code) {
-        Ok(_) => None,
-        Err(error) => Some(error.to_string())
-    }
-}
-
-pub fn register_gameshark_cheat(emulator: &mut Emulator, cheat_id: &str, cheat_code: &str) -> Option<String> {
-    match parse_gameshark_code(cheat_code) {
-        Ok(cheat) => {
-            register_cheat(emulator, cheat_id, cheat)
-        },
-        Err(error) => Some(error.to_string())
-    }
-}
-
-pub fn register_gamegenie_cheat(emulator: &mut Emulator, cheat_id: &str, cheat_code: &str) -> Option<String> {
-    match parse_gamegenie_code(cheat_code) {
-        Ok(cheat) => {
-            register_cheat(emulator, cheat_id, cheat)
-        },
-        Err(error) => Some(error.to_string())
-    }
-}
-
-fn get_ram_bank_for_address(emulator: &Emulator, address: u16) -> u8 {
-    match address & 0xF000 {
-        0xA000..=0xBFFF => emulator.memory.cartridge_mapper.get_ram_bank(),
-        0xC000..=0xDFFF => mmu::get_working_ram_bank(emulator),
-        _ => 0
-    }
-}
-
-pub fn apply_cheat_if_needed(emulator: &Emulator, address: u16, old_data: u8) -> u8 {
-    let mut maybe_found_cheat = None;
-
-    for (_, cheat) in &emulator.cheats.registered {
-        if cheat.address == address {
-            let apply_cheat = if cheat.maybe_bank.is_some() {
-                let cheat_bank = cheat.maybe_bank.unwrap();
-                let current_bank = get_ram_bank_for_address(emulator, address);
-                cheat_bank == current_bank
-            }
-            else if cheat.maybe_bank.is_none() && cheat.maybe_old_data.is_some() {
-                let cheat_old_data = cheat.maybe_old_data.unwrap();
-                old_data == cheat_old_data
-            }
-            else {
-                true
-            };
-        
-            if apply_cheat {
-                maybe_found_cheat = Some(cheat);
-                break;
-            }
+impl CheatState {
+    pub(super) fn new() -> CheatState {
+        CheatState {
+            registered: HashMap::new(),
         }
-    };
+    }
 
-    maybe_found_cheat
-        .map(|cheat| cheat.new_data)
-        .unwrap_or_else(|| old_data)
+    fn register(&mut self, cheat_id: &str, cheat: Cheat) -> Option<String> {
+        if self.registered.len() >= CHEAT_LIMIT {
+            Some(format!("You cannot register more than {CHEAT_LIMIT} cheats at a time."))
+        }
+        else {
+            self.registered.insert(cheat_id.to_string(), cheat); 
+            None
+        }
+    }
+
+    pub(crate) fn unregister(&mut self, cheat_id: &str) {
+        self.registered.remove(cheat_id);
+    }
+
+    pub(crate) fn register_gameshark_cheat(&mut self, cheat_id: &str, cheat_code: &str) -> Option<String> {
+        match parse_gameshark_code(cheat_code) {
+            Ok(cheat) => {
+                self.register(cheat_id, cheat)
+            },
+            Err(error) => Some(error.to_string())
+        }
+    }
+
+    pub(crate) fn register_gamegenie_cheat(&mut self, cheat_id: &str, cheat_code: &str) -> Option<String> {
+        match parse_gamegenie_code(cheat_code) {
+            Ok(cheat) => {
+                self.register(cheat_id, cheat)
+            },
+            Err(error) => Some(error.to_string())
+        }
+    }
+
+    pub(super) fn registered_cheats(&self) -> &HashMap<String, Cheat> {
+        &self.registered
+    }
+}
+
+impl AddressBus {
+    fn get_ram_bank_for_address(&self, address: u16) -> u8 {
+        match address & 0xF000 {
+            0xA000..=0xBFFF => self.cartridge_mapper().get_ram_bank(),
+            0xC000..=0xDFFF => self.get_working_ram_bank(),
+            _ => 0
+        }
+    }
+
+    pub(super) fn apply_cheat_if_needed(&self, address: u16, old_data: u8) -> u8 {
+        let mut maybe_found_cheat = None;
+
+        for (_, cheat) in self.cheats.registered_cheats() {
+            if cheat.address == address {
+                let apply_cheat = if cheat.maybe_bank.is_some() {
+                    let cheat_bank = cheat.maybe_bank.unwrap();
+                    let current_bank = self.get_ram_bank_for_address(address);
+                    cheat_bank == current_bank
+                }
+                else if cheat.maybe_bank.is_none() && cheat.maybe_old_data.is_some() {
+                    let cheat_old_data = cheat.maybe_old_data.unwrap();
+                    old_data == cheat_old_data
+                }
+                else {
+                    true
+                };
+            
+                if apply_cheat {
+                    maybe_found_cheat = Some(cheat);
+                    break;
+                }
+            }
+        };
+
+        maybe_found_cheat
+            .map(|cheat| cheat.new_data)
+            .unwrap_or_else(|| old_data)
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::emulator::{initialize_screenless_emulator, Mode};
-    use crate::mmu;
-    use crate::mmu::constants::*;
-    use crate::mmu::test_utils::*;
-    use crate::mmu::effects::empty_cartridge_effects;
+    use crate::address_bus::MemoryMapped;
+    use crate::address_bus::constants::*;
+    use crate::address_bus::test_utils::*;
+    use crate::address_bus::effects::empty_cartridge_effects;
 
     use super::*;
 
@@ -220,8 +225,8 @@ mod tests {
 
     #[test]
     fn should_apply_gameshark_code() {
-        let mut emulator = initialize_screenless_emulator();
-        emulator.mode = Mode::CGB;
+        let mut address_bus = initialize_test_address_bus();
+        address_bus.set_cgb_mode(true);
 
         let cheat = Cheat {
             address: 0xD356,
@@ -230,12 +235,12 @@ mod tests {
             maybe_bank: Some(1),
         };
 
-        register_cheat(&mut emulator, "da9a7056-ad9b-4ca1-9049-688931b279a3", cheat);
+        address_bus.cheats_mut().register("da9a7056-ad9b-4ca1-9049-688931b279a3", cheat);
 
         // Switch to working RAM bank 1
-        mmu::write_byte(&mut emulator, 0xFF70, 1);
+        address_bus.write_byte(0xFF70, 1);
         
-        let byte = mmu::read_byte(&mut emulator, 0xD356);
+        let byte = address_bus.read_byte(0xD356);
 
         assert_eq!(byte, 0xFF);
     }
@@ -252,12 +257,12 @@ mod tests {
 
     #[test]
     fn should_apply_gamegenie_code() {
-        let mut emulator = initialize_screenless_emulator();
-        emulator.mode = Mode::CGB;
+        let mut address_bus = initialize_test_address_bus();
+        address_bus.set_cgb_mode(true);
 
         let mut test_rom = build_rom(CART_TYPE_MBC1_WITH_RAM, ROM_SIZE_64KB, RAM_SIZE_2KB);
         test_rom[0x5D56] = 0x8E;
-        mmu::load_rom_buffer(&mut emulator.memory, test_rom, empty_cartridge_effects()).unwrap();
+        address_bus.load_rom_buffer(test_rom, empty_cartridge_effects()).unwrap();
 
         let cheat = Cheat {
             address: 0x5D56,
@@ -266,9 +271,9 @@ mod tests {
             maybe_bank: None,
         };
 
-        register_cheat(&mut emulator, "da9a7056-ad9b-4ca1-9049-688931b279a3", cheat);
+        address_bus.cheats_mut().register("da9a7056-ad9b-4ca1-9049-688931b279a3", cheat);
 
-        let byte = mmu::read_byte(&mut emulator, 0x5D56);
+        let byte = address_bus.read_byte(0x5D56);
 
         assert_eq!(byte, 0xCE);
     }

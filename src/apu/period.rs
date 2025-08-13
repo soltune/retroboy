@@ -1,54 +1,59 @@
-use bincode::{Encode, Decode};
+use crate::serializable::Serializable;
+use serializable_derive::Serializable;
+use getset::{CopyGetters, Setters};
 
-#[derive(Clone, Debug, Encode, Decode)]
+#[derive(Debug, Serializable, CopyGetters, Setters)]
+#[getset(get_copy = "pub(crate)", set = "pub(crate)")]
 pub struct Period {
-    pub low: u8,
-    pub high: u8,
-    pub divider: u16,
-    pub reloaded: bool
-}
-
-pub fn initalize_period() -> Period {
-    Period {
-        low: 0,
-        high: 0,
-        divider: 0,
-        reloaded: false
-    }
+    low: u8,
+    high: u8,
+    divider: u16,
+    reloaded: bool
 }
 
 const WAVE_CHANNEL_PERIOD_DELAY: u16 = 3;
 
-pub fn step(period: &mut Period, mut divider_increment: u8, mut handle_divider_reload: impl FnMut()) {
-    period.reloaded = false;
-    while divider_increment > 0 {
-        period.divider -= 1;
-        if period.divider == 0 {
-            period.divider = calculate_period_divider(&period);
-            handle_divider_reload();
-            period.reloaded = true;
+impl Period {
+    pub(super) fn new() -> Self {
+        Period {
+            low: 0,
+            high: 0,
+            divider: 0,
+            reloaded: false
         }
-        divider_increment -= 1;
     }
-    if period.divider != calculate_period_divider(period) {
-        period.reloaded = false;
+
+    pub(super) fn step(&mut self, mut divider_increment: u8, mut handle_divider_reload: impl FnMut()) {
+        self.reloaded = false;
+        while divider_increment > 0 {
+            self.divider -= 1;
+            if self.divider == 0 {
+                self.divider = self.calculate_period_divider();
+                handle_divider_reload();
+                self.reloaded = true;
+            }
+            divider_increment -= 1;
+        }
+        if self.divider != self.calculate_period_divider() {
+            self.reloaded = false;
+        }
     }
-}
 
-pub fn calculate_period_value(period: &Period) -> u16 {
-    let period_high_bits = (period.high & 0b111) as u16;
-    let period_low_bits = period.low as u16;
-    (period_high_bits << 8) | period_low_bits
-}
+    pub(super) fn calculate_period_value(&self) -> u16 {
+        let period_high_bits = (self.high & 0b111) as u16;
+        let period_low_bits = self.low as u16;
+        (period_high_bits << 8) | period_low_bits
+    }
 
-pub fn calculate_period_divider(period: &Period) -> u16 {
-    2048 - calculate_period_value(period)
-}
+    pub(super) fn calculate_period_divider(&self) -> u16 {
+        2048 - self.calculate_period_value()
+    }
 
-pub fn trigger(period: &mut Period) {
-    period.divider = calculate_period_divider(&period);
-}
+    pub(super) fn trigger(&mut self) {
+        self.divider = self.calculate_period_divider();
+    }
 
-pub fn apply_wave_channel_trigger_delay(period: &mut Period) {
-    period.divider += WAVE_CHANNEL_PERIOD_DELAY;
+    pub(super) fn apply_wave_channel_trigger_delay(&mut self) {
+        self.divider += WAVE_CHANNEL_PERIOD_DELAY;
+    }
 }

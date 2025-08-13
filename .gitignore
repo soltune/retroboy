@@ -5,6 +5,11 @@ pkg
 frontends/web/node_modules
 frontends/web/src/core
 frontends/web/build
+<<<<<<< HEAD
 frontends/web/.env.local
 frontends/web/.env.development.local
 frontends/web/.env.production.local
+=======
+CLAUDE.md
+tasks
+>>>>>>> upstream/main

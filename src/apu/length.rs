@@ -1,60 +1,63 @@
-use bincode::{Encode, Decode};
+use crate::serializable::Serializable;
+use getset::{CopyGetters, Setters};
+use serializable_derive::Serializable;
 
-#[derive(Clone, Debug, Encode, Decode)]
+#[derive(Debug, Serializable, CopyGetters, Setters)]
+#[getset(get_copy = "pub(crate)", set = "pub(crate)")]
 pub struct Length {
-    pub initial_settings: u8,
-    pub timer: u16
+    initial_settings: u8,
+    timer: u16,
+    #[getset(skip)]
+    max_length: u16
 }
 
-const WAVE_MAX_LENGTH: u16 = 256;
-const DEFAULT_MAX_LENGTH: u16 = 64;
+pub const WAVE_MAX_LENGTH: u16 = 256;
+pub const DEFAULT_MAX_LENGTH: u16 = 64;
 
-pub fn initialize_length() -> Length {
-    Length {
-        initial_settings: 0,
-        timer: 0
+impl Length {
+    pub(super) fn new(max_length: u16) -> Self {
+        Length {
+            initial_settings: 0,
+            timer: 0,
+            max_length
+        }
     }
-}
 
-pub fn reset_initial_settings(original_length: &Length) -> Length {
-    Length {
-        initial_settings: 0,
-        timer: original_length.timer
+    pub(super) fn reset_initial_settings(original_length: &Length) -> Length {
+        Length {
+            initial_settings: 0,
+            timer: original_length.timer,
+            max_length: original_length.max_length
+        }
     }
-}
 
-pub fn step(length: &mut Length) {
-    if length.timer > 0 {
-        length.timer -= 1;
+    pub(super) fn step(&mut self) {
+        if self.timer > 0 {
+            self.timer -= 1;
+        }
     }
-}
 
-pub fn initialize_timer(length: &mut Length) {
-    let initial_length = (length.initial_settings & 0b00111111) as u16;
-    let initial_timer_value = DEFAULT_MAX_LENGTH - initial_length;
-    length.timer = initial_timer_value;
-}
-
-pub fn initialize_wave_channel_timer(length: &mut Length) {
-    length.timer = WAVE_MAX_LENGTH - length.initial_settings as u16;
-}
-
-pub fn reload_timer_with_maximum(length: &mut Length) {
-    if length.timer == 0 {
-        length.timer = DEFAULT_MAX_LENGTH;
+    pub(super) fn timer_expired(&self) -> bool {
+        self.timer == 0
     }
-}
 
-pub fn reload_wave_channel_timer_with_maximum(length: &mut Length) {
-    if length.timer == 0 {
-        length.timer = WAVE_MAX_LENGTH;
+    pub(super) fn initialize_timer(&mut self) {
+        let initial_length: u16 = if self.max_length == WAVE_MAX_LENGTH {
+            self.initial_settings as u16
+        }
+        else {
+            (self.initial_settings & 0b00111111) as u16
+        };
+        self.timer = self.max_length - initial_length;
     }
-}
 
-pub fn at_max_length(length: &Length) -> bool {
-    length.timer == DEFAULT_MAX_LENGTH
-}
+    pub(super) fn reload_timer(&mut self) {
+        if self.timer == 0 {
+            self.timer = self.max_length;
+        }
+    }
 
-pub fn at_max_wave_channel_length(length: &Length) -> bool {
-    length.timer == WAVE_MAX_LENGTH
+    pub(super) fn at_max_length(&self) -> bool {
+        self.timer == self.max_length
+    }
 }

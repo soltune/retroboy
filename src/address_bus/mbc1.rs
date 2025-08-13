@@ -1,42 +1,23 @@
-use crate::mmu::bank_utils::{banked_read, banked_write};
-use crate::mmu::cartridge::{Cartridge, CartridgeMapper, CartridgeMapperSnapshot, MBCSnapshot};
-use crate::mmu::constants::*;
-use bincode::{Decode, Encode};
+use crate::address_bus::bank_utils::{banked_read, banked_write};
+use crate::address_bus::cartridge::{Cartridge, CartridgeMapper};
+use crate::address_bus::constants::*;
+use crate::serializable::Serializable;
+use serializable_derive::Serializable;
+use std::io::{Read, Write};
 
-#[derive(Clone, Debug, PartialEq, Encode, Decode)]
-pub enum MBCMode {
+#[derive(Debug, PartialEq, Serializable)]
+pub(super) enum MBCMode {
     ROM,
     RAM
 }
 
-#[derive(Clone, Debug, Encode, Decode)]
-pub struct MBC1State {
+#[derive(Debug)]
+pub(super) struct MBC1CartridgeMapper {
+    cartridge: Cartridge,
     ram_enabled: bool,
     rom_bank_number: u8,
     ram_bank_number: u8,
     mode: MBCMode,
-}
-
-#[derive(Debug)]
-pub struct MBC1CartridgeMapper {
-    cartridge: Cartridge,
-    state: MBC1State
-}
-
-pub fn initialize_mbc1() -> MBC1State {
-    MBC1State {
-        ram_enabled: false,
-        rom_bank_number: 1,
-        ram_bank_number: 0,
-        mode: MBCMode::ROM,
-    }
-}
-
-pub fn initialize_mbc1_mapper(cartridge: Cartridge) -> MBC1CartridgeMapper {
-    MBC1CartridgeMapper {
-        cartridge,
-        state: initialize_mbc1()
-    }
 }
 
 fn ram_supported(cartridge: &Cartridge) -> bool {
@@ -48,13 +29,25 @@ fn battery_supported(cartridge: &Cartridge) -> bool {
     cartridge.header.type_code == CART_TYPE_MBC1_WITH_RAM_PLUS_BATTERY
 }
 
+impl MBC1CartridgeMapper {
+    pub(super) fn new(cartridge: Cartridge) -> Self {
+        MBC1CartridgeMapper {
+            cartridge,
+            ram_enabled: false,
+            rom_bank_number: 1,
+            ram_bank_number: 0,
+            mode: MBCMode::ROM,
+        }
+    }
+}
+
 impl CartridgeMapper for MBC1CartridgeMapper {
     fn read_rom(&self, address: u16) -> u8 {
         match address {
             0x0000..=0x3FFF =>
                 self.cartridge.rom[address as usize],
             0x4000..=0x7FFF => {
-                banked_read(&self.cartridge.rom, 0x4000, address, self.state.rom_bank_number as u16)
+                banked_read(&self.cartridge.rom, 0x4000, address, self.rom_bank_number as u16)
             },
             _ => panic!("Invalid ROM address: {:#X}", address),
         }
@@ -64,7 +57,7 @@ impl CartridgeMapper for MBC1CartridgeMapper {
         match address {
             0x0000..=0x1FFF => {
                 if ram_supported(&self.cartridge) {
-                    self.state.ram_enabled = (value & 0xF) == 0x0A;
+                    self.ram_enabled = (value & 0xF) == 0x0A;
                 }
             },
             0x2000..=0x3FFF => {
@@ -74,18 +67,18 @@ impl CartridgeMapper for MBC1CartridgeMapper {
                 let max_bank_mask = ((self.cartridge.header.max_banks - 1) & 0x1F) as u8;
                 bank_value &= max_bank_mask;
     
-                self.state.rom_bank_number = (self.state.rom_bank_number & 0x60) + (bank_value & 0x1F);
+                self.rom_bank_number = (self.rom_bank_number & 0x60) + (bank_value & 0x1F);
             },
             0x4000..=0x5FFF => {
-                if self.state.mode == MBCMode::RAM {
-                    self.state.ram_bank_number = value & 0x3;
+                if self.mode == MBCMode::RAM {
+                    self.ram_bank_number = value & 0x3;
                 } else if self.cartridge.header.max_banks >= 64 {
-                    self.state.rom_bank_number = ((value & 0x3) << 5) + (self.state.rom_bank_number & 0x1F);
+                    self.rom_bank_number = ((value & 0x3) << 5) + (self.rom_bank_number & 0x1F);
                 }
             },
             0x6000..=0x7FFF => {
                 if ram_supported(&self.cartridge) {
-                    self.state.mode = if value == 1 { MBCMode::RAM } else { MBCMode::ROM };
+                    self.mode = if value == 1 { MBCMode::RAM } else { MBCMode::ROM };
                 }
             },
             _ => panic!("Invalid ROM address: {:#X}", address),
@@ -93,16 +86,16 @@ impl CartridgeMapper for MBC1CartridgeMapper {
     }
     
     fn read_ram(&self, address: u16) -> u8 {
-        if self.state.ram_enabled && self.cartridge.header.max_ram_banks > 0 {
-            banked_read(&self.cartridge.ram, 0x2000, address, self.state.ram_bank_number as u16)
+        if self.ram_enabled && self.cartridge.header.max_ram_banks > 0 {
+            banked_read(&self.cartridge.ram, 0x2000, address, self.ram_bank_number as u16)
         } else {
             0xFF
         }
     }
 
     fn write_ram(&mut self, address: u16, value: u8) {
-        if self.state.ram_enabled && self.cartridge.header.max_ram_banks > 0 {
-            banked_write(&mut self.cartridge.ram, 0x2000, address, self.state.ram_bank_number as u16, value);
+        if self.ram_enabled && self.cartridge.header.max_ram_banks > 0 {
+            banked_write(&mut self.cartridge.ram, 0x2000, address, self.ram_bank_number as u16, value);
             if battery_supported(&self.cartridge) {
                 self.cartridge.effects.save_ram(&self.cartridge.header.title, &self.cartridge.ram);
             }
@@ -118,34 +111,37 @@ impl CartridgeMapper for MBC1CartridgeMapper {
     }
     
     fn get_ram_bank(&self) -> u8 {
-        self.state.ram_bank_number
+        self.ram_bank_number
+    }
+}
+
+impl Serializable for MBC1CartridgeMapper {
+    fn serialize(&self, writer: &mut dyn Write)-> std::io::Result<()> {
+        self.cartridge.ram.serialize(writer)?;
+        self.ram_enabled.serialize(writer)?;
+        self.rom_bank_number.serialize(writer)?;
+        self.ram_bank_number.serialize(writer)?;
+        self.mode.serialize(writer)?;
+        Ok(())
     }
 
-    fn get_snapshot(&self) -> CartridgeMapperSnapshot {
-        CartridgeMapperSnapshot {
-            ram: self.cartridge.ram.clone(),
-            mbc: MBCSnapshot::MBC1(self.state.clone())
-        }
-    }
-
-    fn apply_snapshot(&mut self, snapshot: CartridgeMapperSnapshot) {
-        if let MBCSnapshot::MBC1(mbc1_state) = snapshot.mbc {
-            self.state = mbc1_state;
-        } else {
-            panic!("Invalid snapshot type for MBC1");
-        }
-        
-        self.cartridge.ram = snapshot.ram;
+    fn deserialize(&mut self, reader: &mut dyn Read)-> std::io::Result<()> {
+        self.cartridge.ram.deserialize(reader)?;
+        self.ram_enabled.deserialize(reader)?;
+        self.rom_bank_number.deserialize(reader)?;
+        self.ram_bank_number.deserialize(reader)?;
+        self.mode.deserialize(reader)?;
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::mmu::cartridge::*;
-    use crate::mmu::cartridge::test_utils::*;
-    use crate::mmu::constants::*;
-    use crate::mmu::effects::empty_cartridge_effects;
-    use crate::mmu::test_utils::*;
+    use crate::address_bus::cartridge::*;
+    use crate::address_bus::cartridge::test_utils::*;
+    use crate::address_bus::constants::*;
+    use crate::address_bus::effects::empty_cartridge_effects;
+    use crate::address_bus::test_utils::*;
 
     #[test]
     fn enable_external_ram_if_correct_cartridge_type() {

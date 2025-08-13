@@ -1,6 +1,6 @@
 use crate::utils::is_bit_set;
 
-pub fn bounded_wrapping_add(original_value: u8, max_value: u8) -> u8 {
+pub(super) fn bounded_wrapping_add(original_value: u8, max_value: u8) -> u8 {
     let mut new_value = original_value + 1;
     if new_value > max_value {
         new_value = 0;
@@ -8,13 +8,13 @@ pub fn bounded_wrapping_add(original_value: u8, max_value: u8) -> u8 {
     new_value
 }
 
-pub fn as_dac_output(dac_input: f32) -> f32 {
+pub(super) fn as_dac_output(dac_input: f32) -> f32 {
     (dac_input / 7.5) - 1.0
 }
 
 const LENGTH_ENABLED_INDEX: u8 = 6;
 
-pub fn length_enabled(register_value_with_length: u8) -> bool {
+pub(super) fn length_enabled(register_value_with_length: u8) -> bool {
     is_bit_set(register_value_with_length, LENGTH_ENABLED_INDEX) 
 }
 
@@ -48,7 +48,7 @@ fn apply_volume_reduction(sample: f32, master_volume: u8) -> f32 {
     sample * volume_reduction
 }
 
-pub fn calculate_left_stereo_sample(sound_panning: u8,
+pub(super) fn calculate_left_stereo_sample(sound_panning: u8,
     left_master_volume: u8,
     channel1_output: f32,
     channel2_output: f32,
@@ -67,7 +67,7 @@ pub fn calculate_left_stereo_sample(sound_panning: u8,
     apply_volume_reduction(left_sample, left_master_volume)
 }
 
-pub fn calculate_right_stereo_sample(sound_panning: u8,
+pub(super) fn calculate_right_stereo_sample(sound_panning: u8,
     right_master_volume: u8,
     channel1_output: f32,
     channel2_output: f32,
