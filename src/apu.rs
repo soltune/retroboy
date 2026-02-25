@@ -391,30 +391,32 @@ impl Apu {
 
     fn set_ch1_envelope_settings(&mut self, new_envelope_settings: u8) {
         if self.enabled {
-            self.channel1.envelope_mut().set_initial_settings(new_envelope_settings);
-            self.channel1.envelope_mut().reset_settings();
-
-            let should_disable = self.channel1.envelope().should_disable_dac();
-
-            self.channel1.set_dac_enabled(!should_disable);
-
-            if should_disable {
+            if new_envelope_settings & 0xF8 == 0 {
+                self.channel1.envelope_mut().set_initial_settings(new_envelope_settings);
+                self.channel1.set_dac_enabled(false);
                 self.channel1.set_enabled(false);
+            } else {
+                if self.channel1.enabled() {
+                    self.channel1.envelope_mut().zombie_mode_step(new_envelope_settings);
+                }
+                self.channel1.envelope_mut().set_initial_settings(new_envelope_settings);
+                self.channel1.set_dac_enabled(true);
             }
         }
     }
 
     fn set_ch2_envelope_settings(&mut self, new_envelope_settings: u8) {
         if self.enabled {
-            self.channel2.envelope_mut().set_initial_settings(new_envelope_settings);
-            self.channel2.envelope_mut().reset_settings();
-
-            let should_disable = self.channel2.envelope().should_disable_dac();
-        
-            self.channel2.set_dac_enabled(!should_disable);
-        
-            if should_disable {
+            if new_envelope_settings & 0xF8 == 0 {
+                self.channel2.envelope_mut().set_initial_settings(new_envelope_settings);
+                self.channel2.set_dac_enabled(false);
                 self.channel2.set_enabled(false);
+            } else {
+                if self.channel2.enabled() {
+                    self.channel2.envelope_mut().zombie_mode_step(new_envelope_settings);
+                }
+                self.channel2.envelope_mut().set_initial_settings(new_envelope_settings);
+                self.channel2.set_dac_enabled(true);
             }
         }
     }
@@ -433,15 +435,16 @@ impl Apu {
 
     fn set_ch4_envelope_settings(&mut self, new_envelope_settings: u8) {
         if self.enabled {
-            self.channel4.envelope_mut().set_initial_settings(new_envelope_settings);
-            self.channel4.envelope_mut().reset_settings();
-
-            let should_disable = self.channel4.envelope().should_disable_dac();
-        
-            self.channel4.set_dac_enabled(!should_disable);
-        
-            if should_disable {
+            if new_envelope_settings & 0xF8 == 0 {
+                self.channel4.envelope_mut().set_initial_settings(new_envelope_settings);
+                self.channel4.set_dac_enabled(false);
                 self.channel4.set_enabled(false);
+            } else {
+                if self.channel4.enabled() {
+                    self.channel4.envelope_mut().zombie_mode_step(new_envelope_settings);
+                }
+                self.channel4.envelope_mut().set_initial_settings(new_envelope_settings);
+                self.channel4.set_dac_enabled(true);
             }
         }
     }
