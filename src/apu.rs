@@ -43,13 +43,9 @@ pub struct Apu {
     
     right_sample_queue: Vec<f32>,
     
-    prev_channel1_output: f32,
+    prev_left: [f32; 4],
 
-    prev_channel2_output: f32,
-
-    prev_channel3_output: f32,
-
-    prev_channel4_output: f32,
+    prev_right: [f32; 4],
 
     #[getset(skip)]
     blep_table: BlepTable,
@@ -113,10 +109,8 @@ impl Apu {
             channel_clock: 0,
             left_sample_queue: Vec::new(),
             right_sample_queue: Vec::new(),
-            prev_channel1_output: 0.0,
-            prev_channel2_output: 0.0,
-            prev_channel3_output: 0.0,
-            prev_channel4_output: 0.0,
+            prev_left: [0.0; 4],
+            prev_right: [0.0; 4],
             blep_table: generate_blep_table(),
             blep_left: BlepBuffer::new(),
             blep_right: BlepBuffer::new(),
@@ -139,6 +133,12 @@ impl Apu {
         self.channel2 = PulseChannel::reset(&self.channel2, self.cgb_mode);
         self.channel3 = WaveChannel::reset(&self.channel3, self.cgb_mode);
         self.channel4 = NoiseChannel::reset(&self.channel4, self.cgb_mode);
+        self.prev_left = [0.0; 4];
+        self.prev_right = [0.0; 4];
+        self.blep_left.reset();
+        self.blep_right.reset();
+        self.highpass_left = 0.0;
+        self.highpass_right = 0.0;
     }
 
     fn should_step_div_apu(&self, divider: u8) -> bool {
@@ -194,11 +194,20 @@ impl Apu {
         &self.right_sample_queue.as_slice()
     }
 
-    fn scatter_channel_delta(&mut self, channel_output: f32, prev_output: f32, panning_left_bit: u8, panning_right_bit: u8, phase: usize) {
-        let delta = channel_output - prev_output;
-        if delta != 0.0 {
-            let left_delta = if is_bit_set(self.sound_panning, panning_left_bit) { delta } else { 0.0 };
-            let right_delta = if is_bit_set(self.sound_panning, panning_right_bit) { delta } else { 0.0 };
+    fn process_channel_deltas(&mut self, phase: usize) {
+        let outputs = [
+            as_dac_output(self.channel1.digital_output()) / 4.0,
+            as_dac_output(self.channel2.digital_output()) / 4.0,
+            as_dac_output(self.channel3.digital_output()) / 4.0,
+            as_dac_output(self.channel4.digital_output()) / 4.0,
+        ];
+
+        for i in 0..4 {
+            let left = if is_bit_set(self.sound_panning, 4 + i as u8) { outputs[i] } else { 0.0 };
+            let right = if is_bit_set(self.sound_panning, i as u8) { outputs[i] } else { 0.0 };
+
+            let left_delta = left - self.prev_left[i];
+            let right_delta = right - self.prev_right[i];
 
             if left_delta != 0.0 {
                 self.blep_left.add_delta(left_delta, phase, &self.blep_table);
@@ -206,29 +215,10 @@ impl Apu {
             if right_delta != 0.0 {
                 self.blep_right.add_delta(right_delta, phase, &self.blep_table);
             }
+
+            self.prev_left[i] = left;
+            self.prev_right[i] = right;
         }
-    }
-
-    fn process_channel_deltas(&mut self, phase: usize) {
-        let ch1_output = as_dac_output(self.channel1.digital_output()) / 4.0;
-        let ch2_output = as_dac_output(self.channel2.digital_output()) / 4.0;
-        let ch3_output = as_dac_output(self.channel3.digital_output()) / 4.0;
-        let ch4_output = as_dac_output(self.channel4.digital_output()) / 4.0;
-
-        let prev1 = self.prev_channel1_output;
-        let prev2 = self.prev_channel2_output;
-        let prev3 = self.prev_channel3_output;
-        let prev4 = self.prev_channel4_output;
-
-        self.scatter_channel_delta(ch1_output, prev1, 4, 0, phase);
-        self.scatter_channel_delta(ch2_output, prev2, 5, 1, phase);
-        self.scatter_channel_delta(ch3_output, prev3, 6, 2, phase);
-        self.scatter_channel_delta(ch4_output, prev4, 7, 3, phase);
-
-        self.prev_channel1_output = ch1_output;
-        self.prev_channel2_output = ch2_output;
-        self.prev_channel3_output = ch3_output;
-        self.prev_channel4_output = ch4_output;
     }
 
     fn enqueue_audio_samples(&mut self) {
@@ -680,10 +670,8 @@ impl Serializable for Apu {
         self.cgb_mode.deserialize(reader)?;
         self.cgb_double_speed.deserialize(reader)?;
 
-        self.prev_channel1_output = 0.0;
-        self.prev_channel2_output = 0.0;
-        self.prev_channel3_output = 0.0;
-        self.prev_channel4_output = 0.0;
+        self.prev_left = [0.0; 4];
+        self.prev_right = [0.0; 4];
         self.blep_left.reset();
         self.blep_right.reset();
         self.highpass_left = 0.0;
