@@ -1,6 +1,5 @@
 use crate::cpu::Cpu;
 use crate::address_bus::AddressBus;
-use crate::joypad::Key;
 use crate::serializable::Serializable;
 use getset::{Getters, MutGetters};
 use serializable_derive::Serializable;
@@ -9,6 +8,7 @@ use std::io::Result;
 pub use crate::address_bus::effects::CartridgeEffects;
 pub use crate::address_bus::{CartridgeHeader, RTCState};
 pub use crate::cpu::{Registers, BusActivityEntry, BusActivityType};
+pub use crate::joypad::Key;
 
 #[derive(Serializable, Getters, MutGetters)]
 #[getset(get = "pub(crate)", get_mut = "pub(crate)")]
@@ -30,10 +30,6 @@ impl Emulator {
 
     fn address_bus_mut(&mut self) -> &mut AddressBus {
         self.cpu.address_bus_mut()
-    }
-
-    pub fn in_color_bios(&self) -> bool {
-        self.address_bus().in_bios() && self.address_bus().cgb_mode()
     }
 
     pub fn load_rom(&mut self, rom: &[u8], cartridge_effects: Box<dyn CartridgeEffects>) -> Result<CartridgeHeader> {

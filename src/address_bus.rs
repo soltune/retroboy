@@ -166,19 +166,27 @@ impl AddressBus {
     }
 
     pub(super) fn sync(&mut self) {
-        let in_color_bios = self.in_bios && self.cgb_mode;
-
         self.timers.step();
         self.dma_step();
         self.gpu.step(GpuParams {
             hdma: &mut self.hdma,
-            in_color_bios,
         });
         self.apu.step(ApuParams {
-            in_color_bios,
             divider: self.timers.divider(),
         });
         self.serial.step();
+    }
+
+    pub(super) fn trigger_oam_bug_write(&mut self) {
+        self.gpu.trigger_oam_bug_write();
+    }
+
+    pub(super) fn trigger_oam_bug_read(&mut self) {
+        self.gpu.trigger_oam_bug_read();
+    }
+
+    pub(super) fn trigger_oam_bug_mixed(&mut self) {
+        self.gpu.trigger_oam_bug_mixed();
     }
 
     pub(crate) fn set_cgb_mode(&mut self, value: bool) {
@@ -219,7 +227,7 @@ impl AddressBus {
         if self.joypad.interrupt() {
             flags |= 0x10;
         }
-        flags
+        flags | 0xE0
     }
 
     pub(super) fn set_interrupt_flags(&mut self, flags: u8) {

@@ -2,10 +2,10 @@ use crate::apu::noise::NoiseChannel;
 use crate::apu::wave::WaveChannel;
 use crate::apu::pulse::PulseChannel;
 use crate::apu::utils::{bounded_wrapping_add, as_dac_output};
+use crate::apu::blep::{BlepBuffer, BlepTable, generate_blep_table};
 use crate::utils::{get_bit, get_t_cycle_increment, is_bit_set};
 use crate::serializable::Serializable;
 use crate::address_bus::MemoryMapped;
-use utils::{calculate_left_stereo_sample, calculate_right_stereo_sample};
 use std::io::{Read, Write};
 use getset::{CopyGetters, Getters, MutGetters, Setters};
 
@@ -43,14 +43,25 @@ pub struct Apu {
     
     right_sample_queue: Vec<f32>,
     
-    summed_channel1_sample: f32,
-    
-    summed_channel2_sample: f32,
-    
-    summed_channel3_sample: f32,
-    
-    summed_channel4_sample: f32,
-    
+    prev_left: [f32; 4],
+
+    prev_right: [f32; 4],
+
+    #[getset(skip)]
+    blep_table: BlepTable,
+
+    #[getset(skip)]
+    blep_left: BlepBuffer,
+
+    #[getset(skip)]
+    blep_right: BlepBuffer,
+
+    highpass_left: f32,
+
+    highpass_right: f32,
+
+    highpass_rate: f32,
+
     enqueue_rate: u32,
     
     #[getset(set = "pub(super)")]
@@ -61,7 +72,6 @@ pub struct Apu {
 }
 
 pub struct ApuParams {
-    pub in_color_bios: bool,
     pub divider: u8
 }
 
@@ -75,16 +85,6 @@ const MAX_AUDIO_BUFFER_SIZE: usize = 768; // 512 is too small for some PC browse
 
 const CHANNEL_STEP_RATE: u8 = 4;
 
-fn calculate_sample_weight(steps_per_enqueue: u8, steps_since_enqueue: u8) -> f32 {
-    let step_index = steps_per_enqueue - steps_since_enqueue;
-    ((step_index as f32).ln() + 1.0) / ((steps_per_enqueue as f32).ln() + 1.0)
-}
-
-fn generate_dac_output(summed_channel_sample: f32, steps_since_enqueue: u8) -> f32 {
-    let avg_channel_sample = summed_channel_sample / steps_since_enqueue as f32;
-    as_dac_output(avg_channel_sample)
-}
-
 fn in_length_period_first_half(current_divider_apu: u8) -> bool {
     let length_period_first_half_steps = vec![1,3,5,7];
     length_period_first_half_steps.contains(&current_divider_apu)
@@ -92,6 +92,9 @@ fn in_length_period_first_half(current_divider_apu: u8) -> bool {
 
 impl Apu {
     pub(super) fn new() -> Self {
+        let sample_rate = DEFAULT_SAMPLE_RATE;
+        let highpass_rate = (0.999958_f64).powf(CPU_RATE as f64 / sample_rate as f64) as f32;
+
         Apu {
             enabled: false,
             sound_panning: 0,
@@ -106,11 +109,15 @@ impl Apu {
             channel_clock: 0,
             left_sample_queue: Vec::new(),
             right_sample_queue: Vec::new(),
-            summed_channel1_sample: 0.0,
-            summed_channel2_sample: 0.0,
-            summed_channel3_sample: 0.0,
-            summed_channel4_sample: 0.0,
-            enqueue_rate: CPU_RATE / DEFAULT_SAMPLE_RATE,
+            prev_left: [0.0; 4],
+            prev_right: [0.0; 4],
+            blep_table: generate_blep_table(),
+            blep_left: BlepBuffer::new(),
+            blep_right: BlepBuffer::new(),
+            highpass_left: 0.0,
+            highpass_right: 0.0,
+            highpass_rate,
+            enqueue_rate: CPU_RATE / sample_rate,
             cgb_mode: false,
             cgb_double_speed: false
         }
@@ -126,6 +133,12 @@ impl Apu {
         self.channel2 = PulseChannel::reset(&self.channel2, self.cgb_mode);
         self.channel3 = WaveChannel::reset(&self.channel3, self.cgb_mode);
         self.channel4 = NoiseChannel::reset(&self.channel4, self.cgb_mode);
+        self.prev_left = [0.0; 4];
+        self.prev_right = [0.0; 4];
+        self.blep_left.reset();
+        self.blep_right.reset();
+        self.highpass_left = 0.0;
+        self.highpass_right = 0.0;
     }
 
     fn should_step_div_apu(&self, divider: u8) -> bool {
@@ -181,107 +194,65 @@ impl Apu {
         &self.right_sample_queue.as_slice()
     }
 
-    fn track_digital_outputs(&mut self, weight: f32) {
-        let channel1_output = self.channel1.digital_output();
-        let channel2_output = self.channel2.digital_output();
-        let channel3_output = self.channel3.digital_output();
-        let channel4_output = self.channel4.digital_output();
+    fn process_channel_deltas(&mut self, phase: usize) {
+        let outputs = [
+            as_dac_output(self.channel1.digital_output()) / 4.0,
+            as_dac_output(self.channel2.digital_output()) / 4.0,
+            as_dac_output(self.channel3.digital_output()) / 4.0,
+            as_dac_output(self.channel4.digital_output()) / 4.0,
+        ];
 
-        self.summed_channel1_sample += channel1_output * weight;
-        self.summed_channel2_sample += channel2_output * weight;
-        self.summed_channel3_sample += channel3_output * weight;
-        self.summed_channel4_sample += channel4_output * weight;
-    }
+        for i in 0..4 {
+            let left = if is_bit_set(self.sound_panning, 4 + i as u8) { outputs[i] } else { 0.0 };
+            let right = if is_bit_set(self.sound_panning, i as u8) { outputs[i] } else { 0.0 };
 
-    pub(super) fn clear_summed_samples(&mut self) {
-        self.summed_channel1_sample = 0.0;
-        self.summed_channel2_sample = 0.0;
-        self.summed_channel3_sample = 0.0;
-        self.summed_channel4_sample = 0.0;
-    }
+            let left_delta = left - self.prev_left[i];
+            let right_delta = right - self.prev_right[i];
 
-    fn enqueue_left_sample(&mut self,
-        channel1_dac_output: f32,
-        channel2_dac_output: f32,
-        channel3_dac_output: f32,
-        channel4_dac_output: f32) {
-        let left_master_volume = (self.master_volume & 0b01110000) >> 4;
-
-        let left_sample = calculate_left_stereo_sample(self.sound_panning,
-            left_master_volume,
-            channel1_dac_output,
-            channel2_dac_output,
-            channel3_dac_output,
-            channel4_dac_output);
-
-        self.left_sample_queue.push(left_sample);
-    }
-
-    fn enqueue_right_sample(&mut self,
-        channel1_dac_output: f32,
-        channel2_dac_output: f32,
-        channel3_dac_output: f32,
-        channel4_dac_output: f32) {
-        let right_master_volume = self.master_volume & 0b111;
-
-        let right_sample = calculate_right_stereo_sample(self.sound_panning,
-            right_master_volume,
-            channel1_dac_output,
-            channel2_dac_output,
-            channel3_dac_output,
-            channel4_dac_output);
-
-        self.right_sample_queue.push(right_sample);
-    }
-
-    fn enqueue_audio_samples(&mut self, in_color_bios: bool) {
-        /*
-            This emulator uses audio syncing. It steps the emulator until the audio buffer is full, then 
-            briefly pauses while it plays the audio in the buffer. Once the audio plays, the emulator
-            resumes.
-            
-            The purpose of the BIOS check here is that I want my emulator to speed through the
-            initial GBC BIOS so it appears as if it's skipping the BIOS altogether (even though it still
-            runs it; it's just hidden).
-        */
-        if !in_color_bios {
-            let t_cycle_increment = get_t_cycle_increment(self.cgb_double_speed);
-
-            self.audio_buffer_clock += t_cycle_increment;
-            let steps_since_enqueue = self.audio_buffer_clock / t_cycle_increment;
-            let steps_per_enqueue = self.enqueue_rate as u8 + 1 / t_cycle_increment;
-
-            let weight = calculate_sample_weight(steps_per_enqueue, steps_since_enqueue);
-            self.track_digital_outputs(weight);
-
-            if self.audio_buffer_clock as u32 >= self.enqueue_rate {
-                self.audio_buffer_clock = 0;
-
-                let channel1_dac_output = generate_dac_output(self.summed_channel1_sample, steps_since_enqueue);
-                let channel2_dac_output = generate_dac_output(self.summed_channel2_sample, steps_since_enqueue);
-                let channel3_dac_output = generate_dac_output(self.summed_channel3_sample, steps_since_enqueue);
-                let channel4_dac_output = generate_dac_output(self.summed_channel4_sample, steps_since_enqueue);
-
-                self.enqueue_left_sample(
-                    channel1_dac_output,
-                    channel2_dac_output,
-                    channel3_dac_output,
-                    channel4_dac_output);
-
-                self.enqueue_right_sample(
-                    channel1_dac_output,
-                    channel2_dac_output,
-                    channel3_dac_output,
-                    channel4_dac_output);
-
-                self.clear_summed_samples();
+            if left_delta != 0.0 {
+                self.blep_left.add_delta(left_delta, phase, &self.blep_table);
             }
+            if right_delta != 0.0 {
+                self.blep_right.add_delta(right_delta, phase, &self.blep_table);
+            }
+
+            self.prev_left[i] = left;
+            self.prev_right[i] = right;
+        }
+    }
+
+    fn enqueue_audio_samples(&mut self) {
+        let t_cycle_increment = get_t_cycle_increment(self.cgb_double_speed);
+
+        let phase = (self.audio_buffer_clock as usize * 256) / self.enqueue_rate as usize;
+        self.process_channel_deltas(phase);
+
+        self.audio_buffer_clock = self.audio_buffer_clock.wrapping_add(t_cycle_increment);
+
+        if self.audio_buffer_clock as u32 >= self.enqueue_rate {
+            self.audio_buffer_clock = 0;
+
+            let left_master_volume = ((self.master_volume & 0b01110000) >> 4) as f32 + 1.0;
+            let right_master_volume = (self.master_volume & 0b111) as f32 + 1.0;
+
+            let left_sample = self.blep_left.read() * left_master_volume / 8.0;
+            let right_sample = self.blep_right.read() * right_master_volume / 8.0;
+
+            let highpass_rate = self.highpass_rate;
+            self.highpass_left = self.highpass_left * highpass_rate + left_sample * (1.0 - highpass_rate);
+            self.highpass_right = self.highpass_right * highpass_rate + right_sample * (1.0 - highpass_rate);
+
+            let left_filtered = left_sample - self.highpass_left;
+            let right_filtered = right_sample - self.highpass_right;
+
+            self.left_sample_queue.push(left_filtered);
+            self.right_sample_queue.push(right_filtered);
         }
     }
 
     pub(super) fn step(&mut self, params: ApuParams) {
         let t_cycle_increment = get_t_cycle_increment(self.cgb_double_speed);
-        self.channel_clock += t_cycle_increment;
+        self.channel_clock = self.channel_clock.wrapping_add(t_cycle_increment);
 
         if self.enabled {
             if self.channel_clock >= CHANNEL_STEP_RATE {
@@ -296,13 +267,14 @@ impl Apu {
 
             self.step_div_apu(params.divider);
         }
-        self.enqueue_audio_samples(params.in_color_bios);
+        self.enqueue_audio_samples();
 
         self.last_divider_time = params.divider;
     }
 
     pub(crate) fn set_sample_rate(&mut self, sample_rate: u32) {
         self.enqueue_rate = CPU_RATE / sample_rate;
+        self.highpass_rate = (0.999958_f64).powf(CPU_RATE as f64 / sample_rate as f64) as f32;
     }
 
     fn set_ch1_period_high(&mut self, new_period_high_value: u8) {
@@ -403,30 +375,32 @@ impl Apu {
 
     fn set_ch1_envelope_settings(&mut self, new_envelope_settings: u8) {
         if self.enabled {
-            self.channel1.envelope_mut().set_initial_settings(new_envelope_settings);
-            self.channel1.envelope_mut().reset_settings();
-
-            let should_disable = self.channel1.envelope().should_disable_dac();
-
-            self.channel1.set_dac_enabled(!should_disable);
-
-            if should_disable {
+            if new_envelope_settings & 0xF8 == 0 {
+                self.channel1.envelope_mut().set_initial_settings(new_envelope_settings);
+                self.channel1.set_dac_enabled(false);
                 self.channel1.set_enabled(false);
+            } else {
+                if self.channel1.enabled() {
+                    self.channel1.envelope_mut().zombie_mode_step(new_envelope_settings);
+                }
+                self.channel1.envelope_mut().set_initial_settings(new_envelope_settings);
+                self.channel1.set_dac_enabled(true);
             }
         }
     }
 
     fn set_ch2_envelope_settings(&mut self, new_envelope_settings: u8) {
         if self.enabled {
-            self.channel2.envelope_mut().set_initial_settings(new_envelope_settings);
-            self.channel2.envelope_mut().reset_settings();
-
-            let should_disable = self.channel2.envelope().should_disable_dac();
-        
-            self.channel2.set_dac_enabled(!should_disable);
-        
-            if should_disable {
+            if new_envelope_settings & 0xF8 == 0 {
+                self.channel2.envelope_mut().set_initial_settings(new_envelope_settings);
+                self.channel2.set_dac_enabled(false);
                 self.channel2.set_enabled(false);
+            } else {
+                if self.channel2.enabled() {
+                    self.channel2.envelope_mut().zombie_mode_step(new_envelope_settings);
+                }
+                self.channel2.envelope_mut().set_initial_settings(new_envelope_settings);
+                self.channel2.set_dac_enabled(true);
             }
         }
     }
@@ -445,15 +419,16 @@ impl Apu {
 
     fn set_ch4_envelope_settings(&mut self, new_envelope_settings: u8) {
         if self.enabled {
-            self.channel4.envelope_mut().set_initial_settings(new_envelope_settings);
-            self.channel4.envelope_mut().reset_settings();
-
-            let should_disable = self.channel4.envelope().should_disable_dac();
-        
-            self.channel4.set_dac_enabled(!should_disable);
-        
-            if should_disable {
+            if new_envelope_settings & 0xF8 == 0 {
+                self.channel4.envelope_mut().set_initial_settings(new_envelope_settings);
+                self.channel4.set_dac_enabled(false);
                 self.channel4.set_enabled(false);
+            } else {
+                if self.channel4.enabled() {
+                    self.channel4.envelope_mut().zombie_mode_step(new_envelope_settings);
+                }
+                self.channel4.envelope_mut().set_initial_settings(new_envelope_settings);
+                self.channel4.set_dac_enabled(true);
             }
         }
     }
@@ -695,10 +670,12 @@ impl Serializable for Apu {
         self.cgb_mode.deserialize(reader)?;
         self.cgb_double_speed.deserialize(reader)?;
 
-        self.summed_channel1_sample = 0.0;
-        self.summed_channel2_sample = 0.0;
-        self.summed_channel3_sample = 0.0;
-        self.summed_channel4_sample = 0.0;
+        self.prev_left = [0.0; 4];
+        self.prev_right = [0.0; 4];
+        self.blep_left.reset();
+        self.blep_right.reset();
+        self.highpass_left = 0.0;
+        self.highpass_right = 0.0;
 
         self.left_sample_queue.clear();
         self.right_sample_queue.clear();
@@ -718,3 +695,4 @@ mod sweep;
 mod envelope;
 mod period;
 mod utils;
+mod blep;

@@ -8,3 +8,4 @@ frontends/web/build
 frontends/web/.env.local
 frontends/web/.env.development.local
 frontends/web/.env.production.local
+.claude/*
