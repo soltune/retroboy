@@ -66,7 +66,7 @@ const Interface = (): JSX.Element => {
         setPaused(false);
         resetEmulator();
         setRom(null);
-        //setSelectedRomInfo(null);
+        setSelectedRomInfo(null);
     };
 
     const [audioContextRef, startReset] = useAudioSync(
