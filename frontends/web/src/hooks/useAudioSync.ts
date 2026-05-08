@@ -76,6 +76,11 @@ const useAudioSync = (
                     bufferSource.connect(audioContext.destination);
                 }
 
+                // Prevent catch-up loop caused by setTimeout throttling in background tabs
+                if (nextPlayTimeRef.current < audioContext.currentTime) {
+                    nextPlayTimeRef.current = audioContext.currentTime;
+                }
+
                 bufferSource.start(nextPlayTimeRef.current);
 
                 const waitTime =
